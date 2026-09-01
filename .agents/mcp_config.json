@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "alpaca": {
+      "command": "uvx",
+      "args": [
+        "alpaca-mcp-server"
+      ],
+      "env": {
+        "ALPACA_API_KEY": "PKGKDPNM5CPR2WPILVEFTOCQ2Z",
+        "ALPACA_SECRET_KEY": "ACYi33qThtEYtEfjzZ2uTNR4nBWoPBVPzkSyXAQfTP99",
+        "ALPACA_PAPER_TRADE": "true",
+        "ALPACA_TOOLSETS": "account,trading,stock-data,options-data,crypto-data,news"
+      }
+    }
+  }
+}
