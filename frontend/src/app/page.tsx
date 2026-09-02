@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ChevronRight, ArrowRight } from "lucide-react";
 import ThemeToggle from "@/components/common/ThemeToggle";
+import CursorReactiveBackground from "@/components/common/CursorReactiveBackground";
 
 const pipelineStages = [
   { step: "01", title: "MARKET DATA", sub: "SIP Real-Time Feed" },
@@ -77,7 +78,10 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen lg:h-screen lg:max-h-screen bg-voltron-900 text-foreground flex flex-col justify-between selection:bg-voltron-cyan/20 selection:text-voltron-cyan relative font-mono grid-bg overflow-x-hidden">
+    <div className="min-h-screen lg:h-screen lg:max-h-screen bg-voltron-900 text-foreground flex flex-col justify-between selection:bg-voltron-cyan/20 selection:text-voltron-cyan relative font-mono overflow-x-hidden">
+      {/* Interactive Cursor-Reactive Background Field */}
+      <CursorReactiveBackground />
+
       {/* Subtle Institutional Scanline Overlay */}
       <div className="scanline-overlay pointer-events-none" />
 
