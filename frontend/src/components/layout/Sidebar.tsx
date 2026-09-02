@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { X } from "lucide-react";
 import clsx from "clsx";
 
 import { useMarket } from "@/context/MarketContext";
@@ -19,24 +21,55 @@ const navItems = [
   { name: "ANALYTICS", href: "/analytics" },
 ];
 
-export default function Sidebar() {
-  const pathname = usePathname();
-  const { selectedSymbol, getLinkWithSymbol } = useMarket();
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
 
-  return (
-    <aside className="w-52 flex-shrink-0 bg-voltron-950 border-r border-voltron-800 flex flex-col justify-between h-screen sticky top-0 select-none z-30">
+export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
+  const pathname = usePathname();
+  const { getLinkWithSymbol } = useMarket();
+
+  // Close mobile drawer when pressing Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobileOpen && onMobileClose) {
+        onMobileClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen, onMobileClose]);
+
+  const navContent = (
+    <div className="flex flex-col justify-between h-full">
       <div>
         {/* Terminal Header */}
-        <div className="h-12 px-4 flex items-center border-b border-voltron-800">
-          <Link href={getLinkWithSymbol("/dashboard")} className="flex items-center group">
-            <span className="font-mono font-bold tracking-wider text-sm text-white hover:text-voltron-cyan transition-colors">
+        <div className="h-14 px-4 flex items-center justify-between border-b border-voltron-800">
+          <Link
+            href={getLinkWithSymbol("/dashboard")}
+            onClick={() => onMobileClose?.()}
+            className="flex items-center group"
+          >
+            <span className="font-mono font-bold tracking-wider text-sm text-white group-hover:text-voltron-cyan transition-colors">
               VOLTRON
             </span>
           </Link>
+
+          {/* Close button for mobile drawer */}
+          {onMobileClose && (
+            <button
+              onClick={onMobileClose}
+              aria-label="Close navigation"
+              className="lg:hidden p-1.5 rounded text-voltron-400 hover:text-white hover:bg-voltron-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Menu */}
-        <nav className="p-2 pt-2.5 space-y-0.5 overflow-y-auto max-h-[calc(100vh-120px)]">
+        <nav className="p-2 pt-3 space-y-1 overflow-y-auto max-h-[calc(100vh-130px)]">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href === "/dashboard" && pathname === "/");
 
@@ -44,8 +77,9 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 href={getLinkWithSymbol(item.href)}
+                onClick={() => onMobileClose?.()}
                 className={clsx(
-                  "flex items-center justify-between px-3 py-2 text-xs font-mono tracking-wider transition-colors",
+                  "flex items-center justify-between px-3.5 py-2.5 rounded-sm text-xs font-mono tracking-wider transition-colors min-h-[40px]",
                   isActive
                     ? "bg-voltron-900 text-voltron-cyan border-l-2 border-voltron-cyan font-bold"
                     : "text-voltron-400 hover:text-white hover:bg-voltron-900/60 border-l-2 border-transparent"
@@ -59,19 +93,50 @@ export default function Sidebar() {
       </div>
 
       {/* Bottom Status Panel */}
-      <div className="p-3 border-t border-voltron-800 bg-voltron-950 font-mono text-[10px]">
-        <div className="flex items-center justify-between text-voltron-400 mb-1">
+      <div className="p-3.5 border-t border-voltron-800 bg-voltron-950 font-mono text-[10px]">
+        <div className="flex items-center justify-between text-voltron-400 mb-1.5">
           <span className="uppercase tracking-wider">Mode</span>
           <span className="text-white font-bold uppercase">PAPER</span>
         </div>
-        <div className="flex items-center justify-between pt-1 border-t border-voltron-850">
+        <div className="flex items-center justify-between pt-1.5 border-t border-voltron-850">
           <span className="text-voltron-400">Status</span>
           <span className="text-voltron-emerald font-bold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-voltron-emerald inline-block"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-voltron-emerald inline-block animate-pulse"></span>
             CONNECTED
           </span>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* 1. Permanent Desktop Sidebar (>= lg) */}
+      <aside className="hidden lg:flex w-52 flex-shrink-0 bg-voltron-950 border-r border-voltron-800 flex-col justify-between h-screen sticky top-0 select-none z-30">
+        {navContent}
+      </aside>
+
+      {/* 2. Mobile Responsive Slide-over Drawer (< lg) */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop Overlay */}
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            onClick={onMobileClose}
+            aria-hidden="true"
+          />
+
+          {/* Drawer Panel */}
+          <aside
+            role="dialog"
+            aria-label="Mobile Navigation"
+            aria-modal="true"
+            className="relative w-64 max-w-[85vw] bg-voltron-950 border-r border-voltron-800 shadow-2xl z-50 flex flex-col justify-between h-full select-none animate-in slide-in-from-left duration-200"
+          >
+            {navContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
