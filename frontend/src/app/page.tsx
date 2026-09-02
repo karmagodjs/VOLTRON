@@ -114,22 +114,15 @@ export default function LandingPage() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Dark / Light Theme Toggle */}
           <ThemeToggle variant="pill" />
 
           {/* Paper Environment Status Indicator */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-900 border border-voltron-800 text-[10px] text-voltron-400 font-mono">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-800 text-[10.5px] text-voltron-400 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-voltron-emerald inline-block animate-pulse"></span>
-            Paper Environment
+            <span>Paper Environment</span>
           </div>
-
-          <Link
-            href="/dashboard"
-            className="px-3 py-1 rounded bg-voltron-cyan hover:bg-voltron-cyan-dim text-voltron-950 text-xs font-bold transition-all duration-150 transform hover:-translate-y-0.5 active:translate-y-0 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan"
-          >
-            <span>Launch Terminal</span>
-          </Link>
         </div>
       </header>
 
