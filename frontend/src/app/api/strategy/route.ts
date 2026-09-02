@@ -126,8 +126,10 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     strategy,
     symbol,
+    name: asset.name,
     sentiment,
     spot_price: spot,
+    net_credit: Number((maxProfit / 100).toFixed(2)),
     legs,
     max_profit: maxProfit,
     max_loss: maxLoss,
