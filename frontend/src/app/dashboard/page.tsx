@@ -18,8 +18,20 @@ import {
   TimelineEvent,
   RiskStatus,
   AccountSummary,
+  AgentState,
 } from "@/types";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import {
+  ArrowRight,
+  TrendingUp,
+  Zap,
+  Bot,
+  SlidersHorizontal,
+  ShieldCheck,
+  Send,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react";
+import clsx from "clsx";
 
 export default function DashboardPage() {
   const [symbol, setSymbol] = useState("SPY");
@@ -32,7 +44,7 @@ export default function DashboardPage() {
   } | null>(null);
   const [risk, setRisk] = useState<RiskStatus | null>(null);
   const [account, setAccount] = useState<AccountSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
@@ -63,84 +75,120 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [symbol]);
 
-  if (loading && (!market || !analysis || !risk || !account)) {
-    return (
-      <TerminalLayout>
-        <div className="flex items-center justify-center h-[calc(100vh-140px)] font-mono text-xs text-voltron-cyan">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 rounded-lg border-2 border-voltron-cyan border-t-transparent animate-spin"></div>
-            <span className="tracking-wider">INITIALIZING VOLTRON COMMAND CENTER STATE...</span>
-          </div>
-        </div>
-      </TerminalLayout>
-    );
-  }
-
-  if (error && !market) {
-    return (
-      <TerminalLayout>
-        <div className="flex items-center justify-center h-[calc(100vh-140px)] font-mono text-xs text-voltron-rose">
-          <div className="flex flex-col items-center gap-3 p-6 rounded-lg bg-voltron-900 border border-voltron-800">
-            <AlertTriangle className="w-8 h-8 text-voltron-rose" />
-            <span className="font-bold">BACKEND OFFLINE / DATA UNAVAILABLE</span>
-            <span className="text-voltron-400 text-[11px] max-w-sm text-center">
-              Unable to reach VOLTRON execution and market data endpoints.
-            </span>
-            <button
-              onClick={loadData}
-              className="mt-2 px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-white flex items-center gap-1.5"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Retry Connection</span>
-            </button>
-          </div>
-        </div>
-      </TerminalLayout>
-    );
-  }
+  const agentState: AgentState = {
+    cycle: timeline?.cycle || 142,
+    status: "ANALYZING",
+    symbol: symbol,
+    decision: analysis?.decision || "TRADE_CANDIDATE",
+    strategy: analysis?.strategy_recommendation || "IRON_CONDOR",
+    confidence: analysis?.confidence || 88,
+    opportunity_score: analysis?.opportunity_score || 94,
+    active_order_id: "VLT-8941",
+    active_position: "SPY IRON CONDOR",
+    last_reason: "7 Risk gates approved; paper execution active",
+    errors: [],
+  };
 
   return (
     <TerminalLayout>
-      <div className="space-y-3.5">
-        {/* Top 2-Column Institutional Workstation Layout */}
+      <div className="space-y-3.5 font-mono">
+        {/* 1. Visual Flow Banner: MARKET → VOLATILITY → AI DECISION → STRATEGY → RISK → ACTION */}
+        <div className="p-2.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-2 text-xs overflow-x-auto">
+          {/* Step 1: Market */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-[10px] text-voltron-400 uppercase font-bold">1. MARKET</span>
+            <span className="px-1.5 py-0.5 rounded bg-voltron-950 border border-voltron-800 text-white font-bold text-[11px]">
+              {symbol} {market?.price ? `$${market.price.toFixed(2)}` : "—"}
+            </span>
+          </div>
+
+          <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
+
+          {/* Step 2: Volatility */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-[10px] text-voltron-400 uppercase font-bold">2. VOLATILITY</span>
+            <span className="px-1.5 py-0.5 rounded bg-voltron-950 border border-voltron-800 text-voltron-emerald font-bold text-[11px]">
+              {market?.iv_rv_ratio ? `IV/RV ${market.iv_rv_ratio.toFixed(2)}x` : "—"}
+            </span>
+          </div>
+
+          <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
+
+          {/* Step 3: AI Intelligence */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-[10px] text-voltron-400 uppercase font-bold">3. AI DECISION</span>
+            <span className="px-1.5 py-0.5 rounded bg-voltron-cyan/15 border border-voltron-cyan/40 text-voltron-cyan font-bold text-[11px]">
+              {analysis?.decision ? analysis.decision.replace("_", " ") : "ANALYZING"} ({analysis?.confidence || 88}%)
+            </span>
+          </div>
+
+          <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
+
+          {/* Step 4: Strategy */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-[10px] text-voltron-400 uppercase font-bold">4. STRATEGY</span>
+            <span className="px-1.5 py-0.5 rounded bg-voltron-950 border border-voltron-800 text-white font-bold text-[11px]">
+              {analysis?.strategy_recommendation || "IRON CONDOR"}
+            </span>
+          </div>
+
+          <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
+
+          {/* Step 5: Risk */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-[10px] text-voltron-400 uppercase font-bold">5. RISK</span>
+            <span
+              className={clsx(
+                "px-1.5 py-0.5 rounded border font-bold text-[11px]",
+                risk?.overall_status === "APPROVED"
+                  ? "bg-voltron-emerald/15 border-voltron-emerald/30 text-voltron-emerald"
+                  : "bg-voltron-rose/15 border-voltron-rose/30 text-voltron-rose"
+              )}
+            >
+              {risk?.overall_status === "APPROVED" ? "APPROVED" : "BLOCKED"}
+            </span>
+          </div>
+
+          <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
+
+          {/* Step 6: Action */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-[10px] text-voltron-400 uppercase font-bold">6. ACTION</span>
+            <span className="px-2 py-0.5 rounded bg-voltron-cyan/20 border border-voltron-cyan text-voltron-cyan font-bold text-[11px] shadow-cyan-glow">
+              PAPER EXECUTION
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Top 2-Column Institutional Workstation Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
           {/* Main Market Workspace (8 cols on desktop) */}
           <div className="lg:col-span-7 xl:col-span-8">
-            {market && risk && account && (
-              <MarketWorkspace
-                market={market}
-                risk={risk}
-                account={account}
-                onOpenKillSwitch={() => {}}
-              />
-            )}
+            <MarketWorkspace
+              market={market}
+              risk={risk}
+              account={account}
+              isLoading={loading}
+            />
           </div>
 
           {/* Right AI Intelligence & Assessment Panel (4 cols on desktop) */}
           <div className="lg:col-span-5 xl:col-span-4">
-            {analysis && (
-              <AIIntelligencePanel
-                analysis={analysis}
-                strategyName="IRON CONDOR"
-                riskStatus={risk?.overall_status || "APPROVED"}
-              />
-            )}
+            <AIIntelligencePanel
+              analysis={analysis}
+              strategyName={analysis?.strategy_recommendation || "IRON CONDOR"}
+              riskStatus={risk?.overall_status || "APPROVED"}
+            />
           </div>
         </div>
 
-        {/* Bottom Horizontal Agent Pipeline & Telemetry Bar */}
-        {timeline && (
-          <AgentActivityBar
-            cycle={timeline.cycle}
-            symbol={symbol}
-            strategy={analysis?.strategy_recommendation || "IRON_CONDOR"}
-            confidence={analysis?.confidence || 88}
-            opportunityScore={analysis?.opportunity_score || 94}
-            lastAction="Risk evaluation passed / Paper order #VLT-8941 routed"
-            lastUpdated={analysis?.timestamp ? new Date(analysis.timestamp).toLocaleTimeString() : undefined}
-            onRefresh={loadData}
-          />
-        )}
+        {/* 3. Bottom Horizontal Agent Pipeline & Telemetry Bar */}
+        <AgentActivityBar
+          agentState={agentState}
+          activeOrder="VLT-8941"
+          lastUpdated={analysis?.timestamp ? new Date(analysis.timestamp).toLocaleTimeString() : undefined}
+          onRefresh={loadData}
+        />
       </div>
     </TerminalLayout>
   );

@@ -7,18 +7,16 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileText,
-  Database,
-  ShieldCheck,
-  X,
   Sparkles,
   ArrowRight,
+  X,
 } from "lucide-react";
 import clsx from "clsx";
 
 interface AIIntelligencePanelProps {
-  analysis: AIAnalysis;
-  strategyName?: string;
-  riskStatus?: string;
+  analysis: AIAnalysis | null;
+  strategyName?: string | null;
+  riskStatus?: string | null;
 }
 
 export default function AIIntelligencePanel({
@@ -28,6 +26,15 @@ export default function AIIntelligencePanel({
 }: AIIntelligencePanelProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"reasoning" | "data" | "risk">("reasoning");
+
+  const statusLabel = analysis?.status || "ANALYZING";
+  const decisionLabel = analysis?.decision ? analysis.decision.replace("_", " ") : "WAITING";
+  const actionLabel =
+    riskStatus === "APPROVED" && analysis?.decision === "TRADE_CANDIDATE"
+      ? "PAPER EXECUTION"
+      : riskStatus === "BLOCKED"
+      ? "BLOCKED"
+      : "NO TRADE";
 
   return (
     <div className="space-y-3 font-mono">
@@ -44,9 +51,27 @@ export default function AIIntelligencePanel({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-emerald/10 border border-voltron-emerald/30 text-[10px] text-voltron-emerald font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-voltron-emerald animate-pulse"></span>
-            {analysis.status || "ANALYZING"}
+          <div
+            className={clsx(
+              "flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider",
+              statusLabel === "COMPLETE"
+                ? "bg-voltron-emerald/10 border border-voltron-emerald/30 text-voltron-emerald"
+                : statusLabel === "ANALYZING"
+                ? "bg-voltron-cyan/10 border border-voltron-cyan/30 text-voltron-cyan"
+                : "bg-voltron-800 border border-voltron-700 text-voltron-300"
+            )}
+          >
+            <span
+              className={clsx(
+                "w-1.5 h-1.5 rounded-full inline-block",
+                statusLabel === "ANALYZING"
+                  ? "bg-voltron-cyan animate-pulse"
+                  : statusLabel === "COMPLETE"
+                  ? "bg-voltron-emerald"
+                  : "bg-voltron-400"
+              )}
+            ></span>
+            ● {statusLabel}
           </div>
         </div>
 
@@ -54,10 +79,10 @@ export default function AIIntelligencePanel({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">
-              Current Decision
+              Decision
             </span>
             <span className="font-bold text-voltron-emerald truncate block">
-              {analysis.decision.replace("_", " ")}
+              {decisionLabel}
             </span>
           </div>
 
@@ -66,7 +91,7 @@ export default function AIIntelligencePanel({
               Confidence
             </span>
             <span className="font-bold text-voltron-cyan font-tabular">
-              {analysis.confidence}%
+              {analysis?.confidence != null ? `${analysis.confidence}%` : "—"}
             </span>
           </div>
 
@@ -75,7 +100,7 @@ export default function AIIntelligencePanel({
               Direction
             </span>
             <span className="font-bold text-white">
-              {analysis.direction}
+              {analysis?.direction || "—"}
             </span>
           </div>
 
@@ -84,7 +109,7 @@ export default function AIIntelligencePanel({
               Volatility View
             </span>
             <span className="font-bold text-voltron-cyan">
-              {analysis.volatility_view}
+              {analysis?.volatility_view || "—"}
             </span>
           </div>
         </div>
@@ -93,10 +118,10 @@ export default function AIIntelligencePanel({
         <div className="p-3 rounded bg-voltron-950 border border-voltron-800">
           <div className="flex items-center gap-1.5 text-[10px] uppercase text-voltron-cyan font-bold mb-1">
             <Sparkles className="w-3 h-3 text-voltron-cyan" />
-            <span>Quantitative Thesis</span>
+            <span>AI Thesis</span>
           </div>
           <p className="text-xs text-voltron-200 leading-relaxed font-sans font-normal">
-            &ldquo;{analysis.thesis}&rdquo;
+            {analysis?.thesis ? `“${analysis.thesis}”` : "WAITING FOR AI ANALYSIS..."}
           </p>
         </div>
 
@@ -106,17 +131,21 @@ export default function AIIntelligencePanel({
             <CheckCircle2 className="w-3 h-3" /> Key Reasons
           </div>
           <div className="space-y-1">
-            {analysis.key_reasons.slice(0, 3).map((r, i) => (
-              <div
-                key={i}
-                className="p-2 rounded bg-voltron-950/60 border border-voltron-800 flex items-start gap-2 text-xs"
-              >
-                <span className="text-[10px] font-bold text-voltron-emerald px-1 py-0.2 rounded bg-voltron-emerald/10 border border-voltron-emerald/20 flex-shrink-0">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="text-voltron-200 text-[11px] leading-snug">{r}</span>
-              </div>
-            ))}
+            {analysis?.key_reasons && analysis.key_reasons.length > 0 ? (
+              analysis.key_reasons.slice(0, 3).map((r, i) => (
+                <div
+                  key={i}
+                  className="p-2 rounded bg-voltron-950/60 border border-voltron-800 flex items-start gap-2 text-xs"
+                >
+                  <span className="text-[10px] font-bold text-voltron-emerald px-1 py-0.2 rounded bg-voltron-emerald/10 border border-voltron-emerald/20 flex-shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-voltron-200 text-[11px] leading-snug">{r}</span>
+                </div>
+              ))
+            ) : (
+              <div className="text-[11px] text-voltron-400 p-2">No active drivers loaded.</div>
+            )}
           </div>
         </div>
 
@@ -126,17 +155,21 @@ export default function AIIntelligencePanel({
             <AlertTriangle className="w-3 h-3" /> Risks
           </div>
           <div className="space-y-1">
-            {analysis.risks.slice(0, 2).map((r, i) => (
-              <div
-                key={i}
-                className="p-2 rounded bg-voltron-950/60 border border-voltron-800 flex items-start gap-2 text-xs"
-              >
-                <span className="text-[10px] font-bold text-voltron-rose px-1 py-0.2 rounded bg-voltron-rose/10 border border-voltron-rose/20 flex-shrink-0">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="text-voltron-200 text-[11px] leading-snug">{r}</span>
-              </div>
-            ))}
+            {analysis?.risks && analysis.risks.length > 0 ? (
+              analysis.risks.slice(0, 2).map((r, i) => (
+                <div
+                  key={i}
+                  className="p-2 rounded bg-voltron-950/60 border border-voltron-800 flex items-start gap-2 text-xs"
+                >
+                  <span className="text-[10px] font-bold text-voltron-rose px-1 py-0.2 rounded bg-voltron-rose/10 border border-voltron-rose/20 flex-shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-voltron-200 text-[11px] leading-snug">{r}</span>
+                </div>
+              ))
+            ) : (
+              <div className="text-[11px] text-voltron-400 p-2">No active risk factors recorded.</div>
+            )}
           </div>
         </div>
 
@@ -157,38 +190,47 @@ export default function AIIntelligencePanel({
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
         <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
           <span>CURRENT ASSESSMENT</span>
-          <span className="text-[10px] text-voltron-cyan font-semibold">TARGET STATE</span>
+          <span className="text-[10px] text-voltron-cyan font-semibold">DECISION MATRIX</span>
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
             <span className="text-[9px] uppercase text-voltron-400 block">Market</span>
-            <span className="font-bold text-white text-xs">{analysis.symbol}</span>
+            <span className="font-bold text-white text-xs">{analysis?.symbol || "SPY"}</span>
           </div>
 
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
             <span className="text-[9px] uppercase text-voltron-400 block">Regime</span>
-            <span className="font-bold text-voltron-cyan text-xs">{analysis.direction}</span>
+            <span className="font-bold text-voltron-cyan text-xs">{analysis?.direction || "NEUTRAL"}</span>
           </div>
 
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
             <span className="text-[9px] uppercase text-voltron-400 block">Volatility</span>
-            <span className="font-bold text-voltron-emerald text-xs">{analysis.volatility_view}</span>
+            <span className="font-bold text-voltron-emerald text-xs">{analysis?.volatility_view || "EXPENSIVE"}</span>
           </div>
 
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
             <span className="text-[9px] uppercase text-voltron-400 block">Confidence</span>
-            <span className="font-bold text-voltron-cyan text-xs font-tabular">{analysis.confidence}%</span>
+            <span className="font-bold text-voltron-cyan text-xs font-tabular">
+              {analysis?.confidence != null ? `${analysis.confidence}%` : "—"}
+            </span>
           </div>
 
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
             <span className="text-[9px] uppercase text-voltron-400 block">Strategy</span>
-            <span className="font-bold text-white text-xs truncate block">{strategyName}</span>
+            <span className="font-bold text-white text-xs truncate block">{strategyName || "IRON CONDOR"}</span>
           </div>
 
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
-            <span className="text-[9px] uppercase text-voltron-400 block">Risk Status</span>
-            <span className="font-bold text-voltron-emerald text-xs">{riskStatus}</span>
+            <span className="text-[9px] uppercase text-voltron-400 block">Risk</span>
+            <span
+              className={clsx(
+                "font-bold text-xs",
+                riskStatus === "APPROVED" ? "text-voltron-emerald" : "text-voltron-rose"
+              )}
+            >
+              {riskStatus || "PENDING"}
+            </span>
           </div>
         </div>
 
@@ -196,14 +238,14 @@ export default function AIIntelligencePanel({
         <div className="p-2 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex items-center justify-between">
           <span className="text-[10px] uppercase text-voltron-400">Action:</span>
           <span className="text-xs font-bold text-voltron-cyan flex items-center gap-1">
-            PAPER EXECUTION
+            {actionLabel}
             <ArrowRight className="w-3.5 h-3.5" />
           </span>
         </div>
       </div>
 
       {/* Neural Reasoning Inspection Modal */}
-      {modalOpen && (
+      {modalOpen && analysis && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="w-full max-w-2xl bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
             <button
@@ -220,7 +262,6 @@ export default function AIIntelligencePanel({
               </h3>
             </div>
 
-            {/* Modal Tabs */}
             <div className="flex gap-2 border-b border-voltron-750 pb-2 mb-4">
               <button
                 onClick={() => setModalTab("reasoning")}
@@ -257,7 +298,6 @@ export default function AIIntelligencePanel({
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="max-h-[360px] overflow-y-auto space-y-3 text-xs">
               {modalTab === "reasoning" && (
                 <div className="space-y-3">

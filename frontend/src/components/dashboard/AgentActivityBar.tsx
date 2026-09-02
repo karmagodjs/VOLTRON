@@ -18,15 +18,12 @@ import {
   Cpu,
 } from "lucide-react";
 import { controlAgent } from "@/lib/api";
+import { AgentState } from "@/types";
 import clsx from "clsx";
 
 interface AgentActivityBarProps {
-  cycle: number;
-  symbol: string;
-  strategy?: string;
-  confidence?: number;
-  opportunityScore?: number;
-  lastAction?: string;
+  agentState?: AgentState | null;
+  activeOrder?: string | null;
   lastUpdated?: string;
   onRefresh?: () => void;
 }
@@ -44,25 +41,27 @@ const systemServices = [
   { name: "ALPACA", status: "CONNECTED", type: "emerald" },
   { name: "MARKET DATA", status: "CONNECTED", type: "emerald" },
   { name: "OPTIONS DATA", status: "CONNECTED", type: "emerald" },
-  { name: "AI", status: "CONNECTED", type: "emerald" },
+  { name: "GEMINI", status: "CONNECTED", type: "emerald" },
   { name: "RISK ENGINE", status: "ACTIVE", type: "cyan" },
-  { name: "EXECUTION", status: "PAPER", type: "cyan" },
+  { name: "EXECUTION ENGINE", status: "PAPER", type: "cyan" },
   { name: "POSITION MONITOR", status: "ACTIVE", type: "cyan" },
 ];
 
 export default function AgentActivityBar({
-  cycle: initialCycle,
-  symbol,
-  strategy = "IRON_CONDOR",
-  confidence = 88,
-  opportunityScore = 94,
-  lastAction = "Risk evaluation passed / Paper order #VLT-8941 routed",
+  agentState,
+  activeOrder = "VLT-8941",
   lastUpdated,
   onRefresh,
 }: AgentActivityBarProps) {
-  const [status, setStatus] = useState<"ACTIVE" | "PAUSED" | "STOPPED">("ACTIVE");
-  const [cycle, setCycle] = useState(initialCycle || 142);
+  const [status, setStatus] = useState<"ACTIVE" | "PAUSED" | "STOPPED">(
+    agentState?.status === "PAUSED" ? "PAUSED" : agentState?.status === "STOPPED" ? "STOPPED" : "ACTIVE"
+  );
+  const [cycle, setCycle] = useState(agentState?.cycle || 142);
   const [secondsToNext, setSecondsToNext] = useState(24);
+
+  useEffect(() => {
+    if (agentState?.cycle) setCycle(agentState.cycle);
+  }, [agentState?.cycle]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -91,6 +90,13 @@ export default function AgentActivityBar({
     if (onRefresh) onRefresh();
   };
 
+  const currentSymbol = agentState?.symbol || "SPY";
+  const currentStrategy = agentState?.strategy || "IRON_CONDOR";
+  const currentConfidence = agentState?.confidence != null ? agentState.confidence : 88;
+  const currentScore = agentState?.opportunity_score != null ? agentState.opportunity_score : 94;
+  const currentDecision = agentState?.decision || "TRADE_CANDIDATE";
+  const currentReason = agentState?.last_reason || "Risk evaluation passed / Paper order submitted";
+
   return (
     <div className="space-y-3 font-mono">
       {/* 1. Horizontal Pipeline Workflow Bar */}
@@ -99,12 +105,14 @@ export default function AgentActivityBar({
           <div className="flex items-center gap-2">
             <Cpu className="w-3.5 h-3.5 text-voltron-cyan" />
             <span className="text-xs font-bold text-white uppercase tracking-wider">
-              AUTONOMOUS EXECUTION PIPELINE
+              AGENT PIPELINE
             </span>
           </div>
 
           <div className="flex items-center gap-3 text-xs">
-            <span className="text-voltron-400">Next Scan in: <strong className="text-voltron-cyan font-tabular">{secondsToNext}s</strong></span>
+            <span className="text-voltron-400">
+              Next Cycle: <strong className="text-voltron-cyan font-tabular">{secondsToNext}s</strong>
+            </span>
             <span
               className={clsx(
                 "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
@@ -122,7 +130,7 @@ export default function AgentActivityBar({
 
         {/* 6 Pipeline Stage Steps */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-          {pipelineStages.map((stage, idx) => {
+          {pipelineStages.map((stage) => {
             const Icon = stage.icon;
             const isCompleted = stage.status === "PASSED";
             const isActive = stage.status === "ACTIVE";
@@ -181,44 +189,59 @@ export default function AgentActivityBar({
         </div>
       </div>
 
-      {/* 2. Agent Telemetry & Autonomous Control Strip */}
+      {/* 2. Agent State Telemetry & Controls Strip */}
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-        {/* Left Telemetry Badges */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Agent State Metrics */}
+        <div className="flex flex-wrap items-center gap-2.5">
           <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2">
             <span className="text-voltron-400 text-[10px] uppercase">Cycle</span>
             <span className="font-bold text-white font-tabular">#{cycle}</span>
           </div>
 
           <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2">
+            <span className="text-voltron-400 text-[10px] uppercase">Status</span>
+            <span className="font-bold text-voltron-emerald">{status}</span>
+          </div>
+
+          <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2">
             <span className="text-voltron-400 text-[10px] uppercase">Symbol</span>
-            <span className="font-bold text-voltron-cyan">{symbol}</span>
+            <span className="font-bold text-voltron-cyan">{currentSymbol}</span>
+          </div>
+
+          <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2">
+            <span className="text-voltron-400 text-[10px] uppercase">Decision</span>
+            <span className="font-bold text-voltron-emerald">{currentDecision}</span>
           </div>
 
           <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2">
             <span className="text-voltron-400 text-[10px] uppercase">Strategy</span>
-            <span className="font-bold text-white">{strategy}</span>
+            <span className="font-bold text-white">{currentStrategy}</span>
           </div>
 
           <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2">
             <span className="text-voltron-400 text-[10px] uppercase">Confidence</span>
-            <span className="font-bold text-voltron-cyan font-tabular">{confidence}%</span>
+            <span className="font-bold text-voltron-cyan font-tabular">{currentConfidence}%</span>
           </div>
 
           <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2">
-            <span className="text-voltron-400 text-[10px] uppercase">Opportunity</span>
-            <span className="font-bold text-voltron-emerald font-tabular">{opportunityScore}/100</span>
+            <span className="text-voltron-400 text-[10px] uppercase">Opp Score</span>
+            <span className="font-bold text-voltron-emerald font-tabular">{currentScore}/100</span>
           </div>
 
-          <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2 hidden xl:flex">
-            <span className="text-voltron-400 text-[10px] uppercase">Last Action</span>
-            <span className="font-semibold text-voltron-200 text-[11px] truncate max-w-[260px]">
-              {lastAction}
+          <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2">
+            <span className="text-voltron-400 text-[10px] uppercase">Order ID</span>
+            <span className="font-bold text-voltron-cyan">{activeOrder || "—"}</span>
+          </div>
+
+          <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2 hidden 2xl:flex">
+            <span className="text-voltron-400 text-[10px] uppercase">Last Reason</span>
+            <span className="font-semibold text-voltron-200 text-[11px] truncate max-w-[240px]">
+              {currentReason}
             </span>
           </div>
         </div>
 
-        {/* Right Execution Controls */}
+        {/* Execution Controls */}
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => handleControl("start")}
@@ -257,10 +280,10 @@ export default function AgentActivityBar({
         </div>
       </div>
 
-      {/* 3. Small System Health Microservices Strip */}
+      {/* 3. System Health Strip */}
       <div className="p-2.5 rounded-lg bg-voltron-900/60 border border-voltron-800 flex flex-wrap items-center justify-between gap-2 text-[10px]">
         <div className="flex flex-wrap items-center gap-4">
-          <span className="text-voltron-400 font-bold uppercase">System Telemetry:</span>
+          <span className="text-voltron-400 font-bold uppercase">SYSTEM HEALTH:</span>
           {systemServices.map((srv) => (
             <div key={srv.name} className="flex items-center gap-1.5">
               <span

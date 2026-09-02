@@ -69,7 +69,7 @@ export interface OptionChainData {
 
 export interface AIAnalysis {
   symbol: string;
-  status: "ANALYZING" | "IDLE" | "TRADE_CANDIDATE" | "NO_TRADE";
+  status: "ANALYZING" | "IDLE" | "COMPLETE" | "TRADE_CANDIDATE" | "NO_TRADE";
   decision: "TRADE_CANDIDATE" | "NO_TRADE";
   confidence: number;
   direction: "BULLISH" | "BEARISH" | "NEUTRAL";
@@ -80,6 +80,20 @@ export interface AIAnalysis {
   risks: string[];
   opportunity_score: number;
   timestamp: string;
+}
+
+export interface AgentState {
+  cycle: number;
+  status: "IDLE" | "ANALYZING" | "COMPLETE" | "PAUSED" | "STOPPED";
+  symbol: string | null;
+  decision: "TRADE_CANDIDATE" | "NO_TRADE" | null;
+  strategy: string | null;
+  confidence: number;
+  opportunity_score: number;
+  active_order_id: string | null;
+  active_position: string | null;
+  last_reason: string | null;
+  errors: string[];
 }
 
 export interface TimelineEvent {
