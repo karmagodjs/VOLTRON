@@ -18,7 +18,6 @@ const navItems = [
   { name: "RISK", href: "/risk" },
   { name: "ANALYTICS", href: "/analytics" },
   { name: "SYSTEM", href: "/system" },
-  { name: "SETTINGS", href: "/settings" },
 ];
 
 export default function Sidebar() {

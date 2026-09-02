@@ -240,8 +240,9 @@ export default function TopNav({
 
         {/* Settings Link */}
         <Link
-          href="/settings"
+          href={currentSymbol ? `/settings?symbol=${currentSymbol}` : "/settings"}
           className="p-1.5 rounded text-voltron-400 hover:text-white hover:bg-voltron-800 transition-colors"
+          title="Settings"
         >
           <SettingsIcon className="w-4 h-4" />
         </Link>
