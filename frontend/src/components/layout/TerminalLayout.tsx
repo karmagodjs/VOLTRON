@@ -5,7 +5,7 @@ import Sidebar from "./Sidebar";
 import TopNav from "./TopNav";
 import AICopilotDrawer from "../copilot/AICopilotDrawer";
 import KillSwitchModal from "../risk/KillSwitchModal";
-import { fetchAccount, toggleKillSwitch } from "@/lib/api";
+import { fetchAccount, fetchMarket, toggleKillSwitch } from "@/lib/api";
 
 interface TerminalLayoutProps {
   children: React.ReactNode;
@@ -16,14 +16,30 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [killSwitchModalOpen, setKillSwitchModalOpen] = useState(false);
   const [killSwitchActive, setKillSwitchActive] = useState(false);
-  const [portfolioValue, setPortfolioValue] = useState(100000.0);
+  const [portfolioValue, setPortfolioValue] = useState<number | null>(100000.0);
+  const [marketPrice, setMarketPrice] = useState<number | null>(591.42);
+  const [marketStatus, setMarketStatus] = useState<string | null>("OPEN");
 
   useEffect(() => {
-    fetchAccount().then((acc) => {
-      setPortfolioValue(acc.portfolio_value);
-      setKillSwitchActive(acc.kill_switch_active);
-    });
-  }, []);
+    const loadTopBarData = async () => {
+      try {
+        const [acc, mkt] = await Promise.all([
+          fetchAccount(),
+          fetchMarket(currentSymbol),
+        ]);
+        setPortfolioValue(acc.portfolio_value);
+        setKillSwitchActive(acc.kill_switch_active);
+        setMarketPrice(mkt.price);
+        setMarketStatus(mkt.market_status);
+      } catch {
+        // Fallback states handled in components
+      }
+    };
+
+    loadTopBarData();
+    const interval = setInterval(loadTopBarData, 10000);
+    return () => clearInterval(interval);
+  }, [currentSymbol]);
 
   const handleToggleKillSwitch = async (active: boolean) => {
     const res = await toggleKillSwitch(active);
@@ -31,7 +47,7 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
   };
 
   return (
-    <div className="flex min-h-screen bg-voltron-900 text-foreground">
+    <div className="flex min-h-screen bg-voltron-950 text-foreground">
       {/* Left Sidebar */}
       <Sidebar />
 
@@ -44,7 +60,10 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
           onOpenKillSwitch={() => setKillSwitchModalOpen(true)}
           killSwitchActive={killSwitchActive}
           portfolioValue={portfolioValue}
+          marketPrice={marketPrice}
+          marketStatus={marketStatus}
           agentStatus={killSwitchActive ? "PAUSED" : "ACTIVE"}
+          isConnected={true}
         />
 
         {/* Critical Emergency Banner if Kill Switch is active */}
@@ -60,7 +79,7 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
           </div>
         )}
 
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+        <main className="flex-1 p-3.5 lg:p-4 overflow-y-auto">
           {children}
         </main>
       </div>
