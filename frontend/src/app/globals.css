@@ -3,44 +3,177 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root,
+  .dark,
+  [data-theme="dark"] {
+    color-scheme: dark;
     --background: #08090C;
     --foreground: #EDEDED;
+    --background-rgb: 8 9 12;
+    --foreground-rgb: 237 237 237;
+
+    --panel: #0D1017;
+    --panel-secondary: #08090C;
+    --border: #131722;
+    --muted: #6B7C9E;
+    --accent: #00F0FF;
+    --success: #00E676;
+    --warning: #FFB300;
+    --danger: #FF3B30;
+
+    --voltron-950-rgb: 5 6 8;
+    --voltron-900-rgb: 8 9 12;
+    --voltron-850-rgb: 13 16 23;
+    --voltron-800-rgb: 19 23 34;
+    --voltron-750-rgb: 24 30 44;
+    --voltron-700-rgb: 30 38 56;
+    --voltron-600-rgb: 43 54 79;
+    --voltron-500-rgb: 63 78 112;
+    --voltron-400-rgb: 107 124 158;
+    --voltron-300-rgb: 155 168 196;
+    --voltron-200-rgb: 199 208 227;
+    --voltron-100-rgb: 227 232 243;
+    --voltron-50-rgb: 244 246 251;
+
+    --voltron-cyan-rgb: 0 240 255;
+    --voltron-cyan-glow: rgba(0, 240, 255, 0.25);
+    --voltron-cyan-dim: #00B4D8;
+    --voltron-cyan-dark: #005F73;
+
+    --voltron-emerald-rgb: 0 230 118;
+    --voltron-emerald-glow: rgba(0, 230, 118, 0.25);
+    --voltron-emerald-dark: #008744;
+
+    --voltron-rose-rgb: 255 59 48;
+    --voltron-rose-glow: rgba(255, 59, 48, 0.25);
+    --voltron-rose-dark: #9E1912;
+
+    --voltron-amber-rgb: 255 179 0;
+    --voltron-amber-glow: rgba(255, 179, 0, 0.25);
+    --voltron-amber-dark: #B27B00;
+
+    --voltron-violet-rgb: 139 92 246;
+    --voltron-violet-glow: rgba(139, 92, 246, 0.25);
+    --voltron-violet-dark: #5B21B6;
+
+    --grid-line: rgba(255, 255, 255, 0.025);
+    --scan-line: rgba(0, 240, 255, 0.02);
+  }
+
+  .light,
+  [data-theme="light"] {
+    color-scheme: light;
+    --background: #F1F4F9;
+    --foreground: #0F172A;
+    --background-rgb: 241 244 249;
+    --foreground-rgb: 15 23 42;
+
+    --panel: #FFFFFF;
+    --panel-secondary: #F8FAFC;
+    --border: #E2E8F0;
+    --muted: #64748B;
+    --accent: #0284C7;
+    --success: #059669;
+    --warning: #D97706;
+    --danger: #DC2626;
+
+    --voltron-950-rgb: 255 255 255;
+    --voltron-900-rgb: 241 244 249;
+    --voltron-850-rgb: 248 250 252;
+    --voltron-800-rgb: 226 232 240;
+    --voltron-750-rgb: 203 213 225;
+    --voltron-700-rgb: 148 163 184;
+    --voltron-600-rgb: 100 116 139;
+    --voltron-500-rgb: 71 85 105;
+    --voltron-400-rgb: 51 65 85;
+    --voltron-300-rgb: 30 41 59;
+    --voltron-200-rgb: 15 23 42;
+    --voltron-100-rgb: 2 6 23;
+    --voltron-50-rgb: 0 0 0;
+
+    --voltron-cyan-rgb: 2 132 199;
+    --voltron-cyan-glow: rgba(2, 132, 199, 0.15);
+    --voltron-cyan-dim: #0369A1;
+    --voltron-cyan-dark: #075985;
+
+    --voltron-emerald-rgb: 5 150 105;
+    --voltron-emerald-glow: rgba(5, 150, 105, 0.15);
+    --voltron-emerald-dark: #065F46;
+
+    --voltron-rose-rgb: 220 38 38;
+    --voltron-rose-glow: rgba(220, 38, 38, 0.15);
+    --voltron-rose-dark: #991B1B;
+
+    --voltron-amber-rgb: 217 119 6;
+    --voltron-amber-glow: rgba(217, 119, 6, 0.15);
+    --voltron-amber-dark: #92400E;
+
+    --voltron-violet-rgb: 124 58 237;
+    --voltron-violet-glow: rgba(124, 58, 237, 0.15);
+    --voltron-violet-dark: #5B21B6;
+
+    --grid-line: rgba(0, 0, 0, 0.035);
+    --scan-line: rgba(2, 132, 199, 0.015);
   }
 
   body {
-    background-color: #08090C;
-    color: #EDEDED;
+    background-color: rgb(var(--background-rgb));
+    color: rgb(var(--foreground-rgb));
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  /* Custom institutional dark scrollbars */
+  /* Custom institutional scrollbars */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
 
-  ::-webkit-scrollbar-track {
+  .dark ::-webkit-scrollbar-track,
+  [data-theme="dark"] ::-webkit-scrollbar-track {
     background: #0B0E14;
   }
 
-  ::-webkit-scrollbar-thumb {
+  .dark ::-webkit-scrollbar-thumb,
+  [data-theme="dark"] ::-webkit-scrollbar-thumb {
     background: #1F2839;
     border-radius: 3px;
   }
 
-  ::-webkit-scrollbar-thumb:hover {
+  .dark ::-webkit-scrollbar-thumb:hover,
+  [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
     background: #2D3950;
   }
+
+  .light ::-webkit-scrollbar-track,
+  [data-theme="light"] ::-webkit-scrollbar-track {
+    background: #F1F4F9;
+  }
+
+  .light ::-webkit-scrollbar-thumb,
+  [data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 3px;
+  }
+
+  .light ::-webkit-scrollbar-thumb:hover,
+  [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+}
+
+/* Light mode text-white normalization on neutral surfaces */
+.light .text-white:not([class*="bg-voltron-cyan"]):not([class*="bg-voltron-rose"]):not([class*="bg-voltron-emerald"]):not([class*="bg-voltron-amber"]):not([class*="bg-voltron-violet"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="badge-solid"]) {
+  color: #0F172A;
 }
 
 /* Terminal & Quant Utility Classes */
 .terminal-card {
-  background-color: #0E1118;
-  border: 1px solid #181E2C;
+  background-color: rgb(var(--voltron-850-rgb));
+  border: 1px solid rgb(var(--voltron-800-rgb));
   border-radius: 0.5rem;
 }
 
@@ -49,22 +182,54 @@
 }
 
 .terminal-card-hover:hover {
-  border-color: #28334A;
-  background-color: #121620;
+  border-color: rgb(var(--voltron-700-rgb));
+  background-color: rgb(var(--voltron-800-rgb));
 }
 
 .terminal-panel {
-  background-color: #0B0E14;
-  border: 1px solid #151A26;
+  background-color: rgb(var(--voltron-900-rgb));
+  border: 1px solid rgb(var(--voltron-800-rgb));
 }
 
 .font-tabular {
   font-variant-numeric: tabular-nums;
 }
 
+/* Institutional Clean Background Grid */
 .grid-bg {
   background-size: 32px 32px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+}
+
+/* Subtle Institutional Scanline */
+.scanline-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 50%,
+    var(--scan-line) 51%,
+    transparent 52%
+  );
+  background-size: 100% 6px;
+  opacity: 0.6;
+}
+
+/* Reduced Motion Accessibility Overrides */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .scanline-overlay {
+    display: none !important;
+  }
 }

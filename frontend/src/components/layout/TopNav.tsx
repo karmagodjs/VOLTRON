@@ -8,6 +8,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import clsx from "clsx";
+import ThemeToggle from "@/components/common/ThemeToggle";
 
 interface TopNavProps {
   currentSymbol: string;
@@ -237,6 +238,9 @@ export default function TopNav({
             </div>
           )}
         </div>
+
+        {/* Theme Toggle */}
+        <ThemeToggle variant="icon" />
 
         {/* Settings Link */}
         <Link
