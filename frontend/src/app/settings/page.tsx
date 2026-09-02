@@ -15,7 +15,7 @@ import {
 import clsx from "clsx";
 
 export default function SettingsPage() {
-  const [apiKey, setApiKey] = useState("PKGKDPNM5CPR2WPILVEFTOCQ2Z");
+  const [apiKey, setApiKey] = useState("••••••••••••••••••••••••");
   const [secretKey, setSecretKey] = useState("••••••••••••••••••••••••••••••••");
   const [geminiModel, setGeminiModel] = useState("gemini-3.6-flash");
   const [ivRvThreshold, setIvRvThreshold] = useState("1.40");
