@@ -28,21 +28,15 @@ export default function Sidebar() {
       <div>
         {/* Terminal Header */}
         <div className="h-12 px-4 flex items-center border-b border-voltron-800">
-          <Link href={getLinkWithSymbol("/dashboard")} className="flex flex-col group">
-            <span className="font-mono font-bold tracking-wider text-xs text-white">
+          <Link href={getLinkWithSymbol("/dashboard")} className="flex items-center group">
+            <span className="font-mono font-bold tracking-wider text-sm text-white hover:text-voltron-cyan transition-colors">
               VOLTRON
-            </span>
-            <span className="text-[9px] text-voltron-400 font-mono uppercase tracking-widest">
-              VOLATILITY ALPHA
             </span>
           </Link>
         </div>
 
         {/* Navigation Menu */}
-        <nav className="p-2 space-y-0.5 overflow-y-auto max-h-[calc(100vh-120px)]">
-          <div className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-widest text-voltron-500">
-            Navigation
-          </div>
+        <nav className="p-2 pt-2.5 space-y-0.5 overflow-y-auto max-h-[calc(100vh-120px)]">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href === "/dashboard" && pathname === "/");
 
