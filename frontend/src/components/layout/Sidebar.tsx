@@ -2,90 +2,64 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  TrendingUp,
-  Layers,
-  Bot,
-  SlidersHorizontal,
-  FlaskConical,
-  History,
-  Briefcase,
-  ShieldAlert,
-  BarChart3,
-  Server,
-  Settings,
-  Activity,
-} from "lucide-react";
 import clsx from "clsx";
 
+import { useMarket } from "@/context/MarketContext";
+
 const navItems = [
-  { name: "OVERVIEW", href: "/dashboard", icon: LayoutDashboard },
-  { name: "MARKETS", href: "/markets", icon: TrendingUp },
-  { name: "OPTIONS", href: "/options", icon: Layers },
-  { name: "AI AGENT", href: "/agent", icon: Bot, badge: "LIVE" },
-  { name: "STRATEGIES", href: "/strategies", icon: SlidersHorizontal },
-  { name: "BACKTEST", href: "/backtest", icon: FlaskConical },
-  { name: "TRADES", href: "/trades", icon: History },
-  { name: "PORTFOLIO", href: "/portfolio", icon: Briefcase },
-  { name: "RISK", href: "/risk", icon: ShieldAlert },
-  { name: "ANALYTICS", href: "/analytics", icon: BarChart3 },
-  { name: "SYSTEM", href: "/system", icon: Server },
-  { name: "SETTINGS", href: "/settings", icon: Settings },
+  { name: "OVERVIEW", href: "/dashboard" },
+  { name: "MARKETS", href: "/markets" },
+  { name: "OPTIONS", href: "/options" },
+  { name: "AI AGENT", href: "/agent" },
+  { name: "STRATEGIES", href: "/strategies" },
+  { name: "BACKTEST", href: "/backtest" },
+  { name: "TRADES", href: "/trades" },
+  { name: "PORTFOLIO", href: "/portfolio" },
+  { name: "RISK", href: "/risk" },
+  { name: "ANALYTICS", href: "/analytics" },
+  { name: "SYSTEM", href: "/system" },
+  { name: "SETTINGS", href: "/settings" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { selectedSymbol, getLinkWithSymbol } = useMarket();
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-voltron-950 border-r border-voltron-750/70 flex flex-col justify-between h-screen sticky top-0 select-none z-30">
+    <aside className="w-52 flex-shrink-0 bg-voltron-950 border-r border-voltron-800 flex flex-col justify-between h-screen sticky top-0 select-none z-30">
       <div>
         {/* Terminal Header */}
-        <div className="h-14 px-4 flex items-center border-b border-voltron-750/70">
-          <Link href="/dashboard" className="flex flex-col group">
-            <span className="font-mono font-black tracking-wider text-xs text-white">
+        <div className="h-12 px-4 flex items-center border-b border-voltron-800">
+          <Link href={getLinkWithSymbol("/dashboard")} className="flex flex-col group">
+            <span className="font-mono font-bold tracking-wider text-xs text-white">
               VOLTRON
             </span>
-            <span className="text-[9px] text-voltron-cyan font-mono uppercase tracking-widest font-semibold">
+            <span className="text-[9px] text-voltron-400 font-mono uppercase tracking-widest">
               VOLATILITY ALPHA
             </span>
           </Link>
         </div>
 
         {/* Navigation Menu */}
-        <nav className="p-2 space-y-0.5 overflow-y-auto max-h-[calc(100vh-140px)]">
-          <div className="px-2.5 py-1 text-[9px] font-mono uppercase tracking-widest text-voltron-400">
-            Terminal Nav
+        <nav className="p-2 space-y-0.5 overflow-y-auto max-h-[calc(100vh-120px)]">
+          <div className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-widest text-voltron-500">
+            Navigation
           </div>
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href === "/dashboard" && pathname === "/");
-            const Icon = item.icon;
 
             return (
               <Link
                 key={item.name}
-                href={item.href}
+                href={getLinkWithSymbol(item.href)}
                 className={clsx(
-                  "flex items-center justify-between px-2.5 py-1.5 rounded text-[11px] font-mono tracking-wide transition-all group",
+                  "flex items-center justify-between px-3 py-2 text-xs font-mono tracking-wider transition-colors",
                   isActive
-                    ? "bg-voltron-cyan/10 text-voltron-cyan border-l-2 border-voltron-cyan font-bold pl-2"
-                    : "text-voltron-300 hover:text-white hover:bg-voltron-850"
+                    ? "bg-voltron-900 text-voltron-cyan border-l-2 border-voltron-cyan font-bold"
+                    : "text-voltron-400 hover:text-white hover:bg-voltron-900/60 border-l-2 border-transparent"
                 )}
               >
-                <div className="flex items-center gap-2">
-                  <Icon
-                    className={clsx(
-                      "w-3.5 h-3.5 transition-colors",
-                      isActive ? "text-voltron-cyan" : "text-voltron-400 group-hover:text-white"
-                    )}
-                  />
-                  <span>{item.name}</span>
-                </div>
-                {item.badge && (
-                  <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30 font-bold animate-pulse">
-                    {item.badge}
-                  </span>
-                )}
+                <span>{item.name}</span>
               </Link>
             );
           })}
@@ -93,15 +67,15 @@ export default function Sidebar() {
       </div>
 
       {/* Bottom Status Panel */}
-      <div className="p-3 border-t border-voltron-750/70 bg-voltron-900/80 font-mono text-[10px]">
+      <div className="p-3 border-t border-voltron-800 bg-voltron-950 font-mono text-[10px]">
         <div className="flex items-center justify-between text-voltron-400 mb-1">
-          <span className="uppercase tracking-wider">Trading Mode</span>
-          <span className="text-voltron-cyan font-bold uppercase">PAPER TRADING</span>
+          <span className="uppercase tracking-wider">Mode</span>
+          <span className="text-white font-bold uppercase">PAPER</span>
         </div>
-        <div className="flex items-center justify-between pt-1 border-t border-voltron-800">
+        <div className="flex items-center justify-between pt-1 border-t border-voltron-850">
           <span className="text-voltron-400">Status</span>
-          <span className="text-voltron-emerald font-bold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-voltron-emerald animate-pulse inline-block"></span>
+          <span className="text-voltron-emerald font-bold flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-voltron-emerald inline-block"></span>
             CONNECTED
           </span>
         </div>

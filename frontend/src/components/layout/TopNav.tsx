@@ -5,9 +5,7 @@ import Link from "next/link";
 import {
   Bell,
   Settings as SettingsIcon,
-  ShieldAlert,
   ChevronDown,
-  Sparkles,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -24,7 +22,16 @@ interface TopNavProps {
   isConnected?: boolean;
 }
 
-const symbols = ["SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA"];
+const symbols = [
+  { symbol: "SPY", label: "S&P 500 ETF" },
+  { symbol: "QQQ", label: "Nasdaq 100 ETF" },
+  { symbol: "IWM", label: "Russell 2000 ETF" },
+  { symbol: "NVDA", label: "NVIDIA Corp" },
+  { symbol: "AAPL", label: "Apple Inc" },
+  { symbol: "TSLA", label: "Tesla Inc" },
+  { symbol: "MSFT", label: "Microsoft Corp" },
+  { symbol: "AMZN", label: "Amazon.com Inc" },
+];
 
 export default function TopNav({
   currentSymbol,
@@ -57,27 +64,27 @@ export default function TopNav({
           </button>
 
           {dropdownOpen && (
-            <div className="absolute left-0 mt-1.5 w-44 bg-voltron-850 border border-voltron-700 rounded-md shadow-terminal p-1 z-50">
+            <div className="absolute left-0 mt-1.5 w-48 bg-voltron-850 border border-voltron-700 rounded-md shadow-terminal p-1 z-50">
               <div className="px-2 py-1 text-[9px] uppercase text-voltron-400 tracking-wider">
                 Select Market
               </div>
-              {symbols.map((sym) => (
+              {symbols.map((item) => (
                 <button
-                  key={sym}
+                  key={item.symbol}
                   onClick={() => {
-                    onSelectSymbol(sym);
+                    onSelectSymbol(item.symbol);
                     setDropdownOpen(false);
                   }}
                   className={clsx(
                     "w-full text-left px-2.5 py-1.5 rounded text-xs font-semibold flex items-center justify-between transition-colors",
-                    currentSymbol === sym
+                    currentSymbol === item.symbol
                       ? "bg-voltron-cyan/15 text-voltron-cyan"
                       : "text-voltron-200 hover:bg-voltron-750 hover:text-white"
                   )}
                 >
-                  <span>{sym}</span>
+                  <span className="font-bold">{item.symbol}</span>
                   <span className="text-[10px] text-voltron-400">
-                    {sym === "SPY" ? "S&P 500" : sym === "QQQ" ? "Nasdaq 100" : "ETF/Equity"}
+                    {item.label}
                   </span>
                 </button>
               ))}
@@ -182,24 +189,22 @@ export default function TopNav({
         {/* AI Copilot Button */}
         <button
           onClick={onOpenCopilot}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-voltron-cyan/15 hover:bg-voltron-cyan/25 border border-voltron-cyan/40 text-xs font-bold text-voltron-cyan transition-all shadow-cyan-glow"
+          className="px-2.5 py-1.5 rounded bg-voltron-900 hover:bg-voltron-850 border border-voltron-750 text-xs font-mono font-bold text-voltron-cyan transition-colors"
         >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">AI Copilot</span>
+          AI COPILOT
         </button>
 
         {/* Emergency Kill Switch Button */}
         <button
           onClick={onOpenKillSwitch}
           className={clsx(
-            "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-bold transition-all border",
+            "px-2.5 py-1.5 rounded text-xs font-mono font-bold transition-colors border",
             killSwitchActive
-              ? "bg-voltron-rose text-white border-voltron-rose animate-pulse shadow-rose-glow"
+              ? "bg-voltron-rose text-white border-voltron-rose"
               : "bg-voltron-rose/10 hover:bg-voltron-rose/20 text-voltron-rose border-voltron-rose/30"
           )}
         >
-          <ShieldAlert className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">
+          <span>
             {killSwitchActive ? "KILL SWITCH ENGAGED" : "KILL SWITCH"}
           </span>
         </button>

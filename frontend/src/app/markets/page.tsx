@@ -3,11 +3,7 @@
 import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import {
-  TrendingUp,
   Search,
-  Sparkles,
-  ExternalLink,
-  Bot,
   RefreshCw,
   AlertTriangle,
 } from "lucide-react";
@@ -31,8 +27,11 @@ interface AssetScanRow {
   strategy: string;
 }
 
+import { useMarket } from "@/context/MarketContext";
+
 export default function MarketsPage() {
   const router = useRouter();
+  const { selectedSymbol, setSelectedSymbol } = useMarket();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSignal, setFilterSignal] = useState<string>("ALL");
   const [assets, setAssets] = useState<AssetScanRow[]>([]);
@@ -60,6 +59,10 @@ export default function MarketsPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleSelectRow = (sym: string) => {
+    setSelectedSymbol(sym, true);
+  };
+
   const filtered = assets.filter((item) => {
     const sTerm = searchTerm.toLowerCase().trim();
     const matchesSearch =
@@ -77,12 +80,11 @@ export default function MarketsPage() {
         {/* Page Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-voltron-850 border border-voltron-750">
           <div>
-            <h1 className="text-lg font-mono font-bold text-white flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-voltron-cyan" />
+            <h1 className="text-base font-mono font-bold text-white uppercase tracking-wider">
               MARKET VOLATILITY INTELLIGENCE & ASSET SCANNER
             </h1>
-            <p className="text-xs font-mono text-voltron-400">
-              Live quantitative screening across US equities & indices for Implied vs Realized Volatility dispersion.
+            <p className="text-xs font-mono text-voltron-400 mt-0.5">
+              Live quantitative screening across US equities & indices for Implied vs Realized Volatility dispersion. Active Terminal Context: <span className="text-voltron-cyan font-bold">{selectedSymbol}</span>
             </p>
           </div>
 
@@ -163,18 +165,39 @@ export default function MarketsPage() {
                 ) : (
                   filtered.map((row) => {
                     const isPos = row.change >= 0;
+                    const isSelected = row.symbol === selectedSymbol;
+
                     return (
                       <tr
                         key={row.symbol}
-                        onClick={() => router.push(`/agent?symbol=${row.symbol}`)}
-                        className="hover:bg-voltron-800/40 transition-colors cursor-pointer group"
+                        onClick={() => handleSelectRow(row.symbol)}
+                        className={clsx(
+                          "transition-colors cursor-pointer group",
+                          isSelected
+                            ? "bg-voltron-cyan/10 border-l-2 border-voltron-cyan"
+                            : "hover:bg-voltron-800/40 border-l-2 border-transparent"
+                        )}
                       >
                         <td className="p-3 font-bold text-white">
-                          <div>
-                            <span className="group-hover:text-voltron-cyan transition-colors">{row.symbol}</span>
-                            <span className="block text-[10px] text-voltron-400 font-normal">
-                              {row.name}
-                            </span>
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className={clsx(
+                                  "font-bold transition-colors",
+                                  isSelected ? "text-voltron-cyan" : "group-hover:text-voltron-cyan"
+                                )}>
+                                  {row.symbol}
+                                </span>
+                                {isSelected && (
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-voltron-cyan/20 border border-voltron-cyan/40 text-voltron-cyan font-bold tracking-wider">
+                                    SELECTED
+                                  </span>
+                                )}
+                              </div>
+                              <span className="block text-[10px] text-voltron-400 font-normal">
+                                {row.name}
+                              </span>
+                            </div>
                           </div>
                         </td>
 
@@ -227,8 +250,7 @@ export default function MarketsPage() {
                         </td>
 
                         <td className="p-3 font-tabular font-bold text-white">
-                          <span className="flex items-center gap-1 text-voltron-cyan">
-                            <Sparkles className="w-3 h-3" />
+                          <span className="text-voltron-cyan">
                             {row.opportunity_score}
                           </span>
                         </td>
@@ -241,18 +263,29 @@ export default function MarketsPage() {
 
                         <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleSelectRow(row.symbol)}
+                              className={clsx(
+                                "px-2 py-1 rounded text-[11px] font-bold border transition-colors",
+                                isSelected
+                                  ? "bg-voltron-cyan/25 text-voltron-cyan border-voltron-cyan/40"
+                                  : "bg-voltron-800 hover:bg-voltron-750 text-voltron-300 hover:text-white border-voltron-700"
+                              )}
+                            >
+                              {isSelected ? "Selected" : "Select"}
+                            </button>
                             <Link
                               href={`/options?symbol=${row.symbol}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-voltron-cyan font-bold border border-voltron-700 transition-colors"
+                              onClick={() => setSelectedSymbol(row.symbol, false)}
+                              className="px-2.5 py-1 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-voltron-cyan font-bold border border-voltron-700 transition-colors"
                             >
                               <span>Chain</span>
-                              <ExternalLink className="w-3 h-3" />
                             </Link>
                             <Link
                               href={`/agent?symbol=${row.symbol}`}
+                              onClick={() => setSelectedSymbol(row.symbol, false)}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-voltron-cyan/15 hover:bg-voltron-cyan/25 text-[11px] text-voltron-cyan font-bold border border-voltron-cyan/30 transition-colors"
                             >
-                              <Bot className="w-3 h-3" />
                               <span>Agent</span>
                             </Link>
                           </div>

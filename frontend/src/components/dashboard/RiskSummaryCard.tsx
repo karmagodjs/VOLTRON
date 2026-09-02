@@ -1,7 +1,6 @@
 "use client";
 
 import { RiskStatus } from "@/types";
-import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import clsx from "clsx";
 
 interface RiskSummaryCardProps {
@@ -28,8 +27,8 @@ export default function RiskSummaryCard({ risk, onOpenKillSwitch }: RiskSummaryC
             className={clsx(
               "px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider",
               risk.overall_status === "APPROVED"
-                ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30 shadow-emerald-glow"
-                : "bg-voltron-rose/15 text-voltron-rose border border-voltron-rose/30 shadow-rose-glow"
+                ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30"
+                : "bg-voltron-rose/15 text-voltron-rose border border-voltron-rose/30"
             )}
           >
             {risk.overall_status === "APPROVED" ? "GATES APPROVED" : "RISK BLOCKED"}
@@ -116,7 +115,7 @@ export default function RiskSummaryCard({ risk, onOpenKillSwitch }: RiskSummaryC
               className="flex items-center justify-between p-2 rounded bg-voltron-900/40 border border-voltron-800"
             >
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-voltron-emerald" />
+                <span className="text-[10px] text-voltron-emerald font-bold">PASS</span>
                 <span className="text-voltron-200">{g.name}</span>
               </div>
               <span className="text-[10px] font-bold text-voltron-emerald font-tabular">

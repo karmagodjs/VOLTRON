@@ -1,7 +1,6 @@
 "use client";
 
 import { MarketData } from "@/types";
-import { ShieldCheck, Flame } from "lucide-react";
 import clsx from "clsx";
 
 interface VolatilityAlphaCardProps {
@@ -26,7 +25,7 @@ export default function VolatilityAlphaCard({ market }: VolatilityAlphaCardProps
           className={clsx(
             "text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider",
             market.vol_signal === "IV EXPENSIVE"
-              ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30 shadow-emerald-glow"
+              ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30"
               : market.vol_signal === "IV CHEAP"
               ? "bg-voltron-violet/15 text-voltron-violet border border-voltron-violet/30"
               : "bg-voltron-amber/15 text-voltron-amber border border-voltron-amber/30"
@@ -39,7 +38,7 @@ export default function VolatilityAlphaCard({ market }: VolatilityAlphaCardProps
       {/* Main Stats Grid & Visual Gauge */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
         {/* Left: Score Gauge */}
-        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-voltron-900/80 border border-voltron-750/80 relative">
+        <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-voltron-900 border border-voltron-800 relative">
           <div className="relative w-28 h-28 flex items-center justify-center">
             {/* SVG Arc Gauge */}
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -62,7 +61,7 @@ export default function VolatilityAlphaCard({ market }: VolatilityAlphaCardProps
                 strokeDasharray="283"
                 strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
-                className="text-voltron-cyan transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]"
+                className="text-voltron-cyan transition-all duration-1000 ease-out"
               />
             </svg>
 
@@ -76,9 +75,8 @@ export default function VolatilityAlphaCard({ market }: VolatilityAlphaCardProps
             </div>
           </div>
 
-          <div className="mt-2 text-[10px] font-mono text-voltron-300 flex items-center gap-1">
-            <Flame className="w-3 h-3 text-voltron-cyan" />
-            <span>High Edge Regime</span>
+          <div className="mt-2 text-[10px] font-mono text-voltron-400 uppercase tracking-wider">
+            HIGH EDGE REGIME
           </div>
         </div>
 

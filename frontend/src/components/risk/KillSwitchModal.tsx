@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldAlert, AlertTriangle, X, Check } from "lucide-react";
+import { X } from "lucide-react";
 import clsx from "clsx";
 
 interface KillSwitchModalProps {
@@ -46,26 +46,22 @@ export default function KillSwitchModal({
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2.5 mb-4">
-          <ShieldAlert className="w-5 h-5 text-voltron-rose flex-shrink-0" />
-          <div>
-            <h3 className="text-base font-bold text-white font-mono uppercase">
-              {isEngaging ? "EMERGENCY KILL SWITCH" : "RESET KILL SWITCH"}
-            </h3>
-            <p className="text-xs text-voltron-400 font-mono">
-              {isEngaging
-                ? "Immediate trading halt and risk containment"
-                : "Restore autonomous trading execution"}
-            </p>
-          </div>
+        <div className="mb-4">
+          <h3 className="text-base font-bold text-white font-mono uppercase tracking-wider">
+            {isEngaging ? "EMERGENCY KILL SWITCH" : "RESET KILL SWITCH"}
+          </h3>
+          <p className="text-xs text-voltron-400 font-mono mt-0.5">
+            {isEngaging
+              ? "Immediate trading halt and risk containment"
+              : "Restore autonomous trading execution"}
+          </p>
         </div>
 
         <div className="p-3.5 rounded-lg bg-voltron-850/90 border border-voltron-750 mb-5 text-xs text-voltron-200 font-mono space-y-2">
           {isEngaging ? (
             <>
-              <div className="flex items-start gap-2 text-voltron-rose font-bold">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span>CRITICAL SAFETY PROTOCOL:</span>
+              <div className="text-voltron-rose font-bold uppercase tracking-wider">
+                CRITICAL SAFETY PROTOCOL:
               </div>
               <p>1. Halts autonomous loop and cancels pending paper orders.</p>
               <p>2. Blocks all strategy execution and incoming signals.</p>
@@ -107,9 +103,9 @@ export default function KillSwitchModal({
               "flex-1 py-2.5 rounded-lg text-xs font-mono font-bold text-white transition-all flex items-center justify-center gap-2",
               isEngaging
                 ? canProceed
-                  ? "bg-voltron-rose hover:bg-voltron-rose-dark shadow-rose-glow"
+                  ? "bg-voltron-rose hover:bg-voltron-rose-dark"
                   : "bg-voltron-rose/30 cursor-not-allowed opacity-50"
-                : "bg-voltron-emerald hover:bg-voltron-emerald-dark shadow-emerald-glow"
+                : "bg-voltron-emerald hover:bg-voltron-emerald-dark"
             )}
           >
             {loading ? "Processing..." : isEngaging ? "ENGAGE KILL SWITCH" : "RESET CIRCUIT"}

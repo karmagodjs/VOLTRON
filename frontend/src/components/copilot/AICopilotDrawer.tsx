@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Send, Bot, User, RefreshCw } from "lucide-react";
+import { X, Send } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { askCopilot } from "@/lib/api";
@@ -160,18 +160,13 @@ export default function AICopilotDrawer({
           <div
             key={m.id}
             className={clsx(
-              "flex gap-3",
-              m.role === "user" ? "justify-end" : "justify-start"
+              "flex flex-col",
+              m.role === "user" ? "items-end" : "items-start"
             )}
           >
-            {m.role === "assistant" && (
-              <div className="w-6 h-6 rounded bg-voltron-cyan/15 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan flex-shrink-0 mt-0.5">
-                <Bot className="w-3.5 h-3.5" />
-              </div>
-            )}
             <div
               className={clsx(
-                "max-w-[88%] rounded-xl p-3 leading-relaxed",
+                "max-w-[92%] rounded p-3 leading-relaxed",
                 m.role === "user"
                   ? "bg-voltron-cyan/15 text-white border border-voltron-cyan/30 font-medium whitespace-pre-wrap"
                   : "bg-voltron-850 text-voltron-100 border border-voltron-750"
@@ -290,24 +285,14 @@ export default function AICopilotDrawer({
                 {m.timestamp}
               </div>
             </div>
-            {m.role === "user" && (
-              <div className="w-6 h-6 rounded bg-voltron-800 border border-voltron-700 flex items-center justify-center text-voltron-300 flex-shrink-0 mt-0.5">
-                <User className="w-3.5 h-3.5" />
-              </div>
-            )}
           </div>
         ))}
 
         {loading && (
-          <div className="flex items-center gap-3 text-voltron-cyan">
-            <div className="w-6 h-6 rounded bg-voltron-cyan/15 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            </div>
-            <div className="p-3 rounded-xl bg-voltron-850 border border-voltron-750 text-voltron-300 flex items-center gap-2">
-              <span className="font-bold text-voltron-cyan animate-pulse tracking-wider">
-                VOLTRON ANALYZING...
-              </span>
-            </div>
+          <div className="p-3 rounded-lg bg-voltron-850 border border-voltron-800 text-voltron-300">
+            <span className="font-bold text-voltron-cyan animate-pulse tracking-wider text-xs">
+              ● VOLTRON ANALYZING...
+            </span>
           </div>
         )}
         <div ref={messagesEndRef} />

@@ -2,19 +2,10 @@
 
 import { useState, useEffect } from "react";
 import {
-  Radar,
-  Bot,
-  SlidersHorizontal,
-  ShieldCheck,
-  Send,
-  Eye,
-  CheckCircle2,
-  Clock,
   Play,
   Pause,
   Square,
   SkipForward,
-  Cpu,
 } from "lucide-react";
 import { controlAgent } from "@/lib/api";
 import { AgentState } from "@/types";
@@ -28,12 +19,12 @@ interface AgentActivityBarProps {
 }
 
 const pipelineStages = [
-  { name: "SCAN", icon: Radar, status: "PASSED", detail: "SPY liquid filters passed" },
-  { name: "ANALYZE", icon: Bot, status: "PASSED", detail: "IV/RV 1.62x (Confidence 88%)" },
-  { name: "STRATEGY", icon: SlidersHorizontal, status: "PASSED", detail: "IRON CONDOR (45 DTE)" },
-  { name: "RISK", icon: ShieldCheck, status: "PASSED", detail: "7 Gates Approved (0.31% Risk)" },
-  { name: "EXECUTE", icon: Send, status: "PASSED", detail: "Order #VLT-8941 Submitted @ $1.85" },
-  { name: "MONITOR", icon: Eye, status: "ACTIVE", detail: "Unrealized P&L +$145.00 (+7.8%)" },
+  { name: "SCAN", status: "PASSED", detail: "SPY liquid filters passed" },
+  { name: "ANALYZE", status: "PASSED", detail: "IV/RV 1.62x (Confidence 88%)" },
+  { name: "STRATEGY", status: "PASSED", detail: "IRON CONDOR (45 DTE)" },
+  { name: "RISK", status: "PASSED", detail: "7 Gates Approved (0.31% Risk)" },
+  { name: "EXECUTE", status: "PASSED", detail: "Order #VLT-8941 Submitted @ $1.85" },
+  { name: "MONITOR", status: "ACTIVE", detail: "Unrealized P&L +$145.00 (+7.8%)" },
 ];
 
 const systemServices = [
@@ -99,10 +90,9 @@ export default function AgentActivityBar({
   return (
     <div className="space-y-3 font-mono">
       {/* 1. Horizontal Pipeline Workflow Bar */}
-      <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80">
+      <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-800">
         <div className="flex items-center justify-between border-b border-voltron-800 pb-2 mb-3">
-          <div className="flex items-center gap-2">
-            <Cpu className="w-3.5 h-3.5 text-voltron-cyan" />
+          <div className="flex items-center">
             <span className="text-xs font-bold text-white uppercase tracking-wider">
               AGENT PIPELINE
             </span>
@@ -130,7 +120,6 @@ export default function AgentActivityBar({
         {/* 6 Pipeline Stage Steps */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
           {pipelineStages.map((stage) => {
-            const Icon = stage.icon;
             const isCompleted = stage.status === "PASSED";
             const isActive = stage.status === "ACTIVE";
 
@@ -140,30 +129,16 @@ export default function AgentActivityBar({
                 className={clsx(
                   "p-2.5 rounded border transition-all flex flex-col justify-between",
                   isActive
-                    ? "bg-voltron-950 border-voltron-cyan shadow-cyan-glow"
+                    ? "bg-voltron-950 border-voltron-cyan"
                     : isCompleted
                     ? "bg-voltron-950/80 border-voltron-800"
                     : "bg-voltron-950/40 border-voltron-850 opacity-60"
                 )}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <div
-                      className={clsx(
-                        "w-5 h-5 rounded flex items-center justify-center text-[10px]",
-                        isActive
-                          ? "bg-voltron-cyan/20 text-voltron-cyan"
-                          : isCompleted
-                          ? "bg-voltron-emerald/20 text-voltron-emerald"
-                          : "bg-voltron-800 text-voltron-400"
-                      )}
-                    >
-                      <Icon className="w-3 h-3" />
-                    </div>
-                    <span className="text-xs font-bold text-white tracking-wider">
-                      {stage.name}
-                    </span>
-                  </div>
+                  <span className="text-xs font-bold text-white tracking-wider">
+                    {stage.name}
+                  </span>
 
                   <span
                     className={clsx(
@@ -175,7 +150,7 @@ export default function AgentActivityBar({
                         : "text-voltron-400"
                     )}
                   >
-                    {isCompleted ? "✓ PASS" : isActive ? "● LIVE" : "— WAIT"}
+                    {isCompleted ? "PASS" : isActive ? "LIVE" : "WAIT"}
                   </span>
                 </div>
 

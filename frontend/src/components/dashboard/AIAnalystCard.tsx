@@ -2,16 +2,7 @@
 
 import { useState } from "react";
 import { AIAnalysis } from "@/types";
-import {
-  Bot,
-  CheckCircle2,
-  AlertTriangle,
-  FileText,
-  Database,
-  ShieldCheck,
-  X,
-  Sparkles,
-} from "lucide-react";
+import { X } from "lucide-react";
 import clsx from "clsx";
 
 interface AIAnalystCardProps {
@@ -81,9 +72,8 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
 
         {/* AI Thesis Box */}
         <div className="p-3 rounded-lg bg-voltron-900/90 border border-voltron-750/90 mb-3">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase text-voltron-cyan font-bold mb-1">
-            <Sparkles className="w-3 h-3 text-voltron-cyan" />
-            <span>Quantitative Thesis</span>
+          <div className="text-[10px] font-mono uppercase text-voltron-cyan font-bold mb-1 tracking-wider">
+            Quantitative Thesis
           </div>
           <p className="text-xs font-mono text-voltron-200 leading-relaxed">
             &ldquo;{analysis.thesis}&rdquo;
@@ -94,8 +84,8 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3 text-xs font-mono">
           {/* Key Reasons */}
           <div className="p-2.5 rounded bg-voltron-900/40 border border-voltron-800 space-y-1.5">
-            <span className="text-[10px] font-mono uppercase text-voltron-emerald font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Key Drivers
+            <span className="text-[10px] font-mono uppercase text-voltron-emerald font-bold tracking-wider">
+              Key Drivers
             </span>
             {analysis.key_reasons.slice(0, 2).map((r, i) => (
               <div key={i} className="flex items-start gap-1.5 text-voltron-300 text-[11px]">
@@ -107,8 +97,8 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
 
           {/* Key Risks */}
           <div className="p-2.5 rounded bg-voltron-900/40 border border-voltron-800 space-y-1.5">
-            <span className="text-[10px] font-mono uppercase text-voltron-rose font-bold flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" /> Risk Factors
+            <span className="text-[10px] font-mono uppercase text-voltron-rose font-bold tracking-wider">
+              Risk Factors
             </span>
             {analysis.risks.slice(0, 2).map((r, i) => (
               <div key={i} className="flex items-start gap-1.5 text-voltron-300 text-[11px]">
@@ -127,9 +117,8 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
             setModalTab("reasoning");
             setModalOpen(true);
           }}
-          className="flex-1 py-1.5 px-2 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-mono text-voltron-200 hover:text-white flex items-center justify-center gap-1.5 transition-colors"
+          className="flex-1 py-1.5 px-2 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-mono text-voltron-200 hover:text-white flex items-center justify-center transition-colors"
         >
-          <FileText className="w-3.5 h-3.5 text-voltron-cyan" />
           <span>View Reasoning</span>
         </button>
 
@@ -138,9 +127,8 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
             setModalTab("data");
             setModalOpen(true);
           }}
-          className="flex-1 py-1.5 px-2 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-mono text-voltron-200 hover:text-white flex items-center justify-center gap-1.5 transition-colors"
+          className="flex-1 py-1.5 px-2 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-mono text-voltron-200 hover:text-white flex items-center justify-center transition-colors"
         >
-          <Database className="w-3.5 h-3.5 text-voltron-300" />
           <span>View Data</span>
         </button>
 
@@ -152,9 +140,8 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
               setModalOpen(true);
             }
           }}
-          className="flex-1 py-1.5 px-2 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-mono text-voltron-200 hover:text-white flex items-center justify-center gap-1.5 transition-colors"
+          className="flex-1 py-1.5 px-2 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-mono text-voltron-200 hover:text-white flex items-center justify-center transition-colors"
         >
-          <ShieldCheck className="w-3.5 h-3.5 text-voltron-emerald" />
           <span>Risk Assessment</span>
         </button>
       </div>
@@ -170,9 +157,8 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <Bot className="w-5 h-5 text-voltron-cyan" />
-              <h3 className="text-sm font-mono font-bold text-white uppercase">
+            <div className="mb-4">
+              <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
                 AI Intelligence & Quant Audit — {analysis.symbol}
               </h3>
             </div>

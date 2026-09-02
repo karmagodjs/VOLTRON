@@ -4,35 +4,22 @@ import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import KillSwitchModal from "@/components/risk/KillSwitchModal";
 import { fetchRisk, toggleKillSwitch } from "@/lib/api";
-import {
-  ShieldAlert,
-  ShieldCheck,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Lock,
-  Flame,
-  Activity,
-  Info,
-  Layers,
-  X,
-  RefreshCw,
-  SlidersHorizontal,
-  ChevronRight,
-  TrendingDown,
-} from "lucide-react";
+import { X, RefreshCw } from "lucide-react";
 import clsx from "clsx";
 
+import { useMarket } from "@/context/MarketContext";
+
 export default function RiskCommandPage() {
+  const { selectedSymbol } = useMarket();
   const [risk, setRisk] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedGate, setSelectedGate] = useState<any>(null);
   const [historyFilter, setHistoryFilter] = useState<"ALL" | "APPROVED" | "BLOCKED">("ALL");
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = async (sym = selectedSymbol) => {
     try {
-      const res = await fetch("/api/risk");
+      const res = await fetch(`/api/risk?symbol=${sym}`);
       if (!res.ok) throw new Error("Backend offline");
       const json = await res.json();
       setRisk(json);
@@ -44,8 +31,8 @@ export default function RiskCommandPage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(selectedSymbol);
+  }, [selectedSymbol]);
 
   const handleToggleKillSwitch = async (active: boolean) => {
     await toggleKillSwitch(active);
@@ -78,7 +65,7 @@ export default function RiskCommandPage() {
           <div className="flex items-center">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white tracking-wider">
+                <span className="text-sm font-bold text-white tracking-wider uppercase">
                   VOLTRON RISK &amp; SAFETY COMMAND CENTER
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-voltron-emerald/10 border border-voltron-emerald/30 text-voltron-emerald font-bold">
@@ -98,17 +85,16 @@ export default function RiskCommandPage() {
             <button
               onClick={() => setModalOpen(true)}
               className={clsx(
-                "px-3 py-1.5 rounded text-xs font-bold transition-all border flex items-center gap-1.5",
+                "px-3 py-1.5 rounded text-xs font-bold transition-all border",
                 risk.kill_switch
-                  ? "bg-voltron-rose text-white border-voltron-rose animate-pulse shadow-rose-glow"
+                  ? "bg-voltron-rose text-white border-voltron-rose animate-pulse"
                   : "bg-voltron-rose/15 hover:bg-voltron-rose/25 text-voltron-rose border-voltron-rose/40"
               )}
             >
-              <ShieldAlert className="w-4 h-4" />
               <span>{risk.kill_switch ? "RESET EMERGENCY STOP" : "ENGAGE EMERGENCY KILL SWITCH"}</span>
             </button>
             <button
-              onClick={loadData}
+              onClick={() => loadData()}
               className="p-1.5 rounded bg-voltron-950 hover:bg-voltron-800 text-voltron-400 hover:text-white border border-voltron-800 transition-colors"
               title="Refresh Risk Evaluation"
             >
@@ -182,9 +168,8 @@ export default function RiskCommandPage() {
           {/* 7 Safety Gates Matrix (8 cols) */}
           <div className="lg:col-span-8 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-2">
-              <span className="text-xs font-bold text-white uppercase flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-voltron-emerald" />
-                <span>7 Core Pre-Trade Risk Gates</span>
+              <span className="text-xs font-bold text-white uppercase">
+                CORE PRE-TRADE RISK GATES
               </span>
               <span className="text-xs text-voltron-emerald font-bold">
                 {passingGates} OF {risk.gates?.length || 7} VERIFIED
@@ -224,13 +209,11 @@ export default function RiskCommandPage() {
                       <div className="text-[10px] text-voltron-400">Rule: {g.condition}</div>
                     </div>
 
-                    <div className="text-[9px] text-voltron-300 border-t border-voltron-850 pt-1.5 mt-2 flex items-center gap-1">
-                      {isPass ? (
-                        <CheckCircle2 className="w-3 h-3 text-voltron-emerald flex-shrink-0" />
-                      ) : (
-                        <XCircle className="w-3 h-3 text-voltron-rose flex-shrink-0" />
-                      )}
+                    <div className="text-[9px] text-voltron-300 border-t border-voltron-850 pt-1.5 mt-2 flex items-center justify-between">
                       <span className="truncate">{g.source}</span>
+                      <span className={isPass ? "text-voltron-emerald font-bold" : "text-voltron-rose font-bold"}>
+                        {isPass ? "PASS" : "BLOCKED"}
+                      </span>
                     </div>
                   </div>
                 );
@@ -244,7 +227,7 @@ export default function RiskCommandPage() {
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
               <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
                 <span className="text-white font-bold text-xs uppercase">
-                  Current Risk Decision
+                  CURRENT RISK DECISION
                 </span>
                 <span className="text-[10px] px-1.5 py-0.2 rounded bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30 font-bold">
                   {risk.candidate_decision?.decision}
@@ -274,8 +257,7 @@ export default function RiskCommandPage() {
                 </div>
               </div>
 
-              <div className="p-2 rounded bg-voltron-emerald/10 border border-voltron-emerald/30 text-voltron-emerald text-[11px] flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              <div className="p-2 rounded bg-voltron-emerald/10 border border-voltron-emerald/30 text-voltron-emerald text-[11px]">
                 <span><strong>DECISION:</strong> {risk.candidate_decision?.reason} ({risk.candidate_decision?.gates_passed}/{risk.candidate_decision?.total_gates} Gates)</span>
               </div>
             </div>
@@ -298,9 +280,8 @@ export default function RiskCommandPage() {
           {/* Alerts Stream (5 cols) */}
           <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
-              <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
-                <AlertTriangle className="w-3.5 h-3.5 text-voltron-amber" />
-                <span>Risk Alerts Stream ({risk.alerts?.length})</span>
+              <span className="text-white font-bold text-xs uppercase">
+                RISK ALERTS STREAM ({risk.alerts?.length})
               </span>
               <span className="text-[10px] text-voltron-400">Real-time Telemetry</span>
             </div>
@@ -330,9 +311,8 @@ export default function RiskCommandPage() {
           {/* Risk Audit History (7 cols) */}
           <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-1.5 gap-2">
-              <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
-                <Activity className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>Risk Decisions Audit Ledger ({filteredHistory.length})</span>
+              <span className="text-white font-bold text-xs uppercase">
+                RISK DECISIONS AUDIT LEDGER ({filteredHistory.length})
               </span>
 
               <div className="flex gap-1 text-[10px]">
@@ -407,12 +387,9 @@ export default function RiskCommandPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <ShieldCheck className="w-5 h-5 text-voltron-emerald" />
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase">{selectedGate.name}</h3>
-                <span className="text-[10px] text-voltron-400 font-bold">SOURCE: {selectedGate.source}</span>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">{selectedGate.name}</h3>
+              <span className="text-[10px] text-voltron-400 font-bold">SOURCE: {selectedGate.source}</span>
             </div>
 
             <div className="space-y-3 mb-5">

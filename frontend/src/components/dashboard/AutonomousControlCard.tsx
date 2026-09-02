@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, Pause, Square, SkipForward, Cpu, Clock, ShieldCheck } from "lucide-react";
+import { Play, Pause, Square, SkipForward } from "lucide-react";
 import { controlAgent } from "@/lib/api";
 import clsx from "clsx";
 
@@ -62,7 +62,7 @@ export default function AutonomousControlCard({
             className={clsx(
               "flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider",
               status === "ACTIVE"
-                ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30 shadow-emerald-glow"
+                ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30"
                 : status === "PAUSED"
                 ? "bg-voltron-amber/15 text-voltron-amber border border-voltron-amber/30"
                 : "bg-voltron-rose/15 text-voltron-rose border border-voltron-rose/30"
@@ -149,12 +149,11 @@ export default function AutonomousControlCard({
             <span className="hidden sm:inline">Step</span>
           </button>
         </div>
-      </div>
 
-      {/* Safety Notice */}
-      <div className="p-2.5 rounded bg-voltron-900/60 border border-voltron-800 text-[10px] font-mono text-voltron-400 flex items-center gap-2">
-        <ShieldCheck className="w-4 h-4 text-voltron-cyan flex-shrink-0" />
-        <span>Alpaca Paper execution guardrails active. Live execution disabled.</span>
+        {/* Safety Notice */}
+        <div className="p-2.5 rounded bg-voltron-900/60 border border-voltron-800 text-[10px] font-mono text-voltron-400">
+          <span>Alpaca Paper execution guardrails active. Live execution disabled.</span>
+        </div>
       </div>
     </div>
   );

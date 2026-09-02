@@ -17,27 +17,19 @@ import {
   ReferenceLine,
 } from "recharts";
 import {
-  Calendar,
-  TrendingUp,
-  TrendingDown,
-  ShieldCheck,
-  ShieldAlert,
-  Sparkles,
   Search,
   RefreshCw,
-  SlidersHorizontal,
-  FileText,
-  Activity,
-  AlertCircle,
-  Eye,
-  CheckCircle2,
   X,
 } from "lucide-react";
 import clsx from "clsx";
 
+import { useMarket } from "@/context/MarketContext";
+import { SUPPORTED_ASSETS } from "@/lib/marketData";
+
 function OptionsTerminalContent() {
   const searchParams = useSearchParams();
-  const querySymbol = searchParams.get("symbol")?.toUpperCase() || "SPY";
+  const { selectedSymbol, setSelectedSymbol } = useMarket();
+  const querySymbol = searchParams.get("symbol")?.toUpperCase() || selectedSymbol || "SPY";
 
   const [symbol, setSymbol] = useState(querySymbol);
   const [data, setData] = useState<any>(null);
@@ -45,24 +37,39 @@ function OptionsTerminalContent() {
   const [filterMode, setFilterMode] = useState<"ALL" | "ATM" | "ITM" | "OTM">("ALL");
   const [searchStrike, setSearchStrike] = useState<string>("");
   const [selectedContract, setSelectedContract] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
 
+  // Sync if query param or context changes externally
   useEffect(() => {
-    if (querySymbol && querySymbol !== symbol) {
+    if (querySymbol && querySymbol !== symbol && SUPPORTED_ASSETS[querySymbol]) {
       setSymbol(querySymbol);
+      setData(null);
+      setSelectedContract(null);
+      setSelectedExp(null);
+      setLoading(true);
     }
   }, [querySymbol]);
 
-  const loadData = async () => {
+  useEffect(() => {
+    if (selectedSymbol && selectedSymbol !== symbol && SUPPORTED_ASSETS[selectedSymbol]) {
+      setSymbol(selectedSymbol);
+      setData(null);
+      setSelectedContract(null);
+      setSelectedExp(null);
+      setLoading(true);
+    }
+  }, [selectedSymbol]);
+
+  const loadData = async (targetSymbol = symbol) => {
     try {
       setLoading(true);
-      const res = await fetchOptionsChain(symbol, selectedExp || undefined);
+      const res = await fetchOptionsChain(targetSymbol, selectedExp || undefined);
       setData(res);
       if (!selectedExp && res.expirations?.length > 0) {
         setSelectedExp(res.selected_expiration);
       }
-      if (!selectedContract && res.chain?.length > 0) {
+      if (res.chain?.length > 0) {
         const atmRow = res.chain.find((r: any) => r.is_atm) || res.chain[Math.floor(res.chain.length / 2)];
         setSelectedContract(atmRow.call);
       }
@@ -74,11 +81,18 @@ function OptionsTerminalContent() {
   };
 
   useEffect(() => {
-    loadData();
+    loadData(symbol);
   }, [symbol, selectedExp]);
 
-  const spot = data?.spot_price || 591.42;
-  const isPositive = data ? (data.change ?? 0) >= 0 : true;
+  const asset = SUPPORTED_ASSETS[symbol] || SUPPORTED_ASSETS["SPY"];
+  const spot = data?.spot_price || asset.price;
+  const changeVal = data?.change !== undefined ? data.change : asset.change;
+  const changePctVal = data?.change_percent !== undefined ? data.change_percent : asset.change_percent;
+  const isPositive = changeVal >= 0;
+  const ivVal = data?.implied_volatility !== undefined ? data.implied_volatility : asset.implied_volatility;
+  const rvVal = data?.realized_volatility !== undefined ? data.realized_volatility : asset.realized_volatility;
+  const ivRvRatioVal = data?.iv_rv_ratio !== undefined ? data.iv_rv_ratio : asset.iv_rv_ratio;
+  const oppScoreVal = data?.opportunity_score !== undefined ? data.opportunity_score : asset.opportunity_score;
 
   const filteredChain = (data?.chain || []).filter((row: any) => {
     if (searchStrike && !String(row.strike).includes(searchStrike)) return false;
@@ -111,14 +125,16 @@ function OptionsTerminalContent() {
                 <span className="text-lg font-bold text-white font-tabular">${spot.toFixed(2)}</span>
                 <span
                   className={clsx(
-                    "flex items-center gap-0.5 text-xs font-bold font-tabular px-1.5 py-0.2 rounded",
+                    "text-xs font-bold font-tabular px-1.5 py-0.2 rounded",
                     isPositive
                       ? "text-voltron-emerald bg-voltron-emerald/15 border border-voltron-emerald/30"
                       : "text-voltron-rose bg-voltron-rose/15 border border-voltron-rose/30"
                   )}
                 >
-                  {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  {isPositive ? "+" : ""}{data?.change?.toFixed(2) || "4.82"} ({isPositive ? "+" : ""}{data?.change_percent?.toFixed(2) || "0.82"}%)
+                  {isPositive ? "+" : ""}{changeVal.toFixed(2)} ({isPositive ? "+" : ""}{changePctVal.toFixed(2)}%)
+                </span>
+                <span className="text-[10px] text-voltron-400 font-sans">
+                  {asset.name}
                 </span>
                 <span className="text-[10px] text-voltron-emerald flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-voltron-emerald inline-block"></span>
@@ -132,19 +148,19 @@ function OptionsTerminalContent() {
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block">Implied Vol (IV)</span>
-              <span className="font-bold text-voltron-cyan font-tabular">{data?.implied_volatility || 16.85}%</span>
+              <span className="font-bold text-voltron-cyan font-tabular">{ivVal.toFixed(2)}%</span>
             </div>
             <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block">Realized Vol (RV)</span>
-              <span className="font-bold text-white font-tabular">{data?.realized_volatility || 10.42}%</span>
+              <span className="font-bold text-white font-tabular">{rvVal.toFixed(2)}%</span>
             </div>
             <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block">IV / RV Ratio</span>
-              <span className="font-bold text-voltron-emerald font-tabular">{data?.iv_rv_ratio || 1.62}x</span>
+              <span className="font-bold text-voltron-emerald font-tabular">{ivRvRatioVal.toFixed(2)}x</span>
             </div>
             <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block">Opportunity</span>
-              <span className="font-bold text-voltron-cyan font-tabular">{data?.opportunity_score || 94} / 100</span>
+              <span className="font-bold text-voltron-cyan font-tabular">{oppScoreVal} / 100</span>
             </div>
             <div className="p-1.5 px-2.5 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 text-voltron-cyan font-bold flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-voltron-cyan animate-pulse"></span>
@@ -153,12 +169,20 @@ function OptionsTerminalContent() {
           </div>
         </div>
 
+        {/* Loading Indicator when switching symbols */}
+        {loading && !data && (
+          <div className="p-6 rounded-lg bg-voltron-900 border border-voltron-cyan/40 text-voltron-cyan text-xs font-mono flex items-center justify-center gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            <span>{symbol}: LOADING DERIBIT-GRADE OPTIONS CHAIN...</span>
+          </div>
+        )}
+
         {/* 2. EXPIRATION & FILTER TOOLBAR */}
         <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           {/* Expiration Buttons */}
           <div className="flex items-center gap-1.5 overflow-x-auto">
-            <span className="text-[10px] uppercase text-voltron-400 font-bold flex items-center gap-1 mr-1">
-              <Calendar className="w-3.5 h-3.5 text-voltron-cyan" /> EXPIRATION:
+            <span className="text-[10px] uppercase text-voltron-400 font-bold mr-1">
+              EXPIRATION:
             </span>
             {(data?.expiration_labels || []).map((exp: any) => (
               <button
@@ -167,7 +191,7 @@ function OptionsTerminalContent() {
                 className={clsx(
                   "px-2.5 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0",
                   (selectedExp || data?.selected_expiration) === exp.date
-                    ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50 shadow-cyan-glow"
+                    ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50"
                     : "bg-voltron-950 text-voltron-400 hover:text-white border border-voltron-800"
                 )}
               >
@@ -181,7 +205,7 @@ function OptionsTerminalContent() {
 
           {/* Moneyness Filters & Search */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-0.5 bg-voltron-950 p-0.5 rounded border border-voltron-800">
+            <div className="flex items-center gap-0.5 bg-voltron-950 p-0.5 rounded border border-voltron-800 text-[10px]">
               {(["ALL", "ATM", "ITM", "OTM"] as const).map((mode) => (
                 <button
                   key={mode}
@@ -211,7 +235,7 @@ function OptionsTerminalContent() {
             </div>
 
             <button
-              onClick={loadData}
+              onClick={() => loadData()}
               className="p-1.5 rounded bg-voltron-950 hover:bg-voltron-800 text-voltron-400 hover:text-white border border-voltron-800 transition-colors"
               title="Refresh Options Matrix"
             >
@@ -316,7 +340,7 @@ function OptionsTerminalContent() {
                         className={clsx(
                           "p-1.5 font-bold font-tabular text-xs border-x border-voltron-800",
                           isAtm
-                            ? "bg-voltron-cyan/25 text-voltron-cyan shadow-cyan-glow"
+                            ? "bg-voltron-cyan/25 text-voltron-cyan"
                             : "bg-voltron-950/80 text-white"
                         )}
                       >
@@ -370,10 +394,7 @@ function OptionsTerminalContent() {
           {/* Selected Contract & Liquidity Panel (5 cols) */}
           <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-              <div className="flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>SELECTED CONTRACT & LIQUIDITY</span>
-              </div>
+              <span>SELECTED CONTRACT & LIQUIDITY</span>
               <span className="text-[10px] text-voltron-cyan font-bold">
                 {selectedContract?.type || "CALL"} ${selectedContract?.strike || 590}
               </span>
@@ -433,11 +454,10 @@ function OptionsTerminalContent() {
           </div>
 
           {/* IV Term Structure Curve (7 cols) */}
-          <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 h-[210px] flex flex-col justify-between">
+          <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-800 h-[210px] flex flex-col justify-between">
             <div className="flex items-center justify-between text-[11px] text-voltron-400 border-b border-voltron-800 pb-1 mb-1">
-              <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
-                <Activity className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>IV TERM STRUCTURE ({symbol})</span>
+              <span className="text-white font-bold text-xs uppercase tracking-wider">
+                IV TERM STRUCTURE ({symbol})
               </span>
               <span className="text-[10px] text-voltron-cyan font-bold">ATM FORWARD SKEW</span>
             </div>
@@ -468,12 +488,9 @@ function OptionsTerminalContent() {
         {/* 5. ROW 3: STRATEGY ENGINE + PAYOFF CHART */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
           {/* Strategy Engine & Multi-Leg Breakdown (5 cols) */}
-          <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+          <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-800 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-              <div className="flex items-center gap-1.5">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>VOLTRON STRATEGY ENGINE</span>
-              </div>
+              <span>VOLTRON STRATEGY ENGINE</span>
               <span className="text-[10px] px-2 py-0.5 rounded bg-voltron-emerald/15 text-voltron-emerald font-bold">
                 {strat?.name || "IRON CONDOR"}
               </span>
@@ -531,9 +548,8 @@ function OptionsTerminalContent() {
           {/* Payoff Preview Chart (7 cols) */}
           <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 h-[260px] flex flex-col justify-between">
             <div className="flex items-center justify-between text-[11px] text-voltron-400 border-b border-voltron-800 pb-1.5 mb-1">
-              <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
-                <Activity className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>EXPIRATION PAYOFF PROFILE & BREAKEVENS</span>
+              <span className="text-white font-bold text-xs uppercase">
+                EXPIRATION PAYOFF PROFILE & BREAKEVENS
               </span>
               <span className="text-[10px] text-voltron-emerald font-bold">
                 LOWER BE: ${strat?.breakeven_lower} | UPPER BE: ${strat?.breakeven_upper}
@@ -576,10 +592,7 @@ function OptionsTerminalContent() {
           {/* AI Context Panel (6 cols) */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>VOLTRON AI CONTEXT ({symbol})</span>
-              </div>
+              <span>VOLTRON AI CONTEXT ({symbol})</span>
               <span className="text-[10px] text-voltron-cyan font-bold">CONFIDENCE: 88%</span>
             </div>
 
@@ -598,10 +611,7 @@ function OptionsTerminalContent() {
           {/* Order Preview & Risk Verification (6 cols) */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-voltron-emerald" />
-                <span>ORDER PREVIEW & RISK SAFETY GATE</span>
-              </div>
+              <span>ORDER PREVIEW & RISK SAFETY GATE</span>
               <span className="text-[10px] text-voltron-emerald font-bold">7/7 GATES PASSED</span>
             </div>
 
@@ -640,9 +650,8 @@ function OptionsTerminalContent() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <ShieldCheck className="w-5 h-5 text-voltron-emerald" />
-              <h3 className="text-sm font-bold text-white uppercase">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
                 VOLTRON RISK GATE AUDIT — {symbol} {strat?.name || "IRON CONDOR"}
               </h3>
             </div>

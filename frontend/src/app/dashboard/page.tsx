@@ -32,8 +32,10 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 
+import { useMarket } from "@/context/MarketContext";
+
 export default function DashboardPage() {
-  const [symbol, setSymbol] = useState("SPY");
+  const { selectedSymbol, setSelectedSymbol } = useMarket();
   const [market, setMarket] = useState<MarketData | null>(null);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [timeline, setTimeline] = useState<{
@@ -46,13 +48,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (sym = selectedSymbol) => {
     try {
+      setLoading(true);
       const [m, a, t, r, acc] = await Promise.all([
-        fetchMarket(symbol),
-        fetchAIAnalysis(symbol),
-        fetchTimeline(),
-        fetchRisk(),
+        fetchMarket(sym),
+        fetchAIAnalysis(sym),
+        fetchTimeline(sym),
+        fetchRisk(sym),
         fetchAccount(),
       ]);
       setMarket(m);
@@ -69,21 +72,21 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 10000); // 10s auto-refresh
+    loadData(selectedSymbol);
+    const interval = setInterval(() => loadData(selectedSymbol), 10000); // 10s auto-refresh
     return () => clearInterval(interval);
-  }, [symbol]);
+  }, [selectedSymbol]);
 
   const agentState: AgentState = {
     cycle: timeline?.cycle || 142,
     status: "ANALYZING",
-    symbol: symbol,
+    symbol: selectedSymbol,
     decision: analysis?.decision || "TRADE_CANDIDATE",
     strategy: analysis?.strategy_recommendation || "IRON_CONDOR",
     confidence: analysis?.confidence || 88,
     opportunity_score: analysis?.opportunity_score || 94,
-    active_order_id: "VLT-8941",
-    active_position: "SPY IRON CONDOR",
+    active_order_id: `VLT-${selectedSymbol}-8941`,
+    active_position: `${selectedSymbol} ${analysis?.strategy_recommendation || "IRON CONDOR"}`,
     last_reason: "7 Risk gates approved; paper execution active",
     errors: [],
   };
@@ -92,12 +95,12 @@ export default function DashboardPage() {
     <TerminalLayout>
       <div className="space-y-3.5 font-mono">
         {/* 1. Visual Flow Banner: MARKET → VOLATILITY → AI DECISION → STRATEGY → RISK → ACTION */}
-        <div className="p-2.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-2 text-xs overflow-x-auto">
+        <div className="p-2.5 rounded-lg bg-voltron-900 border border-voltron-800 flex flex-wrap items-center justify-between gap-2 text-xs overflow-x-auto">
           {/* Step 1: Market */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">1. MARKET</span>
             <span className="px-1.5 py-0.5 rounded bg-voltron-950 border border-voltron-800 text-white font-bold text-[11px]">
-              {symbol} {market?.price ? `$${market.price.toFixed(2)}` : "—"}
+              {selectedSymbol} {market?.price ? `$${market.price.toFixed(2)}` : "—"}
             </span>
           </div>
 
@@ -153,7 +156,7 @@ export default function DashboardPage() {
           {/* Step 6: Action */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">6. ACTION</span>
-            <span className="px-2 py-0.5 rounded bg-voltron-cyan/20 border border-voltron-cyan text-voltron-cyan font-bold text-[11px] shadow-cyan-glow">
+            <span className="px-2 py-0.5 rounded bg-voltron-cyan/20 border border-voltron-cyan text-voltron-cyan font-bold text-[11px]">
               PAPER EXECUTION
             </span>
           </div>

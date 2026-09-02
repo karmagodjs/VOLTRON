@@ -13,14 +13,6 @@ import {
   CartesianGrid,
 } from "recharts";
 import { MarketData, RiskStatus, AccountSummary } from "@/types";
-import {
-  TrendingUp,
-  TrendingDown,
-  ShieldCheck,
-  Briefcase,
-  Activity,
-  AlertCircle,
-} from "lucide-react";
 import clsx from "clsx";
 
 interface MarketWorkspaceProps {
@@ -109,17 +101,12 @@ export default function MarketWorkspace({
               {market?.change != null ? (
                 <span
                   className={clsx(
-                    "flex items-center gap-1 text-xs font-bold font-tabular px-1.5 py-0.2 rounded",
+                    "inline-flex items-center gap-1 text-xs font-bold font-tabular px-1.5 py-0.2 rounded",
                     isPositive
                       ? "text-voltron-emerald bg-voltron-emerald/15 border border-voltron-emerald/30"
                       : "text-voltron-rose bg-voltron-rose/15 border border-voltron-rose/30"
                   )}
                 >
-                  {isPositive ? (
-                    <TrendingUp className="w-3 h-3" />
-                  ) : (
-                    <TrendingDown className="w-3 h-3" />
-                  )}
                   {isPositive ? "+" : ""}
                   {market.change.toFixed(2)} ({isPositive ? "+" : ""}
                   {market.change_percent.toFixed(2)}%)
@@ -172,13 +159,10 @@ export default function MarketWorkspace({
       </div>
 
       {/* 2. Large Central Market Chart */}
-      <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 h-[340px] flex flex-col justify-between">
+      <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-800 h-[340px] flex flex-col justify-between">
         <div className="flex items-center justify-between text-[11px] text-voltron-400 border-b border-voltron-800 pb-1.5 mb-2">
-          <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
-            <Activity className="w-3.5 h-3.5 text-voltron-cyan" />
-            <span>
-              {market?.symbol || "SPY"} — {activeTab} Time Series ({activeTimeframe})
-            </span>
+          <span className="text-white font-bold text-xs uppercase tracking-wider">
+            {market?.symbol || "SPY"} — {activeTab} TIME SERIES ({activeTimeframe})
           </span>
           <span className="text-[10px] text-voltron-cyan font-bold">
             SIP CONSOLIDATED MARKET FEED
@@ -232,7 +216,6 @@ export default function MarketWorkspace({
             </ResponsiveContainer>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-voltron-400 text-xs">
-              <AlertCircle className="w-6 h-6 text-voltron-amber mb-2" />
               <span>WAITING FOR MARKET DATA BARS...</span>
             </div>
           )}
@@ -251,7 +234,7 @@ export default function MarketWorkspace({
             className={clsx(
               "text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider",
               market?.vol_signal === "IV EXPENSIVE"
-                ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30 shadow-emerald-glow"
+                ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30"
                 : "bg-voltron-amber/15 text-voltron-amber border border-voltron-amber/30"
             )}
           >
@@ -319,12 +302,9 @@ export default function MarketWorkspace({
       {/* 4. Portfolio Summary & Risk Status Summary Strip */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
         {/* Portfolio Summary */}
-        <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
+        <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-800 space-y-2">
           <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-            <div className="flex items-center gap-1.5">
-              <Briefcase className="w-3.5 h-3.5 text-voltron-cyan" />
-              <span>PORTFOLIO SUMMARY</span>
-            </div>
+            <span>PORTFOLIO SUMMARY</span>
             <span className="text-[10px] text-voltron-cyan">ALPACA PAPER</span>
           </div>
 
@@ -379,12 +359,9 @@ export default function MarketWorkspace({
         </div>
 
         {/* Risk Status Summary */}
-        <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
+        <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-800 space-y-2">
           <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-voltron-rose" />
-              <span>RISK ENGINE</span>
-            </div>
+            <span>RISK ENGINE</span>
             <span
               className={clsx(
                 "text-[10px] px-1.5 py-0.2 rounded font-bold uppercase",

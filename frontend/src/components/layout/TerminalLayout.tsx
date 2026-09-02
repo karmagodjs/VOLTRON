@@ -7,30 +7,25 @@ import AICopilotDrawer from "../copilot/AICopilotDrawer";
 import KillSwitchModal from "../risk/KillSwitchModal";
 import { fetchAccount, fetchMarket, toggleKillSwitch } from "@/lib/api";
 
+import { useMarket } from "@/context/MarketContext";
+
 interface TerminalLayoutProps {
   children: React.ReactNode;
 }
 
 export default function TerminalLayout({ children }: TerminalLayoutProps) {
-  const [currentSymbol, setCurrentSymbol] = useState("SPY");
+  const { selectedSymbol, setSelectedSymbol, marketData } = useMarket();
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [killSwitchModalOpen, setKillSwitchModalOpen] = useState(false);
   const [killSwitchActive, setKillSwitchActive] = useState(false);
   const [portfolioValue, setPortfolioValue] = useState<number | null>(100000.0);
-  const [marketPrice, setMarketPrice] = useState<number | null>(591.42);
-  const [marketStatus, setMarketStatus] = useState<string | null>("OPEN");
 
   useEffect(() => {
     const loadTopBarData = async () => {
       try {
-        const [acc, mkt] = await Promise.all([
-          fetchAccount(),
-          fetchMarket(currentSymbol),
-        ]);
+        const acc = await fetchAccount();
         setPortfolioValue(acc.portfolio_value);
         setKillSwitchActive(acc.kill_switch_active);
-        setMarketPrice(mkt.price);
-        setMarketStatus(mkt.market_status);
       } catch {
         // Fallback states handled in components
       }
@@ -39,12 +34,15 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
     loadTopBarData();
     const interval = setInterval(loadTopBarData, 10000);
     return () => clearInterval(interval);
-  }, [currentSymbol]);
+  }, []);
 
   const handleToggleKillSwitch = async (active: boolean) => {
     const res = await toggleKillSwitch(active);
     setKillSwitchActive(res.success ? active : killSwitchActive);
   };
+
+  const marketPrice = marketData?.price ?? null;
+  const marketStatus = marketData?.market_status ?? "OPEN";
 
   return (
     <div className="flex min-h-screen bg-voltron-950 text-foreground">
@@ -54,8 +52,8 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
       {/* Main Terminal Workspace */}
       <div className="flex-1 flex flex-col min-w-0">
         <TopNav
-          currentSymbol={currentSymbol}
-          onSelectSymbol={setCurrentSymbol}
+          currentSymbol={selectedSymbol}
+          onSelectSymbol={(sym) => setSelectedSymbol(sym, true)}
           onOpenCopilot={() => setCopilotOpen(true)}
           onOpenKillSwitch={() => setKillSwitchModalOpen(true)}
           killSwitchActive={killSwitchActive}
@@ -88,7 +86,7 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
       <AICopilotDrawer
         isOpen={copilotOpen}
         onClose={() => setCopilotOpen(false)}
-        currentSymbol={currentSymbol}
+        currentSymbol={selectedSymbol}
       />
 
       {/* Global Kill Switch Modal */}

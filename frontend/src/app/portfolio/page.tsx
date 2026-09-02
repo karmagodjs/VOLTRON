@@ -2,20 +2,7 @@
 
 import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
-import {
-  Layers,
-  ShieldCheck,
-  CheckCircle2,
-  Activity,
-  ArrowRightLeft,
-  X,
-  TrendingUp,
-  RefreshCw,
-  Clock,
-  SlidersHorizontal,
-  ChevronRight,
-  AlertTriangle,
-} from "lucide-react";
+import { X, RefreshCw } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -155,10 +142,7 @@ export default function PortfolioPage() {
           {/* Active Multi-Leg Positions (7 cols) */}
           <div className="lg:col-span-7 space-y-3">
             <div className="flex items-center justify-between text-xs font-bold text-white uppercase px-1">
-              <span className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>OPEN MULTI-LEG POSITIONS ({positions.length})</span>
-              </span>
+              <span>OPEN MULTI-LEG POSITIONS ({positions.length})</span>
               <span className="text-voltron-400 text-[10px] font-normal">
                 DYNAMIC TP: 50% &bull; STOP LOSS: 100%
               </span>
@@ -172,20 +156,15 @@ export default function PortfolioPage() {
               >
                 {/* Header Strip */}
                 <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-2 gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded bg-voltron-cyan/15 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan font-bold text-xs">
-                      {pos.symbol}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white text-xs">{pos.symbol}</span>
+                      <span className="text-xs text-voltron-cyan font-bold">{pos.strategy.replace(/_/g, " ")}</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30">
+                        {pos.status}
+                      </span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-xs">{pos.symbol}</span>
-                        <span className="text-xs text-voltron-cyan font-bold">{pos.strategy.replace(/_/g, " ")}</span>
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30">
-                          {pos.status}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-voltron-400">{pos.expiration} &bull; {pos.opened_at}</div>
-                    </div>
+                    <div className="text-[10px] text-voltron-400">{pos.expiration} &bull; {pos.opened_at}</div>
                   </div>
 
                   <div className="text-right">
@@ -254,9 +233,8 @@ export default function PortfolioPage() {
             {/* P&L Equity Chart */}
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
               <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
-                <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
-                  <Activity className="w-3.5 h-3.5 text-voltron-cyan" />
-                  <span>P&L / EQUITY CURVE</span>
+                <span className="text-white font-bold text-xs uppercase">
+                  P&L / EQUITY CURVE
                 </span>
                 <div className="flex gap-1 text-[10px]">
                   {(["1D", "1M", "ALL"] as const).map((period) => (
@@ -307,10 +285,7 @@ export default function PortfolioPage() {
             {/* Alpaca State Reconciliation Card */}
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
               <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-                <div className="flex items-center gap-1.5">
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-voltron-emerald" />
-                  <span>PAPER STATE RECONCILIATION</span>
-                </div>
+                <span>PAPER STATE RECONCILIATION</span>
                 <span className="text-[10px] text-voltron-emerald font-bold">● SYNCHRONIZED</span>
               </div>
 
@@ -342,14 +317,11 @@ export default function PortfolioPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <Layers className="w-5 h-5 text-voltron-cyan" />
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase">
-                  POSITION DETAIL &mdash; {selectedPosition.symbol} {selectedPosition.strategy}
-                </h3>
-                <span className="text-[10px] text-voltron-400 font-bold">{selectedPosition.opened_at}</span>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                POSITION DETAIL &mdash; {selectedPosition.symbol} {selectedPosition.strategy}
+              </h3>
+              <span className="text-[10px] text-voltron-400 font-bold">{selectedPosition.opened_at}</span>
             </div>
 
             <div className="space-y-2 mb-5">

@@ -24,8 +24,8 @@ export interface MarketData {
   iv_premium: number;
   opportunity_score: number;
   market_regime: string;
-  vol_signal: "IV EXPENSIVE" | "IV CHEAP" | "IV FAIR";
-  market_status: MarketStatus;
+  vol_signal: "IV EXPENSIVE" | "IV CHEAP" | "IV FAIR" | "EXPENSIVE" | "CHEAP" | "FAIR" | string;
+  market_status: MarketStatus | string;
   last_updated: string;
   history: MarketHistoryPoint[];
 }
@@ -100,10 +100,10 @@ export interface TimelineEvent {
   id: string;
   timestamp: string;
   stage: string;
-  status: "PASS" | "FAIL" | "ACTIVE" | "BLOCKED" | "PENDING";
+  status: "PASS" | "FAIL" | "ACTIVE" | "BLOCKED" | "PENDING" | "WAITING" | string;
   summary: string;
   details: string;
-  type: "scan" | "volatility" | "ai" | "strategy" | "risk" | "execution" | "monitor";
+  type: "scan" | "volatility" | "ai" | "strategy" | "risk" | "execution" | "monitor" | string;
 }
 
 export interface StrategyLeg {

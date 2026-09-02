@@ -1,7 +1,6 @@
 "use client";
 
 import { MarketData } from "@/types";
-import { TrendingUp, TrendingDown, Activity, Sparkles } from "lucide-react";
 import clsx from "clsx";
 
 interface MarketHeroCardProps {
@@ -35,17 +34,12 @@ export default function MarketHeroCard({ market }: MarketHeroCardProps) {
               </span>
               <span
                 className={clsx(
-                  "flex items-center gap-1 text-xs font-mono font-bold font-tabular px-2 py-0.5 rounded",
+                  "text-xs font-mono font-bold font-tabular px-2 py-0.5 rounded",
                   isPositive
                     ? "text-voltron-emerald bg-voltron-emerald/15 border border-voltron-emerald/30"
                     : "text-voltron-rose bg-voltron-rose/15 border border-voltron-rose/30"
                 )}
               >
-                {isPositive ? (
-                  <TrendingUp className="w-3.5 h-3.5" />
-                ) : (
-                  <TrendingDown className="w-3.5 h-3.5" />
-                )}
                 {isPositive ? "+" : ""}
                 {market.change.toFixed(2)} ({isPositive ? "+" : ""}
                 {market.change_percent.toFixed(2)}%)
@@ -90,10 +84,9 @@ export default function MarketHeroCard({ market }: MarketHeroCardProps) {
             <span className="text-[10px] font-mono uppercase text-voltron-400 block">
               Alpha Score
             </span>
-            <span className="text-sm font-mono font-bold text-voltron-cyan font-tabular flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-voltron-cyan" />
+            <span className="text-sm font-mono font-bold text-voltron-cyan font-tabular block">
               {market.opportunity_score}
-              <span className="text-[10px] text-voltron-400 font-normal">/ 100</span>
+              <span className="text-[10px] text-voltron-400 font-normal"> / 100</span>
             </span>
           </div>
         </div>

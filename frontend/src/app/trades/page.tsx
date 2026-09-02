@@ -3,21 +3,9 @@
 import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import {
-  History,
-  Download,
-  Filter,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertCircle,
-  Layers,
   ChevronDown,
   ChevronRight,
-  Send,
   X,
-  FileText,
-  Activity,
-  ShieldAlert,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -101,9 +89,8 @@ export default function TradesPage() {
           <div className="flex items-center gap-2 text-xs">
             <button
               onClick={exportCSV}
-              className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white border border-voltron-700 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white border border-voltron-700 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-voltron-cyan" />
               <span>Export Audit CSV</span>
             </button>
           </div>
@@ -146,7 +133,7 @@ export default function TradesPage() {
                 className={clsx(
                   "px-3 py-1 rounded text-xs font-semibold transition-colors uppercase",
                   activeTab === "orders"
-                    ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50 shadow-cyan-glow"
+                    ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50"
                     : "bg-voltron-950 text-voltron-400 hover:text-white border border-voltron-800"
                 )}
               >
@@ -157,7 +144,7 @@ export default function TradesPage() {
                 className={clsx(
                   "px-3 py-1 rounded text-xs font-semibold transition-colors uppercase",
                   activeTab === "ledger"
-                    ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50 shadow-cyan-glow"
+                    ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50"
                     : "bg-voltron-950 text-voltron-400 hover:text-white border border-voltron-800"
                 )}
               >
@@ -288,8 +275,7 @@ export default function TradesPage() {
                                   ))}
                                 </div>
                                 {o.rejection_reason && (
-                                  <div className="p-2 rounded bg-voltron-rose/10 border border-voltron-rose/30 text-voltron-rose text-[11px] flex items-center gap-1.5 mt-2">
-                                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                                  <div className="p-2 rounded bg-voltron-rose/10 border border-voltron-rose/30 text-voltron-rose text-[11px] mt-2">
                                     <span><strong>Rejection Reason:</strong> {o.rejection_reason}</span>
                                   </div>
                                 )}
@@ -370,14 +356,11 @@ export default function TradesPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <Send className="w-5 h-5 text-voltron-cyan" />
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase">
-                  ORDER AUDIT &mdash; {selectedOrder.id} ({selectedOrder.symbol})
-                </h3>
-                <span className="text-[10px] text-voltron-400">{selectedOrder.alpaca_client_order_id}</span>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                ORDER AUDIT &mdash; {selectedOrder.id} ({selectedOrder.symbol})
+              </h3>
+              <span className="text-[10px] text-voltron-400 font-bold">{selectedOrder.alpaca_client_order_id}</span>
             </div>
 
             <div className="space-y-2 mb-5">
@@ -431,14 +414,11 @@ export default function TradesPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <History className="w-5 h-5 text-voltron-cyan" />
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase">
-                  TRADE LEDGER DETAIL &mdash; {selectedTrade.id}
-                </h3>
-                <span className="text-[10px] text-voltron-400">{selectedTrade.symbol} {selectedTrade.strategy}</span>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                TRADE LEDGER DETAIL &mdash; {selectedTrade.id}
+              </h3>
+              <span className="text-[10px] text-voltron-400 font-bold">{selectedTrade.symbol} {selectedTrade.strategy}</span>
             </div>
 
             <div className="space-y-2 mb-5">

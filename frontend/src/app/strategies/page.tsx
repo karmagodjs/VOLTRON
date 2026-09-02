@@ -5,16 +5,6 @@ import TerminalLayout from "@/components/layout/TerminalLayout";
 import { fetchStrategy } from "@/lib/api";
 import { StrategyDetails } from "@/types";
 import {
-  SlidersHorizontal,
-  TrendingUp,
-  ShieldCheck,
-  Zap,
-  Target,
-  BarChart2,
-  DollarSign,
-  PieChart,
-} from "lucide-react";
-import {
   ResponsiveContainer,
   LineChart,
   Line,
@@ -26,6 +16,9 @@ import {
 } from "recharts";
 import clsx from "clsx";
 
+import { useSearchParams } from "next/navigation";
+import { useMarket } from "@/context/MarketContext";
+
 const strategyList = [
   { id: "IRON_CONDOR", name: "Iron Condor", type: "Credit Multi-Leg", sentiment: "NEUTRAL", edge: "High IV Spread" },
   { id: "BULL_PUT_SPREAD", name: "Bull Put Spread", type: "Credit Spread", sentiment: "BULLISH", edge: "Moderate IV" },
@@ -36,8 +29,10 @@ const strategyList = [
 ];
 
 export default function StrategiesPage() {
+  const searchParams = useSearchParams();
+  const { selectedSymbol } = useMarket();
+  const symbol = searchParams.get("symbol")?.toUpperCase() || selectedSymbol || "SPY";
   const [selectedStrategy, setSelectedStrategy] = useState("IRON_CONDOR");
-  const [symbol, setSymbol] = useState("SPY");
   const [details, setDetails] = useState<StrategyDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -199,9 +194,8 @@ export default function StrategiesPage() {
           <div className="lg:col-span-6 space-y-4">
             <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col h-[400px]">
               <div className="flex items-center justify-between border-b border-voltron-750/60 pb-2 mb-3">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-white uppercase">
-                  <BarChart2 className="w-4 h-4 text-voltron-cyan" />
-                  <span>Expiration Payoff Curve (P&L vs Underlying)</span>
+                <div className="text-xs font-mono font-bold text-white uppercase">
+                  <span>EXPIRATION PAYOFF CURVE (P&L VS UNDERLYING)</span>
                 </div>
                 <div className="flex items-center gap-2 text-[10px] font-mono">
                   <span className="text-voltron-emerald">■ Profit Area</span>

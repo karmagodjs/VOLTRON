@@ -59,11 +59,11 @@ const config: Config = {
         mono: ["var(--font-jetbrains)", "JetBrains Mono", "SFMono-Regular", "Menlo", "monospace"],
       },
       boxShadow: {
-        "cyan-glow": "0 0 20px -5px rgba(0, 240, 255, 0.3)",
-        "emerald-glow": "0 0 20px -5px rgba(0, 230, 118, 0.3)",
-        "rose-glow": "0 0 20px -5px rgba(255, 59, 48, 0.3)",
-        "amber-glow": "0 0 20px -5px rgba(255, 179, 0, 0.3)",
-        "terminal": "0 8px 32px 0 rgba(0, 0, 0, 0.5)",
+        "cyan-glow": "none",
+        "emerald-glow": "none",
+        "rose-glow": "none",
+        "amber-glow": "none",
+        "terminal": "0 4px 12px 0 rgba(0, 0, 0, 0.4)",
       },
       animation: {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",

@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   keywords: ["VOLTRON", "Options Trading", "Volatility Alpha", "AI Quant", "Implied Volatility", "Alpaca Trading", "Iron Condor"],
 };
 
+import { MarketProvider } from "@/context/MarketContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans bg-voltron-900 text-foreground min-h-screen selection:bg-voltron-cyan/20 selection:text-voltron-cyan`}>
-        {children}
+        <MarketProvider>{children}</MarketProvider>
       </body>
     </html>
   );

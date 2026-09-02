@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SUPPORTED_ASSETS } from "@/lib/marketData";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const symbol = (searchParams.get("symbol") || "SPY").toUpperCase();
+  const asset = SUPPORTED_ASSETS[symbol] || SUPPORTED_ASSETS["SPY"];
+  const riskApproved = asset.opportunity_score >= 70;
+
   const riskState = {
     account_equity: 100000.0,
     daily_pnl: 1284.5,
     daily_loss_limit: 2000.0,
     daily_loss_limit_pct: 2.0,
-    remaining_daily_budget: 3284.5, // 2000 + 1284.5
+    remaining_daily_budget: 3284.5,
     portfolio_exposure: 18200.0,
     portfolio_exposure_pct: 18.2,
     max_portfolio_exposure: 30000.0,
@@ -20,25 +26,25 @@ export async function GET() {
     liquidity_spread_pct: 2.1,
     max_liquidity_spread_pct: 10.0,
     min_opportunity_score: 70,
-    current_opportunity_score: 94,
+    current_opportunity_score: asset.opportunity_score,
     kill_switch: false,
-    overall_status: "APPROVED",
+    overall_status: riskApproved ? "APPROVED" : "BLOCKED",
     environment: "PAPER",
-    trading_enabled: false, // Default fail-safe
+    trading_enabled: false,
     execution_engine_status: "READY",
     safety_gate_status: "ACTIVE",
 
     candidate_decision: {
-      symbol: "SPY",
-      strategy: "IRON_CONDOR",
-      opportunity_score: 94,
+      symbol: asset.symbol,
+      strategy: asset.strategy,
+      opportunity_score: asset.opportunity_score,
       max_loss: 315.0,
       proposed_exposure: 1800.0,
       spread_pct: 2.1,
-      decision: "APPROVED",
-      reason: "RISK_APPROVED",
-      timestamp: "2026-09-02 00:35:10 UTC",
-      gates_passed: 7,
+      decision: riskApproved ? "APPROVED" : "BLOCKED",
+      reason: riskApproved ? "RISK_APPROVED" : "OPPORTUNITY_SCORE_TOO_LOW",
+      timestamp: new Date().toISOString(),
+      gates_passed: riskApproved ? 7 : 6,
       total_gates: 7,
     },
 
@@ -56,9 +62,9 @@ export async function GET() {
         id: "GATE-01",
         name: "Opportunity Score",
         condition: "Score >= 70",
-        current_value: "94 / 100",
+        current_value: `${asset.opportunity_score} / 100`,
         limit: "70 Min",
-        status: "PASS",
+        status: riskApproved ? "PASS" : "BLOCKED",
         source: "quant.alpha / RiskEngine",
         description: "Statistical IV/RV variance premium exceeds quant hurdle rate.",
       },

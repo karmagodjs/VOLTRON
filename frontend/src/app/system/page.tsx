@@ -3,27 +3,10 @@
 import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import {
-  Server,
-  Activity,
-  CheckCircle2,
-  Clock,
-  Cpu,
-  Database,
-  ShieldCheck,
-  ShieldAlert,
   RefreshCw,
   Search,
-  Filter,
-  Download,
-  AlertTriangle,
-  Info,
-  Radio,
-  Layers,
   ChevronRight,
   X,
-  FileText,
-  Send,
-  SlidersHorizontal,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -138,9 +121,8 @@ export default function SystemHealthPage() {
           <div className="flex items-center gap-2 text-xs">
             <button
               onClick={exportAuditCSV}
-              className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white border border-voltron-700 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white border border-voltron-700 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-voltron-cyan" />
               <span>Export Audit Trail</span>
             </button>
             <button
@@ -157,9 +139,8 @@ export default function SystemHealthPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Global System Health</span>
-            <span className="text-sm font-bold text-voltron-emerald font-tabular flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" />
-              {health?.system_status || "HEALTHY"}
+            <span className="text-sm font-bold text-voltron-emerald font-tabular">
+              ● {health?.system_status || "HEALTHY"}
             </span>
           </div>
 
@@ -186,9 +167,8 @@ export default function SystemHealthPage() {
 
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">WebSocket Stream</span>
-            <span className="text-sm font-bold text-voltron-emerald font-tabular flex items-center gap-1">
-              <Radio className="w-3.5 h-3.5 text-voltron-emerald animate-pulse" />
-              trade_updates
+            <span className="text-sm font-bold text-voltron-emerald font-tabular">
+              ● trade_updates
             </span>
           </div>
 
@@ -218,7 +198,7 @@ export default function SystemHealthPage() {
                   className={clsx(
                     "px-3 py-1 rounded text-xs font-semibold transition-colors uppercase",
                     activeTab === tab.key
-                      ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50 shadow-cyan-glow"
+                      ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50"
                       : "bg-voltron-950 text-voltron-400 hover:text-white border border-voltron-800"
                   )}
                 >
@@ -285,7 +265,7 @@ export default function SystemHealthPage() {
                           className={clsx(
                             "px-2 py-0.5 rounded font-bold uppercase",
                             isCurrent
-                              ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50 shadow-cyan-glow"
+                              ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50"
                               : isDone
                               ? "bg-voltron-emerald/10 text-voltron-emerald border border-voltron-emerald/30"
                               : "bg-voltron-900 text-voltron-500 border border-voltron-800"
@@ -362,10 +342,9 @@ export default function SystemHealthPage() {
           {activeTab === "trace" && (
             <div className="space-y-3">
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-voltron-cyan" />
+                <div className="flex items-center">
                   <span className="text-white font-bold text-xs uppercase">
-                    Trade Reconstruction Trace: {trace.trace_id} ({trace.symbol} {trace.strategy})
+                    TRADE RECONSTRUCTION TRACE: {trace.trace_id} ({trace.symbol} {trace.strategy})
                   </span>
                 </div>
                 <div className="text-[10px] text-voltron-400">
@@ -468,12 +447,9 @@ export default function SystemHealthPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <Server className="w-5 h-5 text-voltron-cyan" />
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase">{selectedComponent.name}</h3>
-                <span className="text-[10px] text-voltron-400 font-bold">VERSION: {selectedComponent.version}</span>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">{selectedComponent.name}</h3>
+              <span className="text-[10px] text-voltron-400 font-bold">VERSION: {selectedComponent.version}</span>
             </div>
 
             <div className="space-y-2 mb-5">
@@ -520,12 +496,9 @@ export default function SystemHealthPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <Activity className="w-5 h-5 text-voltron-cyan" />
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase">{selectedEvent.event_type} &mdash; {selectedEvent.id}</h3>
-                <span className="text-[10px] text-voltron-400">TRACE ID: {selectedEvent.trace_id}</span>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">{selectedEvent.event_type} &mdash; {selectedEvent.id}</h3>
+              <span className="text-[10px] text-voltron-400 font-bold">TRACE ID: {selectedEvent.trace_id}</span>
             </div>
 
             <div className="space-y-2 mb-5">

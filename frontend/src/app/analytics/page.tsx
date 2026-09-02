@@ -3,27 +3,6 @@
 import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import {
-  TrendingUp,
-  TrendingDown,
-  PieChart as PieIcon,
-  Calendar,
-  Award,
-  ShieldCheck,
-  ShieldAlert,
-  Activity,
-  Layers,
-  ArrowRightLeft,
-  Download,
-  Info,
-  SlidersHorizontal,
-  ChevronRight,
-  Clock,
-  Percent,
-  CheckCircle2,
-  XCircle,
-  HelpCircle,
-} from "lucide-react";
-import {
   ResponsiveContainer,
   AreaChart,
   Area,
@@ -151,9 +130,8 @@ export default function AnalyticsPage() {
 
             <button
               onClick={exportCSV}
-              className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white border border-voltron-700 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white border border-voltron-700 transition-colors"
             >
-              <Download className="w-3.5 h-3.5 text-voltron-cyan" />
               <span>Export CSV</span>
             </button>
           </div>
@@ -222,7 +200,7 @@ export default function AnalyticsPage() {
                   className={clsx(
                     "px-3 py-1 rounded text-xs font-semibold transition-colors uppercase",
                     activeTab === tab.key
-                      ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50 shadow-cyan-glow"
+                      ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50"
                       : "bg-voltron-950 text-voltron-400 hover:text-white border border-voltron-800"
                   )}
                 >
@@ -239,9 +217,8 @@ export default function AnalyticsPage() {
                 {/* Equity Curve (7 cols) */}
                 <div className="lg:col-span-7 p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                   <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
-                    <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                      <TrendingUp className="w-3.5 h-3.5 text-voltron-cyan" />
-                      <span>Portfolio Equity Walk ($100,000 &rarr; $128,450)</span>
+                    <span className="text-white font-bold text-xs uppercase">
+                      PORTFOLIO EQUITY WALK ($100,000 &rarr; $128,450)
                     </span>
                     <span className="text-voltron-emerald font-bold text-xs">+$28,450.00 (+28.45%)</span>
                   </div>
@@ -276,9 +253,8 @@ export default function AnalyticsPage() {
                 {/* Underwater Drawdown Curve (5 cols) */}
                 <div className="lg:col-span-5 p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                   <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
-                    <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                      <TrendingDown className="w-3.5 h-3.5 text-voltron-rose" />
-                      <span>Underwater Drawdown Profile</span>
+                    <span className="text-white font-bold text-xs uppercase">
+                      UNDERWATER DRAWDOWN PROFILE
                     </span>
                     <span className="text-voltron-rose font-bold text-xs">Max: 6.42%</span>
                   </div>
@@ -379,9 +355,8 @@ export default function AnalyticsPage() {
               {/* Strategy A vs Strategy B Head-to-Head Comparison */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex flex-wrap items-center justify-between border-b border-voltron-850 pb-1.5 gap-2">
-                  <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                    <ArrowRightLeft className="w-3.5 h-3.5 text-voltron-cyan" />
-                    <span>Strategy A vs Strategy B Comparison</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    STRATEGY A VS STRATEGY B COMPARISON
                   </span>
                   <div className="flex items-center gap-2 text-xs">
                     <select
@@ -507,9 +482,8 @@ export default function AnalyticsPage() {
               {/* Risk Engine Stats */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
-                  <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-voltron-emerald" />
-                    <span>Pre-Trade Risk Engine Performance</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    PRE-TRADE RISK ENGINE PERFORMANCE
                   </span>
                   <span className="text-xs text-voltron-cyan font-bold">Block Rate: {riskStats.block_rate_pct}%</span>
                 </div>
@@ -543,9 +517,8 @@ export default function AnalyticsPage() {
               {/* Execution Quality */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
-                  <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-voltron-cyan" />
-                    <span>Alpaca Paper Execution Quality</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    ALPACA PAPER EXECUTION QUALITY
                   </span>
                   <span className="text-xs text-voltron-emerald font-bold">Fill Rate: 85.7%</span>
                 </div>
@@ -577,9 +550,8 @@ export default function AnalyticsPage() {
               {/* DTE Performance */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
-                  <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-voltron-cyan" />
-                    <span>Days to Expiration (DTE) Attribution</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    DAYS TO EXPIRATION (DTE) ATTRIBUTION
                   </span>
                   <span className="text-[10px] text-voltron-400">Optimal Envelope: 15-30 DTE</span>
                 </div>
@@ -608,9 +580,8 @@ export default function AnalyticsPage() {
               {/* Holding Duration */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
-                  <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-voltron-cyan" />
-                    <span>Holding Time vs Win Rate</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    HOLDING TIME VS WIN RATE
                   </span>
                   <span className="text-[10px] text-voltron-400">Avg Hold: 12.4 Days</span>
                 </div>
@@ -644,9 +615,8 @@ export default function AnalyticsPage() {
               {/* Backtest vs Paper Alignment */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
-                  <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                    <ArrowRightLeft className="w-3.5 h-3.5 text-voltron-cyan" />
-                    <span>Backtest vs Live Paper Execution Parity</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    BACKTEST VS LIVE PAPER EXECUTION PARITY
                   </span>
                   <span className="text-[10px] text-voltron-emerald font-bold">● HIGH CORRELATION (94.2%)</span>
                 </div>
@@ -712,18 +682,16 @@ export default function AnalyticsPage() {
           {/* Performance Insights Engine (6 cols) */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
-              <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
-                <Award className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>Computed Performance Insights</span>
+              <span className="text-white font-bold text-xs uppercase">
+                COMPUTED PERFORMANCE INSIGHTS
               </span>
               <span className="text-[10px] text-voltron-400">Algorithmic Synthesis</span>
             </div>
 
             <div className="space-y-2">
               {insights.map((ins: string, idx: number) => (
-                <div key={idx} className="p-2 rounded bg-voltron-950 border border-voltron-800 text-[11px] text-voltron-200 flex items-start gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-voltron-emerald flex-shrink-0 mt-0.5" />
-                  <span>{ins}</span>
+                <div key={idx} className="p-2 rounded bg-voltron-950 border border-voltron-800 text-[11px] text-voltron-200">
+                  <span>&bull; {ins}</span>
                 </div>
               ))}
             </div>
@@ -732,9 +700,8 @@ export default function AnalyticsPage() {
           {/* Best & Worst Trades Ledger (6 cols) */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
-              <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
-                <Activity className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>Best &amp; Worst Outlier Trades</span>
+              <span className="text-white font-bold text-xs uppercase">
+                BEST &amp; WORST OUTLIER TRADES
               </span>
               <span className="text-[10px] text-voltron-400">Realized P&amp;L Extremes</span>
             </div>

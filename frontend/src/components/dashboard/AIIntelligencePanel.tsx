@@ -2,15 +2,7 @@
 
 import { useState } from "react";
 import { AIAnalysis } from "@/types";
-import {
-  Bot,
-  CheckCircle2,
-  AlertTriangle,
-  FileText,
-  Sparkles,
-  ArrowRight,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 import clsx from "clsx";
 
 interface AIIntelligencePanelProps {
@@ -113,9 +105,8 @@ export default function AIIntelligencePanel({
 
         {/* AI Thesis Box */}
         <div className="p-3 rounded bg-voltron-950 border border-voltron-800">
-          <div className="flex items-center gap-1.5 text-[10px] uppercase text-voltron-cyan font-bold mb-1">
-            <Sparkles className="w-3 h-3 text-voltron-cyan" />
-            <span>AI Thesis</span>
+          <div className="text-[10px] uppercase text-voltron-cyan font-bold mb-1 tracking-wider">
+            AI THESIS
           </div>
           <p className="text-xs text-voltron-200 leading-relaxed font-sans font-normal">
             {analysis?.thesis ? `“${analysis.thesis}”` : "WAITING FOR AI ANALYSIS..."}
@@ -124,8 +115,8 @@ export default function AIIntelligencePanel({
 
         {/* Numbered Key Reasons (01, 02, 03) */}
         <div className="space-y-1.5">
-          <div className="text-[10px] uppercase text-voltron-emerald font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Key Reasons
+          <div className="text-[10px] uppercase text-voltron-emerald font-bold tracking-wider">
+            KEY REASONS
           </div>
           <div className="space-y-1">
             {analysis?.key_reasons && analysis.key_reasons.length > 0 ? (
@@ -148,8 +139,8 @@ export default function AIIntelligencePanel({
 
         {/* Numbered Risk Factors (01, 02) */}
         <div className="space-y-1.5">
-          <div className="text-[10px] uppercase text-voltron-rose font-bold flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" /> Risks
+          <div className="text-[10px] uppercase text-voltron-rose font-bold tracking-wider">
+            RISKS
           </div>
           <div className="space-y-1">
             {analysis?.risks && analysis.risks.length > 0 ? (
@@ -176,10 +167,9 @@ export default function AIIntelligencePanel({
             setModalTab("reasoning");
             setModalOpen(true);
           }}
-          className="w-full py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-voltron-cyan font-bold border border-voltron-700/80 transition-colors flex items-center justify-center gap-1.5"
+          className="w-full py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-voltron-cyan font-bold border border-voltron-700/80 transition-colors flex items-center justify-center"
         >
-          <FileText className="w-3.5 h-3.5" />
-          <span>Inspect Neural Audit Payload</span>
+          <span>INSPECT DECISION & AUDIT PAYLOAD</span>
         </button>
       </div>
 
@@ -234,9 +224,8 @@ export default function AIIntelligencePanel({
         {/* Action Button Strip */}
         <div className="p-2 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex items-center justify-between">
           <span className="text-[10px] uppercase text-voltron-400">Action:</span>
-          <span className="text-xs font-bold text-voltron-cyan flex items-center gap-1">
+          <span className="text-xs font-bold text-voltron-cyan">
             {actionLabel}
-            <ArrowRight className="w-3.5 h-3.5" />
           </span>
         </div>
       </div>
@@ -252,9 +241,8 @@ export default function AIIntelligencePanel({
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <Bot className="w-5 h-5 text-voltron-cyan" />
-              <h3 className="text-sm font-bold text-white uppercase">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
                 VOLTRON AI Intelligence Audit — {analysis.symbol}
               </h3>
             </div>

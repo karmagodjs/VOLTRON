@@ -2,17 +2,6 @@
 
 import { useState } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
-import {
-  Settings as SettingsIcon,
-  Key,
-  Bot,
-  ShieldCheck,
-  Cpu,
-  Save,
-  CheckCircle2,
-  Lock,
-} from "lucide-react";
-import clsx from "clsx";
 
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState("••••••••••••••••••••••••");
@@ -32,7 +21,7 @@ export default function SettingsPage() {
 
   return (
     <TerminalLayout>
-      <div className="space-y-4 max-w-5xl">
+      <div className="space-y-4 max-w-5xl font-mono text-xs">
         {/* Header */}
         <div className="p-4 rounded-xl bg-voltron-850 border border-voltron-750 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center">
@@ -51,8 +40,7 @@ export default function SettingsPage() {
 
           {saved && (
             <div className="flex items-center gap-1.5 text-xs font-mono text-voltron-emerald bg-voltron-emerald/15 px-3 py-1.5 rounded-lg border border-voltron-emerald/30 animate-in fade-in">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Configuration saved successfully</span>
+              <span>● Configuration saved successfully</span>
             </div>
           )}
         </div>
@@ -60,9 +48,8 @@ export default function SettingsPage() {
         <form onSubmit={handleSave} className="space-y-4 font-mono text-xs">
           {/* Section 1: Alpaca Paper Trading Credentials */}
           <div className="terminal-card p-5 border border-voltron-750/80 bg-voltron-850/40 space-y-4">
-            <div className="flex items-center gap-2 border-b border-voltron-750 pb-2 text-white font-bold uppercase">
-              <Key className="w-4 h-4 text-voltron-cyan" />
-              <span>Alpaca Paper Trading Environment</span>
+            <div className="border-b border-voltron-750 pb-2 text-white font-bold uppercase">
+              <span>ALPACAPAPER TRADING ENVIRONMENT</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -93,17 +80,16 @@ export default function SettingsPage() {
 
             <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-800 text-[11px] text-voltron-300 flex items-center justify-between">
               <span>Environment Base URL: <strong className="text-white">https://paper-api.alpaca.markets</strong></span>
-              <span className="text-voltron-emerald font-bold flex items-center gap-1">
-                <Lock className="w-3.5 h-3.5" /> Paper Mode Locked
+              <span className="text-voltron-emerald font-bold">
+                ● Paper Mode Locked
               </span>
             </div>
           </div>
 
           {/* Section 2: Gemini AI Model Settings */}
           <div className="terminal-card p-5 border border-voltron-750/80 bg-voltron-850/40 space-y-4">
-            <div className="flex items-center gap-2 border-b border-voltron-750 pb-2 text-white font-bold uppercase">
-              <Bot className="w-4 h-4 text-voltron-cyan" />
-              <span>Gemini AI Volatility Analyst Configuration</span>
+            <div className="border-b border-voltron-750 pb-2 text-white font-bold uppercase">
+              <span>GEMINI AI VOLATILITY ANALYST CONFIGURATION</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -137,9 +123,8 @@ export default function SettingsPage() {
 
           {/* Section 3: Risk Engine Gate Thresholds */}
           <div className="terminal-card p-5 border border-voltron-750/80 bg-voltron-850/40 space-y-4">
-            <div className="flex items-center gap-2 border-b border-voltron-750 pb-2 text-white font-bold uppercase">
-              <ShieldCheck className="w-4 h-4 text-voltron-rose" />
-              <span>Risk Engine Safety Thresholds</span>
+            <div className="border-b border-voltron-750 pb-2 text-white font-bold uppercase">
+              <span>RISK ENGINE SAFETY THRESHOLDS</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -185,9 +170,8 @@ export default function SettingsPage() {
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-lg bg-voltron-cyan hover:bg-voltron-cyan-dim text-voltron-950 font-mono font-bold text-xs shadow-cyan-glow transition-all flex items-center gap-2"
+              className="px-6 py-2 rounded bg-voltron-cyan hover:bg-voltron-cyan-dim text-voltron-950 font-mono font-bold text-xs transition-colors"
             >
-              <Save className="w-4 h-4" />
               <span>SAVE CONFIGURATION</span>
             </button>
           </div>

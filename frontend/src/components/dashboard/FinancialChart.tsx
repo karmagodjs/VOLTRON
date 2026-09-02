@@ -15,7 +15,6 @@ import {
   CartesianGrid,
 } from "recharts";
 import { MarketHistoryPoint } from "@/types";
-import { BarChart2, TrendingUp, Maximize2 } from "lucide-react";
 import clsx from "clsx";
 
 interface FinancialChartProps {

@@ -5,24 +5,8 @@ import TerminalLayout from "@/components/layout/TerminalLayout";
 import { runBacktest } from "@/lib/api";
 import {
   Play,
-  TrendingUp,
-  TrendingDown,
-  ShieldCheck,
-  ShieldAlert,
-  Sparkles,
-  SlidersHorizontal,
-  Calendar,
-  FileText,
-  Activity,
-  Layers,
-  BarChart2,
-  Table,
-  Eye,
-  CheckCircle2,
   X,
   Search,
-  Filter,
-  ArrowRightLeft,
   AlertCircle,
 } from "lucide-react";
 import {
@@ -42,9 +26,16 @@ import {
 } from "recharts";
 import clsx from "clsx";
 
+import { useSearchParams } from "next/navigation";
+import { useMarket } from "@/context/MarketContext";
+
 export default function QuantBacktestLabPage() {
+  const searchParams = useSearchParams();
+  const { selectedSymbol } = useMarket();
+  const querySymbol = searchParams.get("symbol")?.toUpperCase() || selectedSymbol || "SPY";
+
   const [strategy, setStrategy] = useState("IRON_CONDOR");
-  const [symbol, setSymbol] = useState("SPY");
+  const [symbol, setSymbol] = useState(querySymbol);
   const [startDate, setStartDate] = useState("2025-01-01");
   const [endDate, setEndDate] = useState("2026-08-31");
   const [startingCapital, setStartingCapital] = useState(100000);
@@ -52,6 +43,12 @@ export default function QuantBacktestLabPage() {
   const [confidenceThreshold, setConfidenceThreshold] = useState(70);
   const [riskPct, setRiskPct] = useState(1.0);
   const [maxExposure, setMaxExposure] = useState(30.0);
+
+  useEffect(() => {
+    if (querySymbol && querySymbol !== symbol) {
+      setSymbol(querySymbol);
+    }
+  }, [querySymbol]);
 
   const [activeTab, setActiveTab] = useState<
     "equity" | "drawdown" | "distribution" | "strategies" | "regimes" | "optimizer"
@@ -168,10 +165,7 @@ export default function QuantBacktestLabPage() {
           <div className="lg:col-span-4 space-y-3">
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
               <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-                <div className="flex items-center gap-1.5">
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-voltron-cyan" />
-                  <span>STRATEGY & DATA CONFIG</span>
-                </div>
+                <span>STRATEGY & DATA CONFIG</span>
                 <span className="text-[10px] text-voltron-cyan">{symbol}</span>
               </div>
 
@@ -328,7 +322,7 @@ export default function QuantBacktestLabPage() {
               <button
                 onClick={executeBacktest}
                 disabled={loading}
-                className="w-full py-2.5 rounded bg-voltron-cyan hover:bg-voltron-cyan-dim text-voltron-950 font-bold text-xs shadow-cyan-glow flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                className="w-full py-2.5 rounded bg-voltron-cyan hover:bg-voltron-cyan-dim text-voltron-950 font-bold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
               >
                 <Play className="w-4 h-4 fill-voltron-950" />
                 <span>{loading ? progressStage : "RUN QUANT BACKTEST"}</span>
@@ -432,7 +426,7 @@ export default function QuantBacktestLabPage() {
                       className={clsx(
                         "px-2.5 py-1 rounded text-xs font-semibold transition-colors uppercase",
                         activeTab === tab.id
-                          ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50 shadow-cyan-glow"
+                          ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/50"
                           : "bg-voltron-950 text-voltron-400 hover:text-white border border-voltron-800"
                       )}
                     >
@@ -631,10 +625,7 @@ export default function QuantBacktestLabPage() {
           {/* AI Research Summary */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>VOLTRON RESEARCH SUMMARY</span>
-              </div>
+              <span>VOLTRON RESEARCH SUMMARY</span>
               <span className="text-[10px] text-voltron-400">Generated from backtest results</span>
             </div>
 
@@ -646,10 +637,7 @@ export default function QuantBacktestLabPage() {
           {/* Backtest vs Paper */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
-              <div className="flex items-center gap-1.5">
-                <ArrowRightLeft className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>BACKTEST VS LIVE PAPER COMPARISON</span>
-              </div>
+              <span>BACKTEST VS LIVE PAPER COMPARISON</span>
               <span className="text-[10px] text-voltron-emerald font-bold">ALIGNED ALPHA</span>
             </div>
 
@@ -681,8 +669,7 @@ export default function QuantBacktestLabPage() {
         {/* 4. BACKTEST TRADE LOG & TRADE DETAIL DRAWER */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
           <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-2 gap-2">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-voltron-cyan" />
+            <div className="flex items-center">
               <span className="text-xs font-bold text-white uppercase tracking-wider">
                 BACKTEST TRADE LOG ({filteredTrades.length} TRADES)
               </span>
@@ -781,14 +768,11 @@ export default function QuantBacktestLabPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-4">
-              <FileText className="w-5 h-5 text-voltron-cyan" />
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase">
-                  TRADE DETAIL &mdash; {selectedTrade.id} ({selectedTrade.symbol})
-                </h3>
-                <span className="text-[10px] text-voltron-cyan font-bold">{selectedTrade.strategy}</span>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                TRADE DETAIL &mdash; {selectedTrade.id} ({selectedTrade.symbol})
+              </h3>
+              <span className="text-[10px] text-voltron-cyan font-bold">{selectedTrade.strategy}</span>
             </div>
 
             <div className="space-y-2 mb-5">
