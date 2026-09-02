@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ChevronRight, ArrowRight } from "lucide-react";
-import ThemeToggle from "@/components/common/ThemeToggle";
 import CursorReactiveBackground from "@/components/common/CursorReactiveBackground";
 
 const pipelineStages = [
@@ -78,65 +77,24 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen lg:h-screen lg:max-h-screen bg-voltron-900 text-foreground flex flex-col justify-between selection:bg-voltron-cyan/20 selection:text-voltron-cyan relative font-mono overflow-x-hidden">
+    <div className="min-h-screen lg:h-screen lg:max-h-screen bg-voltron-900 text-foreground flex flex-col justify-center selection:bg-voltron-cyan/20 selection:text-voltron-cyan relative font-mono overflow-x-hidden">
       {/* Interactive Cursor-Reactive Background Field */}
       <CursorReactiveBackground />
 
       {/* Subtle Institutional Scanline Overlay */}
       <div className="scanline-overlay pointer-events-none" />
 
-      {/* Top Header Bar */}
-      <header className="h-12 lg:h-13 px-4 sm:px-6 lg:px-8 flex-shrink-0 flex items-center justify-between border-b border-voltron-800 bg-voltron-950/90 backdrop-blur sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <span className="font-bold tracking-wider text-xs sm:text-sm text-white">
-            VOLTRON
-          </span>
-          <span className="text-[8.5px] px-1.5 py-0.5 rounded bg-voltron-900 text-voltron-400 border border-voltron-800 uppercase tracking-widest font-semibold">
-            VOLATILITY ALPHA
-          </span>
-        </div>
-
-        <nav className="hidden md:flex items-center gap-5 text-xs text-voltron-400">
-          <Link href="/dashboard" className="hover:text-white transition-colors">
-            Terminal
-          </Link>
-          <Link href="/markets" className="hover:text-white transition-colors">
-            Volatility
-          </Link>
-          <Link href="/options" className="hover:text-white transition-colors">
-            Options Chain
-          </Link>
-          <Link href="/agent" className="hover:text-white transition-colors">
-            AI Agent
-          </Link>
-          <Link href="/risk" className="hover:text-white transition-colors">
-            Risk Engine
-          </Link>
-        </nav>
-
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Dark / Light Theme Toggle */}
-          <ThemeToggle variant="pill" />
-
-          {/* Paper Environment Status Indicator */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-800 text-[10.5px] text-voltron-400 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-voltron-emerald inline-block animate-pulse"></span>
-            <span>Paper Environment</span>
-          </div>
-        </div>
-      </header>
-
       {/* Main Single-Viewport Body */}
-      <main className="flex-1 flex flex-col justify-evenly px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full py-2 sm:py-3 lg:py-2 relative z-10">
-        {/* 1. Hero Section (Compact ~35-40% Viewport on Desktop) */}
-        <section className="text-center flex flex-col items-center justify-center my-auto py-1">
+      <main className="flex-1 flex flex-col justify-evenly px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full py-4 sm:py-6 lg:py-5 relative z-10">
+        {/* 1. Hero Section (Centered Viewport Composition) */}
+        <section className="text-center flex flex-col items-center justify-center py-2">
           {/* Top Tag Badge */}
           <motion.div
             initial="hidden"
             animate="visible"
             custom={0.05}
             variants={heroVariants}
-            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-voltron-850 border border-voltron-750 text-[9px] sm:text-[10px] text-voltron-cyan font-bold tracking-wider uppercase mb-2 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-voltron-850 border border-voltron-750 text-[9.5px] sm:text-[10.5px] text-voltron-cyan font-bold tracking-wider uppercase mb-3 shadow-sm"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-voltron-cyan animate-pulse inline-block" />
             <span>AUTONOMOUS OPTIONS QUANT TRADING TERMINAL</span>
@@ -148,9 +106,9 @@ export default function LandingPage() {
             animate="visible"
             custom={0.12}
             variants={heroVariants}
-            className="text-2xl sm:text-4xl lg:text-[40px] lg:leading-tight font-black tracking-tight text-white mb-2"
+            className="text-3xl sm:text-5xl lg:text-[52px] lg:leading-none font-black tracking-tight text-white mb-3"
           >
-            VOLTRON — VOLATILITY ALPHA
+            VOLTRON
           </motion.h1>
 
           {/* Description */}
@@ -159,7 +117,7 @@ export default function LandingPage() {
             animate="visible"
             custom={0.2}
             variants={heroVariants}
-            className="text-xs sm:text-[13px] text-voltron-300 max-w-2xl mx-auto mb-3.5 leading-relaxed font-sans"
+            className="text-xs sm:text-sm text-voltron-300 max-w-2xl mx-auto mb-5 leading-relaxed font-sans"
           >
             An autonomous intelligence layer that analyzes volatility spreads, selects defined-risk options strategies, enforces institutional risk controls, and executes paper trades through Alpaca.
           </motion.p>
@@ -170,11 +128,11 @@ export default function LandingPage() {
             animate="visible"
             custom={0.28}
             variants={heroVariants}
-            className="flex flex-wrap items-center justify-center gap-2.5"
+            className="flex flex-wrap items-center justify-center gap-3"
           >
             <Link
               href="/dashboard"
-              className="px-4 py-1.5 rounded bg-voltron-cyan hover:bg-voltron-cyan-dim text-voltron-950 font-bold text-xs transition-all duration-150 transform hover:-translate-y-0.5 active:translate-y-0 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan flex items-center gap-1.5"
+              className="px-5 py-2 rounded bg-voltron-cyan hover:bg-voltron-cyan-dim text-voltron-950 font-bold text-xs transition-all duration-150 transform hover:-translate-y-0.5 active:translate-y-0 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan flex items-center gap-1.5"
             >
               <span>Launch Terminal</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -182,14 +140,14 @@ export default function LandingPage() {
 
             <Link
               href="/agent"
-              className="px-4 py-1.5 rounded bg-voltron-850 hover:bg-voltron-800 text-white font-semibold text-xs border border-voltron-750 hover:border-voltron-700 transition-all duration-150 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan"
+              className="px-5 py-2 rounded bg-voltron-850 hover:bg-voltron-800 text-white font-semibold text-xs border border-voltron-750 hover:border-voltron-700 transition-all duration-150 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan"
             >
               View AI Agent
             </Link>
 
             <Link
               href="/strategies"
-              className="px-4 py-1.5 rounded bg-voltron-850 hover:bg-voltron-800 text-white font-semibold text-xs border border-voltron-750 hover:border-voltron-700 transition-all duration-150 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan"
+              className="px-5 py-2 rounded bg-voltron-850 hover:bg-voltron-800 text-white font-semibold text-xs border border-voltron-750 hover:border-voltron-700 transition-all duration-150 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan"
             >
               Explore Strategies
             </Link>
@@ -205,10 +163,10 @@ export default function LandingPage() {
             delay: shouldReduceMotion ? 0 : 0.32,
             ease: "easeOut",
           }}
-          className="w-full my-auto py-1"
+          className="w-full py-1.5"
         >
-          <div className="p-2.5 sm:p-3 rounded-lg border border-voltron-750 bg-voltron-850/80 backdrop-blur shadow-terminal">
-            <div className="flex items-center justify-between border-b border-voltron-750/80 pb-1.5 mb-2 text-xs">
+          <div className="p-3 sm:p-3.5 rounded-lg border border-voltron-750 bg-voltron-850/80 backdrop-blur shadow-terminal">
+            <div className="flex items-center justify-between border-b border-voltron-750/80 pb-2 mb-2.5 text-xs">
               <span className="text-white font-bold tracking-wider uppercase flex items-center gap-1.5 text-[11px]">
                 <span className="w-1.5 h-1.5 rounded-sm bg-voltron-cyan inline-block"></span>
                 AUTONOMOUS EXECUTION PIPELINE
@@ -224,28 +182,28 @@ export default function LandingPage() {
               variants={containerStagger}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5"
+              className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2"
             >
               {pipelineStages.map((stage, idx) => (
                 <motion.div
                   key={stage.step}
                   variants={itemVariant}
-                  className="group relative p-2 rounded bg-voltron-950 border border-voltron-800 hover:border-voltron-700 transition-all duration-200 flex flex-col justify-between text-left"
+                  className="group relative p-2.5 rounded bg-voltron-950 border border-voltron-800 hover:border-voltron-700 transition-all duration-200 flex flex-col justify-between text-left"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[8.5px] text-voltron-500 font-tabular font-bold">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] text-voltron-500 font-tabular font-bold">
                         {stage.step}
                       </span>
                       {idx < pipelineStages.length - 1 && (
                         <ChevronRight className="hidden lg:block w-3 h-3 text-voltron-600 group-hover:text-voltron-cyan transition-colors" />
                       )}
                     </div>
-                    <span className="text-[10px] font-bold text-white block leading-tight">
+                    <span className="text-[10.5px] font-bold text-white block leading-tight">
                       {stage.title}
                     </span>
                   </div>
-                  <div className="text-[8px] text-voltron-400 mt-1 border-t border-voltron-850 pt-0.5">
+                  <div className="text-[8.5px] text-voltron-400 mt-1.5 border-t border-voltron-850 pt-1">
                     {stage.sub}
                   </div>
                 </motion.div>
@@ -254,8 +212,8 @@ export default function LandingPage() {
           </div>
         </motion.section>
 
-        {/* 3. Three Information Cards (Compact Single Row on Desktop) */}
-        <section className="w-full my-auto py-1">
+        {/* 3. Three Information Cards (Horizontal Row) */}
+        <section className="w-full py-1.5">
           <motion.div
             initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -264,23 +222,23 @@ export default function LandingPage() {
               delay: shouldReduceMotion ? 0 : 0.4,
               ease: "easeOut",
             }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-2.5 text-left"
+            className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left"
           >
             {pillarCards.map((card, idx) => (
               <div
                 key={idx}
-                className="p-3 rounded-lg bg-voltron-850/60 border border-voltron-800 hover:border-voltron-700/90 transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-terminal flex flex-col justify-between"
+                className="p-3.5 rounded-lg bg-voltron-850/60 border border-voltron-800 hover:border-voltron-700/90 transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-terminal flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[8.5px] font-bold text-voltron-cyan px-1.5 py-0.2 rounded bg-voltron-cyan/10 border border-voltron-cyan/20 uppercase tracking-wider">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[8.5px] font-bold text-voltron-cyan px-1.5 py-0.5 rounded bg-voltron-cyan/10 border border-voltron-cyan/20 uppercase tracking-wider">
                       {card.tag}
                     </span>
                   </div>
-                  <h3 className="text-[11px] font-bold text-white uppercase tracking-wider mb-1">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-1.5">
                     {card.title}
                   </h3>
-                  <p className="text-[10.5px] text-voltron-300 leading-snug font-sans">
+                  <p className="text-[11px] text-voltron-300 leading-relaxed font-sans">
                     {card.description}
                   </p>
                 </div>
@@ -289,19 +247,6 @@ export default function LandingPage() {
           </motion.div>
         </section>
       </main>
-
-      {/* 4. Compact Footer Bar (Pinned at Bottom of Desktop Viewport) */}
-      <footer className="h-9 lg:h-10 px-4 sm:px-6 lg:px-8 flex-shrink-0 border-t border-voltron-800 bg-voltron-950 text-xs text-voltron-400 flex flex-wrap items-center justify-between gap-2 relative z-10">
-        <div className="flex items-center gap-2 text-white font-bold text-[10px] sm:text-[11px]">
-          <span>VOLTRON TRADING TERMINAL</span>
-        </div>
-        <div className="text-[10px] text-voltron-400 hidden sm:block">
-          Alpaca Paper Trading Environment &bull; Real money trading disabled
-        </div>
-        <div className="text-[10px] text-voltron-400">
-          Autonomous Options Operations
-        </div>
-      </footer>
     </div>
   );
 }
