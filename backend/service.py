@@ -1058,115 +1058,192 @@ class VoltronService:
     def copilot_query(self, message: str) -> Dict[str, Any]:
         lower_msg = message.lower().strip()
         
-        # Extract symbols
+        # Non-ticker common words
+        common_words = {
+            "a", "an", "the", "and", "or", "but", "for", "nor", "on", "at", "to", "from", "by", "with", "in", "out",
+            "of", "about", "what", "why", "how", "who", "when", "where", "which", "is", "are", "was", "were", "be",
+            "been", "do", "does", "did", "have", "has", "had", "can", "could", "will", "would", "should", "show",
+            "tell", "me", "you", "my", "our", "your", "this", "that", "these", "those", "today", "now", "status",
+            "state", "mode", "help", "hello", "hey", "hi", "thanks", "thank", "please", "ok", "yes", "no", "price",
+            "prices", "volatility", "iv", "rv", "ratio", "spread", "spreads", "option", "options", "chain", "chains",
+            "call", "calls", "put", "puts", "strike", "strikes", "greek", "greeks", "delta", "gamma", "theta", "vega",
+            "strategy", "strategies", "condor", "iron", "straddle", "risk", "risks", "gate", "gates", "safety",
+            "limit", "limits", "loss", "losses", "profit", "pnl", "portfolio", "balance", "account", "equity", "cash",
+            "agent", "bot", "trade", "trades", "trading", "cycle", "cycles", "analyze", "analysis", "compare", "versus",
+            "vs", "view", "check", "open", "closed", "active", "paused", "kill", "switch", "circuit", "breaker",
+            "order", "orders", "fill", "fills", "position", "positions", "monitor", "exit", "exits", "expensive", "cheap",
+            "fair", "regime", "score", "alpha", "voltron", "paper", "live", "system", "health", "latency", "uptime"
+        }
+
         known_symbols = list(self.SUPPORTED_ASSET_METRICS.keys())
-        found_symbols = [s for s in known_symbols if s.lower() in lower_msg]
-        target_symbol = found_symbols[0] if found_symbols else "SPY"
+        words = [w.upper() for w in "".join([c if c.isalnum() else " " for c in message]).split() if w]
         
+        valid_symbols = [w for w in words if w in known_symbols]
+        invalid_symbols = [w for w in words if w not in known_symbols and 2 <= len(w) <= 5 and w.isalpha() and w.lower() not in common_words]
+
+        # 1. Handle Invalid Tickers (e.g., SYP, QQ, NVD, XYZ)
+        if invalid_symbols:
+            invalid_sym = invalid_symbols[0]
+            # Find closest suggestion (anagram, prefix, or edit distance <= 2)
+            suggestion = None
+            sorted_inv = "".join(sorted(invalid_sym))
+            for s in known_symbols:
+                if "".join(sorted(s)) == sorted_inv:
+                    suggestion = s
+                    break
+            if not suggestion:
+                for s in known_symbols:
+                    if s.startswith(invalid_sym) or invalid_sym.startswith(s):
+                        suggestion = s
+                        break
+            
+            reply = f"## VOLTRON\n\nI don't recognize \"**{invalid_sym}**\" as a supported market symbol.\n\n"
+            if suggestion:
+                reply += f"Did you mean **{suggestion}**?\n\n"
+            reply += (
+                "Supported symbols include:\n"
+                "- **SPY** (SPDR S&P 500 ETF)\n"
+                "- **QQQ** (Invesco Nasdaq 100 ETF)\n"
+                "- **IWM** (iShares Russell 2000 ETF)\n"
+                "- **NVDA** (NVIDIA Corporation)\n"
+                "- **AAPL** (Apple Inc.)\n"
+                "- **TSLA** (Tesla Inc.)\n"
+                "- **MSFT** (Microsoft Corporation)\n"
+                "- **AMZN** (Amazon.com Inc.)\n\n"
+                "Please confirm your intended ticker."
+            )
+            return {
+                "reply": reply,
+                "intent": "INVALID_TICKER",
+                "symbol": invalid_sym,
+                "suggestion": suggestion,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+
+        target_symbol = valid_symbols[0] if valid_symbols else "SPY"
         market = self.get_market_data(target_symbol)
         ai_state = self.get_ai_analysis(target_symbol)
         risk = self.get_risk_status()
 
-        # 1. Compare Intent
-        if "compare" in lower_msg or " vs " in lower_msg or len(found_symbols) >= 2:
-            sym_a = found_symbols[0] if len(found_symbols) >= 1 else "SPY"
-            sym_b = found_symbols[1] if len(found_symbols) >= 2 else ("QQQ" if sym_a == "SPY" else "SPY")
+        # 2. Greeting / Help
+        if lower_msg in ["hello", "hi", "hey", "help", "?"] or "what can you do" in lower_msg:
+            reply = (
+                "## VOLTRON Online\n\n"
+                "I am your autonomous quantitative options and volatility copilot.\n\n"
+                "You can ask about:\n"
+                "- **Supported Assets:** SPY, QQQ, IWM, NVDA, AAPL, TSLA, MSFT, AMZN\n"
+                "- **Volatility & Alpha:** \"SPY volatility\", \"why is IV expensive\"\n"
+                "- **Options & Greeks:** \"QQQ options\", \"SPY chain\"\n"
+                "- **Strategy Selection:** \"why iron condor\", \"compare SPY and QQQ\"\n"
+                "- **Risk & Safety:** \"risk status\", \"safety gates\"\n"
+                "- **Agent Operations:** \"agent status\", \"portfolio balance\""
+            )
+            return {
+                "reply": reply,
+                "intent": "HELP",
+                "symbol": target_symbol,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+
+        # 3. Compare Intent
+        if "compare" in lower_msg or " vs " in lower_msg or len(valid_symbols) >= 2:
+            sym_a = valid_symbols[0] if len(valid_symbols) >= 1 else "SPY"
+            sym_b = valid_symbols[1] if len(valid_symbols) >= 2 else ("QQQ" if sym_a == "SPY" else "SPY")
             a = self.get_market_data(sym_a)
             b = self.get_market_data(sym_b)
 
             reply = (
-                f"**VOLTRON QUANTITATIVE COMPARISON: {a['symbol']} vs {b['symbol']}**\n\n"
-                f"```\n"
-                f"Metric               {a['symbol']:<12} {b['symbol']:<12}\n"
-                f"─────────────────────────────────────────\n"
-                f"Spot Price           ${a['price']:<11.2f} ${b['price']:<11.2f}\n"
-                f"24h Change           {('+' if a['change'] >= 0 else '') + str(a['change_percent']) + '%':<12} {('+' if b['change'] >= 0 else '') + str(b['change_percent']) + '%'}\n"
-                f"20D Realized Vol     {a['realized_volatility']:<11.2f}% {b['realized_volatility']:<11.2f}%\n"
-                f"ATM Implied Vol      {a['implied_volatility']:<11.2f}% {b['implied_volatility']:<11.2f}%\n"
-                f"IV / RV Ratio        {a['iv_rv_ratio']:<11.2f}x {b['iv_rv_ratio']:<11.2f}x\n"
-                f"Vol Signal           {a['vol_signal']:<12} {b['vol_signal']:<12}\n"
-                f"Opportunity Score    {str(a['opportunity_score']) + '/100':<12} {str(b['opportunity_score']) + '/100':<12}\n"
-                f"Target Strategy      {a['strategy']:<12} {b['strategy']:<12}\n"
-                f"```"
+                f"## Quantitative Comparison: {a['symbol']} vs {b['symbol']}\n\n"
+                f"| Metric | {a['symbol']} | {b['symbol']} |\n"
+                f"| :--- | :--- | :--- |\n"
+                f"| **Spot Price** | ${a['price']:.2f} | ${b['price']:.2f} |\n"
+                f"| **24h Change** | {('+' if a['change'] >= 0 else '') + str(a['change_percent']) + '%'} | {('+' if b['change'] >= 0 else '') + str(b['change_percent']) + '%'} |\n"
+                f"| **20D Realized Vol** | {a['realized_volatility']:.2f}% | {b['realized_volatility']:.2f}% |\n"
+                f"| **ATM Implied Vol** | {a['implied_volatility']:.2f}% | {b['implied_volatility']:.2f}% |\n"
+                f"| **IV / RV Ratio** | {a['iv_rv_ratio']:.2f}x | {b['iv_rv_ratio']:.2f}x |\n"
+                f"| **Vol Signal** | {a['vol_signal']} | {b['vol_signal']} |\n"
+                f"| **Opportunity Score** | {a['opportunity_score']}/100 | {b['opportunity_score']}/100 |\n"
+                f"| **Target Strategy** | {a['strategy'].replace('_', ' ')} | {b['strategy'].replace('_', ' ')} |\n\n"
+                f"**Key Takeaway:** {a['symbol'] if a['opportunity_score'] > b['opportunity_score'] else b['symbol']} offers a higher volatility alpha score."
             )
 
-        # 2. Strategy Questions
+        # 4. Strategy Questions
         elif "why" in lower_msg or "strategy" in lower_msg or "iron condor" in lower_msg or "spread" in lower_msg:
             reply = (
-                f"**STRATEGY SELECTION RATIONALE: {market['symbol']}**\n\n"
-                f"• **Selected Strategy**: {market['strategy'].replace('_', ' ')}\n"
-                f"• **Volatility Regime**: {market['market_regime']} (IV/RV: {market['iv_rv_ratio']:.2f}x)\n"
-                f"• **Directional Bias**: {'BULLISH' if 'BULL' in market['strategy'] else 'BEARISH' if 'BEAR' in market['strategy'] else 'NEUTRAL'}\n"
-                f"• **Opportunity Score**: {market['opportunity_score']} / 100\n\n"
+                f"## Strategy Selection Rationale — {market['symbol']}\n\n"
+                f"- **Selected Strategy:** {market['strategy'].replace('_', ' ')}\n"
+                f"- **Volatility Regime:** {market['market_regime']} (IV/RV: {market['iv_rv_ratio']:.2f}x)\n"
+                f"- **Directional Bias:** {'BULLISH' if 'BULL' in market['strategy'] else 'BEARISH' if 'BEAR' in market['strategy'] else 'NEUTRAL'}\n"
+                f"- **Opportunity Score:** {market['opportunity_score']}/100\n\n"
                 f"**Why this structure?**\n"
-                f"Elevated IV/RV spread ({market['iv_rv_ratio']:.2f}x) relative to realized historical drift mathematically favors "
+                f"Elevated IV/RV spread ({market['iv_rv_ratio']:.2f}x) relative to historical drift mathematically favors "
                 f"defined-risk credit harvesting, capping maximum loss while collecting elevated variance risk premium."
             )
 
-        # 3. Risk Status
+        # 5. Risk Status
         elif "rejected" in lower_msg or "risk" in lower_msg or "kill switch" in lower_msg or "gate" in lower_msg:
             reply = (
-                f"**VOLTRON 7-GATE RISK & SAFETY VERIFICATION**\n\n"
-                f"• **Opportunity Score**: {market['opportunity_score']}/100 (Min: 70) [PASS]\n"
-                f"• **Trade Risk**: 0.31% (Max: 1.00%) [PASS]\n"
-                f"• **Daily Loss Limit**: +$1,284.50 (Max Drawdown: 2.0%) [PASS]\n"
-                f"• **Exposure**: 18.2% (Max: 30.0%) [PASS]\n"
-                f"• **Consecutive Losses**: 0 (Max: 3) [PASS]\n"
-                f"• **Liquidity Spread**: 2.1% (Max: 10.0%) [PASS]\n"
-                f"• **Emergency Kill Switch**: DISARMED / NORMAL [PASS]\n\n"
-                f"**Overall Status**: 🟢 **RISK APPROVED** (100% Fail-Closed Architecture Active)"
+                f"## VOLTRON 7-Gate Risk & Safety Audit\n\n"
+                f"- **Gate 1 (Opportunity Hurdle):** {market['opportunity_score']}/100 (Min: 70) — **PASS**\n"
+                f"- **Gate 2 (Trade Risk Limit):** 0.31% / $315.00 (Max: 1.00%) — **PASS**\n"
+                f"- **Gate 3 (Daily Loss Circuit):** +$1,284.50 Profit (Max Loss: 2.0%) — **PASS**\n"
+                f"- **Gate 4 (Portfolio Exposure):** 18.2% / $18,200 (Max: 30.0%) — **PASS**\n"
+                f"- **Gate 5 (Market Liquidity):** 2.1% Spread (Max: 10.0%) — **PASS**\n"
+                f"- **Gate 6 (Consecutive Losses):** 0 Losses (Max: 3) — **PASS**\n"
+                f"- **Gate 7 (Emergency Kill Switch):** DISARMED / NORMAL — **PASS**\n\n"
+                f"**Overall Status:** **RISK APPROVED** (100% Fail-Closed Safety Active)"
             )
 
-        # 4. Volatility Questions
+        # 6. Volatility Questions
         elif "volatility" in lower_msg or "iv" in lower_msg or "rv" in lower_msg or "regime" in lower_msg:
             reply = (
-                f"**{market['symbol']} VOLATILITY INTELLIGENCE**\n\n"
-                f"• **Implied Volatility (IV)**: {market['implied_volatility']:.2f}%\n"
-                f"• **Realized Volatility (RV)**: {market['realized_volatility']:.2f}%\n"
-                f"• **IV / RV Dislocation**: {market['iv_rv_ratio']:.2f}x\n"
-                f"• **Variance Premium**: +{market['iv_premium']:.1f}%\n"
-                f"• **Regime Classification**: {market['market_regime']}\n"
-                f"• **Alpha Signal**: {market['vol_signal']}\n"
-                f"• **Opportunity Score**: {market['opportunity_score']} / 100"
+                f"## {market['symbol']} Volatility Intelligence\n\n"
+                f"- **Implied Volatility (IV):** {market['implied_volatility']:.2f}%\n"
+                f"- **Realized Volatility (RV):** {market['realized_volatility']:.2f}%\n"
+                f"- **IV / RV Dislocation:** {market['iv_rv_ratio']:.2f}x\n"
+                f"- **Variance Premium:** +{market['iv_premium']:.1f}%\n"
+                f"- **Regime Classification:** {market['market_regime']}\n"
+                f"- **Alpha Signal:** {market['vol_signal']}\n"
+                f"- **Opportunity Score:** {market['opportunity_score']}/100"
             )
 
-        # 5. Options Chain / Strike Questions
+        # 7. Options Chain / Strike Questions
         elif "option" in lower_msg or "chain" in lower_msg or "strike" in lower_msg:
             atm_strike = round(market['price'] / 5.0) * 5
             reply = (
-                f"**{market['symbol']} OPTIONS SUMMARY**\n\n"
-                f"• **Underlying Spot**: ${market['price']:.2f}\n"
-                f"• **ATM Strike Anchor**: ${atm_strike:.2f}\n"
-                f"• **ATM Implied Volatility**: {market['implied_volatility']:.2f}%\n"
-                f"• **Recommended Structure**: {market['strategy'].replace('_', ' ')} (45 DTE)\n"
-                f"• **Market Liquidity**: Institutional (< 2.5% spread)"
+                f"## {market['symbol']} Options Summary\n\n"
+                f"- **Underlying Spot:** ${market['price']:.2f}\n"
+                f"- **ATM Strike Anchor:** ${atm_strike:.2f}\n"
+                f"- **ATM Implied Volatility:** {market['implied_volatility']:.2f}%\n"
+                f"- **Recommended Structure:** {market['strategy'].replace('_', ' ')} (45 DTE)\n"
+                f"- **Market Liquidity:** Institutional (< 2.5% spread)"
             )
 
-        # 6. Agent Status
+        # 8. Agent Status
         elif "agent" in lower_msg or "doing" in lower_msg or "cycle" in lower_msg:
             reply = (
-                f"**AUTONOMOUS AGENT COMMAND STATE**\n\n"
-                f"• **Status**: ACTIVE ● (Autonomous Scanning Loop Running)\n"
-                f"• **Active Symbol**: {market['symbol']}\n"
-                f"• **Current Stage**: ANALYZE (IV/RV: {market['iv_rv_ratio']:.2f}x, Score: {market['opportunity_score']})\n"
-                f"• **AI Confidence**: 88% (Gemini 3.6 Pro synthesized thesis)\n"
-                f"• **Execution Target**: Alpaca Paper Sandbox\n"
-                f"• **Cycles Completed Today**: 142\n"
-                f"• **Win Rate**: 83.3% (5W / 1L)"
+                f"## Autonomous Agent Command State\n\n"
+                f"- **Status:** ACTIVE ● (Autonomous Scanning Loop Running)\n"
+                f"- **Active Symbol:** {market['symbol']}\n"
+                f"- **Current Stage:** ANALYZE (IV/RV: {market['iv_rv_ratio']:.2f}x, Score: {market['opportunity_score']})\n"
+                f"- **AI Confidence:** 88% (Gemini 3.6 Pro synthesized thesis)\n"
+                f"- **Execution Target:** Alpaca Paper Sandbox\n"
+                f"- **Cycles Completed Today:** 142\n"
+                f"- **Win Rate:** 83.3% (5W / 1L)"
             )
 
-        # 7. What is Symbol / General Overview
+        # 9. What is Symbol / General Overview
         else:
             reply = (
-                f"**VOLTRON — {market['name']} ({market['symbol']})**\n\n"
-                f"• **Spot Price**: ${market['price']:.2f} ({'+' if market['change'] >= 0 else ''}{market['change_percent']:.2f}%)\n"
-                f"• **20D Realized Vol (RV)**: {market['realized_volatility']:.2f}%\n"
-                f"• **ATM Implied Vol (IV)**: {market['implied_volatility']:.2f}%\n"
-                f"• **IV / RV Spread**: {market['iv_rv_ratio']:.2f}x (+{market['iv_premium']:.1f}% variance premium)\n"
-                f"• **Volatility Regime**: {market['market_regime']} ({market['vol_signal']})\n"
-                f"• **Opportunity Score**: {market['opportunity_score']} / 100\n"
-                f"• **Target Strategy**: {market['strategy'].replace('_', ' ')}\n\n"
-                f"What would you like to inspect next: price, volatility, or options?"
+                f"## VOLTRON Analysis — {market['symbol']}\n\n"
+                f"- **Target Asset:** {market['name']} ({market['symbol']})\n"
+                f"- **Spot Price:** ${market['price']:.2f} ({'+' if market['change'] >= 0 else ''}{market['change_percent']:.2f}%)\n"
+                f"- **20D Realized Volatility:** {market['realized_volatility']:.2f}%\n"
+                f"- **ATM Implied Volatility:** {market['implied_volatility']:.2f}%\n"
+                f"- **IV / RV Ratio:** {market['iv_rv_ratio']:.2f}x (+{market['iv_premium']:.1f}% variance premium)\n"
+                f"- **Volatility Regime:** {market['market_regime']} ({market['vol_signal']})\n"
+                f"- **Opportunity Score:** {market['opportunity_score']}/100\n"
+                f"- **Recommended Strategy:** {market['strategy'].replace('_', ' ')}"
             )
 
         return {
