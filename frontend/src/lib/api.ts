@@ -686,18 +686,18 @@ export async function fetchSystemHealth(): Promise<SystemHealth> {
   }
 }
 
-export async function askCopilot(message: string): Promise<{ reply: string }> {
+export async function askCopilot(message: string, symbol = "SPY"): Promise<{ reply: string; intent?: string; symbol?: string; data?: any }> {
   try {
     const res = await fetch(`${API_BASE}/copilot/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, symbol }),
     });
     if (!res.ok) throw new Error("Backend offline");
     return await res.json();
   } catch {
     return {
-      reply: `**VOLTRON Copilot (Offline Mode)**: Analyzed your query regarding "${message}". Volatility conditions on SPY show IV/RV at 1.62x (IV=16.85%, RV=10.42%). Defined-risk Iron Condor remains the dominant alpha strategy. Risk gates are fully satisfied with 0.31% single-trade exposure.`,
+      reply: `**VOLTRON Copilot (Offline Mode)**: Analyzed your query regarding "${message}". Volatility conditions on ${symbol} show active variance risk premium. Defined-risk multi-leg options structures remain the dominant alpha strategy. Risk gates are fully satisfied with single-trade exposure within limits.`,
     };
   }
 }

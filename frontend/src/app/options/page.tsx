@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import { fetchOptionsChain } from "@/lib/api";
 import {
@@ -36,8 +37,11 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 
-export default function OptionsTerminalPage() {
-  const [symbol, setSymbol] = useState("SPY");
+function OptionsTerminalContent() {
+  const searchParams = useSearchParams();
+  const querySymbol = searchParams.get("symbol")?.toUpperCase() || "SPY";
+
+  const [symbol, setSymbol] = useState(querySymbol);
   const [data, setData] = useState<any>(null);
   const [selectedExp, setSelectedExp] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<"ALL" | "ATM" | "ITM" | "OTM">("ALL");
@@ -46,8 +50,15 @@ export default function OptionsTerminalPage() {
   const [loading, setLoading] = useState(false);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
 
+  useEffect(() => {
+    if (querySymbol && querySymbol !== symbol) {
+      setSymbol(querySymbol);
+    }
+  }, [querySymbol]);
+
   const loadData = async () => {
     try {
+      setLoading(true);
       const res = await fetchOptionsChain(symbol, selectedExp || undefined);
       setData(res);
       if (!selectedExp && res.expirations?.length > 0) {
@@ -69,7 +80,7 @@ export default function OptionsTerminalPage() {
   }, [symbol, selectedExp]);
 
   const spot = data?.spot_price || 591.42;
-  const isPositive = data ? data.change >= 0 : true;
+  const isPositive = data ? (data.change ?? 0) >= 0 : true;
 
   const filteredChain = (data?.chain || []).filter((row: any) => {
     if (searchStrike && !String(row.strike).includes(searchStrike)) return false;
@@ -209,7 +220,7 @@ export default function OptionsTerminalPage() {
               className="p-1.5 rounded bg-voltron-950 hover:bg-voltron-800 text-voltron-400 hover:text-white border border-voltron-800 transition-colors"
               title="Refresh Options Matrix"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className={clsx("w-3.5 h-3.5", loading && "animate-spin text-voltron-cyan")} />
             </button>
           </div>
         </div>
@@ -431,7 +442,7 @@ export default function OptionsTerminalPage() {
             <div className="flex items-center justify-between text-[11px] text-voltron-400 border-b border-voltron-800 pb-1 mb-1">
               <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
                 <Activity className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>IV TERM STRUCTURE (EXPIRATION VS IMPLIED VOL)</span>
+                <span>IV TERM STRUCTURE ({symbol})</span>
               </span>
               <span className="text-[10px] text-voltron-cyan font-bold">ATM FORWARD SKEW</span>
             </div>
@@ -572,7 +583,7 @@ export default function OptionsTerminalPage() {
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>VOLTRON AI CONTEXT</span>
+                <span>VOLTRON AI CONTEXT ({symbol})</span>
               </div>
               <span className="text-[10px] text-voltron-cyan font-bold">CONFIDENCE: 88%</span>
             </div>
@@ -580,11 +591,11 @@ export default function OptionsTerminalPage() {
             <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 space-y-1.5 text-xs">
               <div className="flex items-start gap-2">
                 <span className="text-voltron-cyan font-bold text-[10px] uppercase">Observation:</span>
-                <span className="text-voltron-200 text-[11px]">IV (16.85%) is materially elevated above 20-day RV (10.42%) producing a 1.62x variance risk spread.</span>
+                <span className="text-voltron-200 text-[11px]">IV ({data?.implied_volatility || 16.85}%) vs 20-day RV ({data?.realized_volatility || 10.42}%) produces a {data?.iv_rv_ratio || 1.62}x variance risk spread.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-voltron-emerald font-bold text-[10px] uppercase">AI Thesis:</span>
-                <span className="text-voltron-200 text-[11px]">Construct defined-risk Iron Condor harvesting theta decay in neutral consolidation regime.</span>
+                <span className="text-voltron-200 text-[11px]">Construct defined-risk {strat?.name || "Iron Condor"} harvesting theta decay in {data?.market_regime || "neutral consolidation"} regime.</span>
               </div>
             </div>
           </div>
@@ -602,7 +613,7 @@ export default function OptionsTerminalPage() {
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800 flex flex-wrap items-center justify-between gap-2 text-xs">
               <div>
                 <span className="text-[9px] text-voltron-400 uppercase block">Order Structure</span>
-                <span className="font-bold text-white text-xs">SPY 4-Leg Iron Condor @ $1.85 Net Credit</span>
+                <span className="font-bold text-white text-xs">{symbol} {strat?.name || "Iron Condor"} @ ${strat?.net_credit?.toFixed(2) || "1.85"} Net Credit</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -637,7 +648,7 @@ export default function OptionsTerminalPage() {
             <div className="flex items-center gap-2.5 mb-4">
               <ShieldCheck className="w-5 h-5 text-voltron-emerald" />
               <h3 className="text-sm font-bold text-white uppercase">
-                VOLTRON RISK GATE AUDIT — {symbol} IRON CONDOR
+                VOLTRON RISK GATE AUDIT — {symbol} {strat?.name || "IRON CONDOR"}
               </h3>
             </div>
 
@@ -647,7 +658,7 @@ export default function OptionsTerminalPage() {
                   <span className="font-bold text-white block">Opportunity Score</span>
                   <span className="text-[10px] text-voltron-400">Score &ge; 70</span>
                 </div>
-                <span className="text-voltron-emerald font-bold">94 / 100 [PASS]</span>
+                <span className="text-voltron-emerald font-bold">{data?.opportunity_score || 94} / 100 [PASS]</span>
               </div>
               <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
                 <div>
@@ -691,5 +702,20 @@ export default function OptionsTerminalPage() {
         </div>
       )}
     </TerminalLayout>
+  );
+}
+
+export default function OptionsTerminalPage() {
+  return (
+    <Suspense fallback={
+      <TerminalLayout>
+        <div className="p-8 text-center text-voltron-cyan font-mono text-xs flex items-center justify-center gap-2">
+          <RefreshCw className="w-4 h-4 animate-spin" />
+          <span>LOADING OPTIONS MATRIX...</span>
+        </div>
+      </TerminalLayout>
+    }>
+      <OptionsTerminalContent />
+    </Suspense>
   );
 }

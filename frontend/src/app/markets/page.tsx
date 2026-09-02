@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import {
   TrendingUp,
-  TrendingDown,
-  Flame,
   Search,
-  ArrowUpDown,
   Sparkles,
   ExternalLink,
-  Zap,
+  Bot,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import clsx from "clsx";
 
 interface AssetScanRow {
@@ -20,149 +20,54 @@ interface AssetScanRow {
   name: string;
   price: number;
   change: number;
-  change_pct: number;
-  rv: number;
-  iv: number;
-  iv_rv: number;
-  premium: number;
-  score: number;
-  regime: string;
+  change_percent: number;
+  realized_volatility: number;
+  implied_volatility: number;
+  iv_rv_ratio: number;
+  iv_premium: number;
+  opportunity_score: number;
+  market_regime: string;
+  vol_signal: "EXPENSIVE" | "CHEAP" | "FAIR";
   strategy: string;
-  signal: "EXPENSIVE" | "CHEAP" | "FAIR";
 }
 
-const scannerData: AssetScanRow[] = [
-  {
-    symbol: "SPY",
-    name: "S&P 500 ETF",
-    price: 591.42,
-    change: 4.82,
-    change_pct: 0.82,
-    rv: 10.42,
-    iv: 16.85,
-    iv_rv: 1.62,
-    premium: 61.7,
-    score: 94,
-    regime: "HIGH IV SPREAD",
-    strategy: "IRON_CONDOR",
-    signal: "EXPENSIVE",
-  },
-  {
-    symbol: "QQQ",
-    name: "Nasdaq 100 ETF",
-    price: 498.75,
-    change: 6.2,
-    change_pct: 1.26,
-    rv: 13.85,
-    iv: 20.4,
-    iv_rv: 1.47,
-    premium: 47.3,
-    score: 89,
-    regime: "BULLISH EXPANSION",
-    strategy: "BULL_PUT_SPREAD",
-    signal: "EXPENSIVE",
-  },
-  {
-    symbol: "IWM",
-    name: "Russell 2000 ETF",
-    price: 222.18,
-    change: -1.15,
-    change_pct: -0.51,
-    rv: 16.2,
-    iv: 23.5,
-    iv_rv: 1.45,
-    premium: 45.1,
-    score: 86,
-    regime: "BEARISH ROTATION",
-    strategy: "BEAR_CALL_SPREAD",
-    signal: "EXPENSIVE",
-  },
-  {
-    symbol: "NVDA",
-    name: "Nvidia Corporation",
-    price: 128.4,
-    change: 3.12,
-    change_pct: 2.49,
-    rv: 34.5,
-    iv: 48.2,
-    iv_rv: 1.4,
-    premium: 39.7,
-    score: 82,
-    regime: "EARNINGS HIGH IV",
-    strategy: "IRON_CONDOR",
-    signal: "EXPENSIVE",
-  },
-  {
-    symbol: "AAPL",
-    name: "Apple Inc.",
-    price: 228.6,
-    change: 0.45,
-    change_pct: 0.2,
-    rv: 14.1,
-    iv: 17.2,
-    iv_rv: 1.22,
-    premium: 22.0,
-    score: 68,
-    regime: "LOW SPREAD",
-    strategy: "NO_TRADE",
-    signal: "FAIR",
-  },
-  {
-    symbol: "TSLA",
-    name: "Tesla Inc.",
-    price: 218.8,
-    change: -4.3,
-    change_pct: -1.93,
-    rv: 48.2,
-    iv: 41.5,
-    iv_rv: 0.86,
-    premium: -13.9,
-    score: 74,
-    regime: "VOLATILITY COMPRESSED",
-    strategy: "LONG_STRADDLE",
-    signal: "CHEAP",
-  },
-  {
-    symbol: "MSFT",
-    name: "Microsoft Corporation",
-    price: 432.1,
-    change: 2.8,
-    change_pct: 0.65,
-    rv: 13.5,
-    iv: 16.9,
-    iv_rv: 1.25,
-    premium: 25.2,
-    score: 64,
-    regime: "FAIR VALUE",
-    strategy: "NO_TRADE",
-    signal: "FAIR",
-  },
-  {
-    symbol: "AMZN",
-    name: "Amazon.com Inc.",
-    price: 188.5,
-    change: 1.4,
-    change_pct: 0.75,
-    rv: 18.2,
-    iv: 24.8,
-    iv_rv: 1.36,
-    premium: 36.3,
-    score: 79,
-    regime: "MODERATE SPREAD",
-    strategy: "BULL_PUT_SPREAD",
-    signal: "EXPENSIVE",
-  },
-];
-
 export default function MarketsPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSignal, setFilterSignal] = useState<string>("ALL");
+  const [assets, setAssets] = useState<AssetScanRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = scannerData.filter((item) => {
+  const loadMarketScanner = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/market?all=true");
+      if (!res.ok) throw new Error("Failed to load market scan data");
+      const data = await res.json();
+      setAssets(data.assets || []);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message || "Market data service temporarily unavailable");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMarketScanner();
+    const interval = setInterval(loadMarketScanner, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const filtered = assets.filter((item) => {
+    const sTerm = searchTerm.toLowerCase().trim();
     const matchesSearch =
-      item.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSignal = filterSignal === "ALL" || item.signal === filterSignal;
+      !sTerm ||
+      item.symbol.toLowerCase().includes(sTerm) ||
+      item.name.toLowerCase().includes(sTerm);
+    const matchesSignal =
+      filterSignal === "ALL" || item.vol_signal === filterSignal;
     return matchesSearch && matchesSignal;
   });
 
@@ -182,6 +87,7 @@ export default function MarketsPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Search Input */}
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-voltron-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -193,6 +99,7 @@ export default function MarketsPage() {
               />
             </div>
 
+            {/* Volatility Regime Filters */}
             <div className="flex gap-1 bg-voltron-900 p-1 rounded-lg border border-voltron-750 text-xs font-mono">
               {["ALL", "EXPENSIVE", "CHEAP", "FAIR"].map((sig) => (
                 <button
@@ -209,8 +116,24 @@ export default function MarketsPage() {
                 </button>
               ))}
             </div>
+
+            <button
+              onClick={loadMarketScanner}
+              className="p-1.5 rounded-lg bg-voltron-900 border border-voltron-750 text-voltron-400 hover:text-voltron-cyan transition-colors"
+              title="Refresh Market Scanner"
+            >
+              <RefreshCw className={clsx("w-4 h-4", loading && "animate-spin text-voltron-cyan")} />
+            </button>
           </div>
         </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="p-3 rounded-lg bg-voltron-rose/15 border border-voltron-rose/30 text-voltron-rose text-xs font-mono flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
         {/* Institutional Scanner Table */}
         <div className="terminal-card overflow-hidden border border-voltron-750/80 bg-voltron-850/40">
@@ -231,98 +154,116 @@ export default function MarketsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-voltron-800">
-                {filtered.map((row) => {
-                  const isPos = row.change >= 0;
-                  return (
-                    <tr
-                      key={row.symbol}
-                      className="hover:bg-voltron-800/40 transition-colors group"
-                    >
-                      <td className="p-3 font-bold text-white flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan text-[11px]">
-                          {row.symbol[0]}
-                        </div>
-                        <div>
-                          <span>{row.symbol}</span>
-                          <span className="block text-[10px] text-voltron-400 font-normal">
-                            {row.name}
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="p-8 text-center text-voltron-400 font-mono text-xs">
+                      {loading ? "LOADING MARKET VOLATILITY SCANNER..." : `No assets matching "${searchTerm}" with filter "${filterSignal}"`}
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((row) => {
+                    const isPos = row.change >= 0;
+                    return (
+                      <tr
+                        key={row.symbol}
+                        onClick={() => router.push(`/agent?symbol=${row.symbol}`)}
+                        className="hover:bg-voltron-800/40 transition-colors cursor-pointer group"
+                      >
+                        <td className="p-3 font-bold text-white flex items-center gap-2">
+                          <div className="w-6 h-6 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan text-[11px] font-bold">
+                            {row.symbol[0]}
+                          </div>
+                          <div>
+                            <span className="group-hover:text-voltron-cyan transition-colors">{row.symbol}</span>
+                            <span className="block text-[10px] text-voltron-400 font-normal">
+                              {row.name}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="p-3 font-bold text-white font-tabular">
+                          ${row.price.toFixed(2)}
+                        </td>
+
+                        <td className="p-3 font-tabular">
+                          <span
+                            className={clsx(
+                              "inline-flex items-center gap-0.5 font-bold",
+                              isPos ? "text-voltron-emerald" : "text-voltron-rose"
+                            )}
+                          >
+                            {isPos ? "+" : ""}
+                            {row.change_percent.toFixed(2)}%
                           </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="p-3 font-bold text-white font-tabular">
-                        ${row.price.toFixed(2)}
-                      </td>
+                        <td className="p-3 font-tabular text-voltron-300">
+                          {row.realized_volatility.toFixed(2)}%
+                        </td>
 
-                      <td className="p-3 font-tabular">
-                        <span
-                          className={clsx(
-                            "inline-flex items-center gap-0.5 font-bold",
-                            isPos ? "text-voltron-emerald" : "text-voltron-rose"
-                          )}
-                        >
-                          {isPos ? "+" : ""}
-                          {row.change_pct.toFixed(2)}%
-                        </span>
-                      </td>
+                        <td className="p-3 font-tabular text-voltron-cyan font-bold">
+                          {row.implied_volatility.toFixed(2)}%
+                        </td>
 
-                      <td className="p-3 font-tabular text-voltron-300">
-                        {row.rv.toFixed(2)}%
-                      </td>
+                        <td className="p-3 font-tabular">
+                          <span className="font-bold text-voltron-emerald">
+                            {row.iv_rv_ratio.toFixed(2)}x
+                          </span>
+                          <span className="text-[10px] text-voltron-400 ml-1">
+                            ({row.iv_premium >= 0 ? "+" : ""}{row.iv_premium.toFixed(1)}%)
+                          </span>
+                        </td>
 
-                      <td className="p-3 font-tabular text-voltron-cyan font-bold">
-                        {row.iv.toFixed(2)}%
-                      </td>
+                        <td className="p-3">
+                          <span
+                            className={clsx(
+                              "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                              row.vol_signal === "EXPENSIVE"
+                                ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30"
+                                : row.vol_signal === "CHEAP"
+                                ? "bg-voltron-violet/15 text-voltron-violet border border-voltron-violet/30"
+                                : "bg-voltron-amber/15 text-voltron-amber border border-voltron-amber/30"
+                            )}
+                          >
+                            {row.vol_signal}
+                          </span>
+                        </td>
 
-                      <td className="p-3 font-tabular">
-                        <span className="font-bold text-voltron-emerald">
-                          {row.iv_rv.toFixed(2)}x
-                        </span>
-                        <span className="text-[10px] text-voltron-400 ml-1">
-                          (+{row.premium.toFixed(1)}%)
-                        </span>
-                      </td>
+                        <td className="p-3 font-tabular font-bold text-white">
+                          <span className="flex items-center gap-1 text-voltron-cyan">
+                            <Sparkles className="w-3 h-3" />
+                            {row.opportunity_score}
+                          </span>
+                        </td>
 
-                      <td className="p-3">
-                        <span
-                          className={clsx(
-                            "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-                            row.signal === "EXPENSIVE"
-                              ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30"
-                              : row.signal === "CHEAP"
-                              ? "bg-voltron-violet/15 text-voltron-violet border border-voltron-violet/30"
-                              : "bg-voltron-amber/15 text-voltron-amber border border-voltron-amber/30"
-                          )}
-                        >
-                          {row.signal}
-                        </span>
-                      </td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded bg-voltron-900 border border-voltron-750 text-[10px] text-voltron-200">
+                            {row.strategy.replace(/_/g, " ")}
+                          </span>
+                        </td>
 
-                      <td className="p-3 font-tabular font-bold text-white">
-                        <span className="flex items-center gap-1 text-voltron-cyan">
-                          <Sparkles className="w-3 h-3" />
-                          {row.score}
-                        </span>
-                      </td>
-
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded bg-voltron-900 border border-voltron-750 text-[10px] text-voltron-200">
-                          {row.strategy.replace(/_/g, " ")}
-                        </span>
-                      </td>
-
-                      <td className="p-3 text-right">
-                        <Link
-                          href={`/options?symbol=${row.symbol}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-voltron-cyan font-bold border border-voltron-700 transition-colors"
-                        >
-                          <span>Chain</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Link
+                              href={`/options?symbol=${row.symbol}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-voltron-cyan font-bold border border-voltron-700 transition-colors"
+                            >
+                              <span>Chain</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
+                            <Link
+                              href={`/agent?symbol=${row.symbol}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-voltron-cyan/15 hover:bg-voltron-cyan/25 text-[11px] text-voltron-cyan font-bold border border-voltron-cyan/30 transition-colors"
+                            >
+                              <Bot className="w-3 h-3" />
+                              <span>Agent</span>
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

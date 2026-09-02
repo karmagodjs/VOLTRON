@@ -66,7 +66,7 @@ export default function AICopilotDrawer({
     setLoading(true);
 
     try {
-      const res = await askCopilot(textToSend);
+      const res = await askCopilot(textToSend, currentSymbol);
       const aiMsg: Message = {
         id: `ai-${Date.now()}`,
         sender: "ai",

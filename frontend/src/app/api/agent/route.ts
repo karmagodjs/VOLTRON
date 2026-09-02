@@ -1,82 +1,140 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SUPPORTED_ASSETS } from "@/lib/marketData";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const symbol = (searchParams.get("symbol") || "SPY").toUpperCase();
+  const asset = SUPPORTED_ASSETS[symbol] || SUPPORTED_ASSETS["SPY"];
   const now = new Date();
 
-  const isSPY = symbol === "SPY";
-  const price = isSPY ? 591.42 : symbol === "QQQ" ? 485.30 : symbol === "NVDA" ? 128.40 : 210.50;
-  const change = isSPY ? 4.82 : 2.15;
-  const changePct = isSPY ? 0.82 : 0.54;
-  const iv = isSPY ? 16.85 : 22.40;
-  const rv = isSPY ? 10.42 : 14.80;
-  const ivRvRatio = Number((iv / rv).toFixed(2));
-  const ivPremium = Number((((iv - rv) / rv) * 100).toFixed(1));
-  const oppScore = isSPY ? 94 : 82;
+  const {
+    price,
+    change,
+    change_percent: changePct,
+    realized_volatility: rv,
+    implied_volatility: iv,
+    iv_rv_ratio: ivRvRatio,
+    iv_premium: ivPremium,
+    opportunity_score: oppScore,
+    market_regime: regime,
+    vol_signal: volSignal,
+    strategy,
+  } = asset;
+
+  const decision = oppScore >= 70 ? "TRADE_CANDIDATE" : "NO_TRADE";
+  const confidence = decision === "TRADE_CANDIDATE" ? (symbol === "SPY" ? 88 : symbol === "QQQ" ? 89 : 82) : 45;
+  const direction = strategy.includes("BULL") ? "BULLISH" : strategy.includes("BEAR") ? "BEARISH" : "NEUTRAL";
+
+  const thesis =
+    decision === "TRADE_CANDIDATE"
+      ? `${symbol} implied volatility (${iv.toFixed(2)}%) is elevated above 20-day realized volatility (${rv.toFixed(2)}%), generating an IV/RV spread of ${ivRvRatio.toFixed(2)}x. Optimal conditions for defined-risk credit spread harvesting with strict loss caps.`
+      : `${symbol} volatility dislocation score (${oppScore}/100) is below the minimum institutional hurdle rate of 70. Execution is blocked under fail-closed safety gating.`;
 
   const analysis = {
     symbol,
     status: "ANALYZING" as const,
-    decision: "TRADE_CANDIDATE" as const,
-    confidence: 88,
-    direction: "NEUTRAL" as const,
-    volatility_view: "EXPENSIVE" as const,
-    strategy_recommendation: "IRON CONDOR",
-    thesis: `${symbol} implied volatility (${iv}%) is materially elevated above 20-day realized volatility (${rv}%), generating an IV/RV spread of ${ivRvRatio}x. This indicates substantial variance risk premium and optimal conditions for defined-risk credit harvesting.`,
+    decision,
+    confidence,
+    direction,
+    volatility_view: volSignal,
+    strategy_recommendation: strategy.replace(/_/g, " "),
+    thesis,
     key_reasons: [
-      `IV/RV spread ratio of ${ivRvRatio}x indicates statistically rich option premium`,
-      "Underlying index realized price velocity shows low directional drift (regime: NEUTRAL)",
-      "Deep institutional options liquidity with tight bid-ask spreads (< 2.5%)",
+      `IV/RV spread ratio of ${ivRvRatio.toFixed(2)}x indicates statistically rich option premium`,
+      `Underlying price drift indicates ${direction} market structure (regime: ${regime})`,
+      "Institutional options liquidity with tight bid-ask spreads",
       "Defined-risk multi-leg structure guarantees maximum loss containment",
     ],
     risks: [
       "Macro economic announcements or FOMC rate decisions could trigger IV expansion",
       "Tail gap movement exceeding wing thresholds will trigger stop loss",
-      "Theta decay decelerates if realized volatility spikes above 20%",
     ],
     opportunity_score: oppScore,
     timestamp: now.toISOString(),
   };
 
   const decisionFactors = [
-    "IV materially above 20-day realized volatility (1.62x variance spread)",
-    "Market direction currently neutral consolidation with low directional drift",
-    `Opportunity score (${oppScore}/100) exceeds threshold of 70`,
-    "Defined-risk multi-leg options strategy available (IRON CONDOR)",
+    `IV (${iv.toFixed(1)}%) vs 20-day RV (${rv.toFixed(1)}%) creates ${ivRvRatio.toFixed(2)}x variance spread`,
+    `Directional bias classified as ${direction} with low tail drift`,
+    `Opportunity score (${oppScore}/100) ${oppScore >= 70 ? "satisfies" : "fails"} minimum threshold of 70`,
+    `Strategy mapped to ${strategy.replace(/_/g, " ")} with defined risk limits`,
   ];
 
+  const riskApproved = oppScore >= 70;
   const riskGates = [
-    { name: "OPPORTUNITY SCORE", condition: "Score >= 70", current_value: `${oppScore} / 100`, status: "PASS" as const, description: "Volatility alpha score satisfies minimum trade threshold." },
-    { name: "TRADE RISK", condition: "Risk <= 1.0% ($1,000)", current_value: "0.31% ($315.00)", status: "PASS" as const, description: "Single-trade max loss within safety envelope." },
-    { name: "DAILY LOSS", condition: "Daily Loss < 2.0% ($2,000)", current_value: "+$1,284.50 (Profit)", status: "PASS" as const, description: "Daily circuit breaker active." },
-    { name: "PORTFOLIO EXPOSURE", condition: "Exposure <= 30.0% ($30,000)", current_value: "18.2% ($18,200.00)", status: "PASS" as const, description: "Total capital utilization within limits." },
-    { name: "LIQUIDITY", condition: "Spread <= 10.0%", current_value: "2.1% Spread", status: "PASS" as const, description: "Options market spread meets institutional liquidity gate." },
-    { name: "CONSECUTIVE LOSSES", condition: "Losses < 3", current_value: "0 / 3 Losses", status: "PASS" as const, description: "Cooling period inactive; zero consecutive stop-outs." },
-    { name: "KILL SWITCH", condition: "Disarmed / Normal", current_value: "ARMED / READY", status: "PASS" as const, description: "Emergency kill switch ready." },
+    {
+      name: "OPPORTUNITY SCORE",
+      condition: "Score >= 70",
+      current_value: `${oppScore} / 100`,
+      status: oppScore >= 70 ? ("PASS" as const) : ("BLOCKED" as const),
+      description: "Volatility alpha score satisfies minimum trade threshold.",
+    },
+    {
+      name: "TRADE RISK",
+      condition: "Risk <= 1.0% ($1,000)",
+      current_value: "0.31% ($315.00)",
+      status: "PASS" as const,
+      description: "Single-trade max loss within safety envelope.",
+    },
+    {
+      name: "DAILY LOSS",
+      condition: "Daily Loss < 2.0% ($2,000)",
+      current_value: "+$1,284.50 (Profit)",
+      status: "PASS" as const,
+      description: "Daily circuit breaker active.",
+    },
+    {
+      name: "PORTFOLIO EXPOSURE",
+      condition: "Exposure <= 30.0% ($30,000)",
+      current_value: "18.2% ($18,200.00)",
+      status: "PASS" as const,
+      description: "Total capital utilization within limits.",
+    },
+    {
+      name: "LIQUIDITY",
+      condition: "Spread <= 10.0%",
+      current_value: "2.1% Spread",
+      status: "PASS" as const,
+      description: "Options market spread meets institutional liquidity gate.",
+    },
+    {
+      name: "CONSECUTIVE LOSSES",
+      condition: "Losses < 3",
+      current_value: "0 / 3 Losses",
+      status: "PASS" as const,
+      description: "Cooling period inactive; zero consecutive stop-outs.",
+    },
+    {
+      name: "KILL SWITCH",
+      condition: "Disarmed / Normal",
+      current_value: "ARMED / READY",
+      status: "PASS" as const,
+      description: "Emergency kill switch ready.",
+    },
   ];
 
   const pipeline = [
     { stage: "SCAN", status: "PASSED", timestamp: "09:31:02", reason: `${symbol} liquid options scan detected` },
-    { stage: "ANALYZE", status: "PASSED", timestamp: "09:31:03", reason: `IV/RV = ${ivRvRatio}x (Confidence: 88%)` },
-    { stage: "STRATEGY", status: "PASSED", timestamp: "09:31:04", reason: "IRON_CONDOR (45 DTE) selected" },
-    { stage: "RISK", status: "PASSED", timestamp: "09:31:05", reason: "7 Safety gates approved (0.31% Risk)" },
-    { stage: "EXECUTE", status: "PASSED", timestamp: "09:31:05", reason: "Paper order #VLT-8941 routed to Alpaca" },
-    { stage: "MONITOR", status: "ACTIVE", timestamp: "09:31:06", reason: "Position live: Unrealized P&L +$145.00 (+7.8%)" },
+    { stage: "ANALYZE", status: "PASSED", timestamp: "09:31:03", reason: `IV/RV = ${ivRvRatio.toFixed(2)}x (Confidence: ${confidence}%)` },
+    { stage: "STRATEGY", status: "PASSED", timestamp: "09:31:04", reason: `${strategy} (45 DTE) selected` },
+    { stage: "RISK", status: riskApproved ? "PASSED" : "BLOCKED", timestamp: "09:31:05", reason: riskApproved ? "7 Safety gates approved (0.31% Risk)" : "Opportunity score below 70 hurdle rate" },
+    { stage: "EXECUTE", status: riskApproved ? "PASSED" : "BLOCKED", timestamp: "09:31:05", reason: riskApproved ? `Paper order #VLT-${symbol} routed to Alpaca` : "Execution safely blocked by Risk Engine" },
+    { stage: "MONITOR", status: riskApproved ? "ACTIVE" : "WAITING", timestamp: riskApproved ? "09:31:06" : "—", reason: riskApproved ? `Position live on ${symbol}` : "No position open" },
     { stage: "EXIT", status: "WAITING", timestamp: "—", reason: "Monitoring TP 50% / SL 100%" },
     { stage: "LOG", status: "WAITING", timestamp: "—", reason: "Awaiting cycle finalization" },
   ];
 
+  const atmAnchor = Math.round(price / 5.0) * 5;
   const executionState = {
-    status: "ORDER_SUBMITTED",
-    order_id: "VLT-8941",
+    status: riskApproved ? "ORDER_SUBMITTED" : "EXECUTION_BLOCKED",
+    order_id: `VLT-${symbol}-8941`,
     symbol,
-    strategy: "IRON_CONDOR",
+    strategy,
     legs: [
-      "SELL SPY 580 PUT",
-      "BUY SPY 575 PUT",
-      "SELL SPY 605 CALL",
-      "BUY SPY 610 CALL",
+      `SELL ${symbol} ${atmAnchor - 5} PUT`,
+      `BUY ${symbol} ${atmAnchor - 10} PUT`,
+      `SELL ${symbol} ${atmAnchor + 10} CALL`,
+      `BUY ${symbol} ${atmAnchor + 15} CALL`,
     ],
     quantity: 1,
     order_type: "LIMIT_CREDIT",
@@ -85,19 +143,21 @@ export async function GET(request: NextRequest) {
   };
 
   const positionMonitor = {
-    status: "POSITION_ACTIVE",
-    position: {
-      symbol,
-      strategy: "IRON CONDOR",
-      entry_price: 1.85,
-      current_value: 1.70,
-      unrealized_pnl: 145.00,
-      unrealized_pnl_pct: 7.84,
-      take_profit: 0.92,
-      stop_loss: 3.70,
-      opened_at: "09:31:05 UTC",
-      time_open: "1h 42m",
-    },
+    status: riskApproved ? "POSITION_ACTIVE" : "NO_POSITION",
+    position: riskApproved
+      ? {
+          symbol,
+          strategy: strategy.replace(/_/g, " "),
+          entry_price: 1.85,
+          current_value: 1.70,
+          unrealized_pnl: 145.0,
+          unrealized_pnl_pct: 7.84,
+          take_profit: 0.92,
+          stop_loss: 3.7,
+          opened_at: "09:31:05 UTC",
+          time_open: "1h 42m",
+        }
+      : null,
   };
 
   const metrics = {
@@ -124,13 +184,13 @@ export async function GET(request: NextRequest) {
       cycle: 142,
       status: "ANALYZING",
       symbol,
-      decision: "TRADE_CANDIDATE",
-      strategy: "IRON_CONDOR",
-      confidence: 88,
+      decision,
+      strategy,
+      confidence,
       opportunity_score: oppScore,
-      active_order_id: "VLT-8941",
-      active_position: `${symbol} IRON CONDOR`,
-      last_reason: "Volatility opportunity detected",
+      active_order_id: `VLT-${symbol}-8941`,
+      active_position: riskApproved ? `${symbol} ${strategy.replace(/_/g, " ")}` : "NONE",
+      last_reason: thesis,
       errors: [],
     },
     market_observation: {
@@ -138,34 +198,36 @@ export async function GET(request: NextRequest) {
       price,
       change,
       change_percent: changePct,
-      market_regime: "HIGH IV SPREAD",
+      market_regime: regime,
       implied_volatility: iv,
       realized_volatility: rv,
       iv_rv_ratio: ivRvRatio,
       iv_premium: ivPremium,
       opportunity_score: oppScore,
-      vol_signal: "IV EXPENSIVE",
+      vol_signal: volSignal,
       market_status: "OPEN",
     },
     analysis,
     decision_factors: decisionFactors,
     risk_decision: {
-      overall_status: "APPROVED",
-      reason: "All 7 safety gates evaluated and passed successfully.",
+      overall_status: riskApproved ? "APPROVED" : "BLOCKED",
+      reason: riskApproved
+        ? "All 7 safety gates evaluated and passed successfully."
+        : "Risk Engine blocked execution: Opportunity score below 70 threshold.",
       gates: riskGates,
     },
     strategy_decision: {
-      selected_strategy: "IRON CONDOR",
-      sentiment: "NEUTRAL",
-      volatility_view: "EXPENSIVE",
+      selected_strategy: strategy.replace(/_/g, " "),
+      sentiment: direction,
+      volatility_view: volSignal,
       iv_rv_ratio: ivRvRatio,
-      confidence: 88,
-      rationale: "Elevated variance risk premium (IV/RV 1.62x) combined with compressed directional realized movement makes Iron Condor the optimal risk-defined credit harvesting vehicle.",
+      confidence,
+      rationale: thesis,
       legs: [
-        { action: "SELL", strike: 580, type: "PUT", price: 2.20 },
-        { action: "BUY", strike: 575, type: "PUT", price: 1.25 },
-        { action: "SELL", strike: 605, type: "CALL", price: 2.10 },
-        { action: "BUY", strike: 610, type: "CALL", price: 1.20 },
+        { action: "SELL", strike: atmAnchor - 5, type: "PUT", price: 2.2 },
+        { action: "BUY", strike: atmAnchor - 10, type: "PUT", price: 1.25 },
+        { action: "SELL", strike: atmAnchor + 10, type: "CALL", price: 2.1 },
+        { action: "BUY", strike: atmAnchor + 15, type: "CALL", price: 1.2 },
       ],
       net_credit: 1.85,
       max_loss: 3.15,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import {
   fetchAgentTelemetry,
@@ -31,40 +32,61 @@ import {
   Sparkles,
   ChevronDown,
   X,
+  RefreshCw,
 } from "lucide-react";
 import clsx from "clsx";
 
-const symbols = ["SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA"];
+const symbols = ["SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA", "MSFT", "AMZN"];
 
-export default function AgentCommandCenterPage() {
-  const [symbol, setSymbol] = useState("SPY");
+function AgentCommandCenterContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const querySymbol = searchParams.get("symbol")?.toUpperCase() || "SPY";
+
+  const [symbol, setSymbol] = useState(querySymbol);
   const [data, setData] = useState<any>(null);
   const [timeline, setTimeline] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [symbolDropdown, setSymbolDropdown] = useState(false);
   const [killModalOpen, setKillModalOpen] = useState(false);
   const [secondsToNext, setSecondsToNext] = useState(24);
 
-  const loadData = async () => {
+  // Sync if query param changes externally
+  useEffect(() => {
+    if (querySymbol && querySymbol !== symbol && symbols.includes(querySymbol)) {
+      setSymbol(querySymbol);
+    }
+  }, [querySymbol]);
+
+  const loadData = async (targetSymbol = symbol) => {
     try {
       const [tel, t] = await Promise.all([
-        fetchAgentTelemetry(symbol),
+        fetchAgentTelemetry(targetSymbol),
         fetchTimeline(),
       ]);
       setData(tel);
       setTimeline(t);
       setError(null);
     } catch (err: any) {
-      setError(err?.message || "Failed to fetch telemetry from agent engine");
+      setError(err?.message || `Failed to fetch telemetry for ${targetSymbol}`);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSelectSymbol = (newSymbol: string) => {
+    setSymbol(newSymbol);
+    setSymbolDropdown(false);
+    setData(null); // CRITICAL DATA ISOLATION: Clear previous symbol data during loading
+    setLoading(true);
+    router.replace(`/agent?symbol=${newSymbol}`);
+    loadData(newSymbol);
+  };
+
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 6000);
+    loadData(symbol);
+    const interval = setInterval(() => loadData(symbol), 6000);
     return () => clearInterval(interval);
   }, [symbol]);
 
@@ -72,25 +94,25 @@ export default function AgentCommandCenterPage() {
     const timer = setInterval(() => {
       setSecondsToNext((prev) => {
         if (prev <= 1) {
-          loadData();
+          loadData(symbol);
           return 30;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [symbol]);
 
   const handleControl = async (action: "start" | "pause" | "stop" | "step") => {
     await controlAgent(action);
-    loadData();
+    loadData(symbol);
   };
 
   const handleEmergencyStop = async () => {
     await toggleKillSwitch(true);
     await controlAgent("stop");
     setKillModalOpen(false);
-    loadData();
+    loadData(symbol);
   };
 
   const agentState = data?.agent_state;
@@ -105,7 +127,9 @@ export default function AgentCommandCenterPage() {
   const pipeline = data?.pipeline || [];
 
   const statusLabel = agentState?.status || "ANALYZING";
-  const isNoTrade = analysis?.decision === "NO_TRADE";
+  const isRiskApproved = riskDec?.overall_status === "APPROVED";
+  const isNoTrade = analysis?.decision === "NO_TRADE" || !isRiskApproved;
+  const hasActivePosition = posMon?.status === "POSITION_ACTIVE" && posMon?.position;
 
   return (
     <TerminalLayout>
@@ -126,7 +150,7 @@ export default function AgentCommandCenterPage() {
                 </span>
               </div>
               <div className="text-[11px] text-voltron-400 mt-0.5">
-                Targeting Variance Risk Premium via Alpaca Paper Environment
+                Targeting Variance Risk Premium on {symbol} via Alpaca Paper Environment
               </div>
             </div>
           </div>
@@ -139,7 +163,7 @@ export default function AgentCommandCenterPage() {
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-950 border border-voltron-750 text-white font-bold hover:bg-voltron-800 transition-colors"
               >
                 <span className="text-voltron-400 text-[10px] uppercase">Symbol:</span>
-                <span className="text-voltron-cyan">{symbol}</span>
+                <span className="text-voltron-cyan font-bold">{symbol}</span>
                 <ChevronDown className="w-3 h-3 text-voltron-400" />
               </button>
               {symbolDropdown && (
@@ -147,10 +171,7 @@ export default function AgentCommandCenterPage() {
                   {symbols.map((s) => (
                     <button
                       key={s}
-                      onClick={() => {
-                        setSymbol(s);
-                        setSymbolDropdown(false);
-                      }}
+                      onClick={() => handleSelectSymbol(s)}
                       className={clsx(
                         "w-full text-left px-2.5 py-1 rounded text-[11px] font-semibold transition-colors",
                         symbol === s
@@ -204,6 +225,21 @@ export default function AgentCommandCenterPage() {
             </div>
           </div>
         </div>
+
+        {/* Loading / Error Banner */}
+        {loading && !data && (
+          <div className="p-4 rounded-lg bg-voltron-900 border border-voltron-cyan/40 text-voltron-cyan text-xs font-mono flex items-center justify-center gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            <span>{symbol}: LOADING MARKET DATA & QUANT STATE...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-3 rounded-lg bg-voltron-rose/15 border border-voltron-rose/30 text-voltron-rose text-xs font-mono flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>{symbol}: MARKET DATA UNAVAILABLE — {error}</span>
+          </div>
+        )}
 
         {/* 2. AGENT CONTROL CENTER */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
@@ -294,6 +330,7 @@ export default function AgentCommandCenterPage() {
             {pipeline.map((step: any) => {
               const isPass = step.status === "PASSED";
               const isActive = step.status === "ACTIVE";
+              const isBlocked = step.status === "BLOCKED";
 
               return (
                 <div
@@ -302,6 +339,8 @@ export default function AgentCommandCenterPage() {
                     "p-2 rounded border flex flex-col justify-between transition-all",
                     isActive
                       ? "bg-voltron-950 border-voltron-cyan shadow-cyan-glow"
+                      : isBlocked
+                      ? "bg-voltron-rose/10 border-voltron-rose/40"
                       : isPass
                       ? "bg-voltron-950/80 border-voltron-800"
                       : "bg-voltron-950/40 border-voltron-850 opacity-60"
@@ -314,12 +353,14 @@ export default function AgentCommandCenterPage() {
                         "text-[9px] font-bold px-1 rounded",
                         isActive
                           ? "text-voltron-cyan bg-voltron-cyan/15 animate-pulse"
+                          : isBlocked
+                          ? "text-voltron-rose bg-voltron-rose/15"
                           : isPass
                           ? "text-voltron-emerald bg-voltron-emerald/15"
                           : "text-voltron-400"
                       )}
                     >
-                      {isPass ? "✓" : isActive ? "●" : "—"}
+                      {isPass ? "✓" : isBlocked ? "✗" : isActive ? "●" : "—"}
                     </span>
                   </div>
                   <div className="text-[10px] text-voltron-400 font-tabular">{step.timestamp}</div>
@@ -351,7 +392,7 @@ export default function AgentCommandCenterPage() {
             </div>
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Volatility</span>
-              <span className="font-bold text-voltron-emerald text-xs">{analysis?.volatility_view || "EXPENSIVE"}</span>
+              <span className="font-bold text-voltron-emerald text-xs">{observation?.vol_signal || analysis?.volatility_view || "EXPENSIVE"}</span>
             </div>
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Direction</span>
@@ -363,7 +404,7 @@ export default function AgentCommandCenterPage() {
             </div>
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Opportunity</span>
-              <span className="font-bold text-voltron-emerald text-xs font-tabular">{observation?.opportunity_score || 94}</span>
+              <span className="font-bold text-voltron-emerald text-xs font-tabular">{observation?.opportunity_score ?? 94}</span>
             </div>
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Strategy</span>
@@ -371,7 +412,9 @@ export default function AgentCommandCenterPage() {
             </div>
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Risk Status</span>
-              <span className="font-bold text-voltron-emerald text-xs">{riskDec?.overall_status || "APPROVED"}</span>
+              <span className={clsx("font-bold text-xs", isRiskApproved ? "text-voltron-emerald" : "text-voltron-rose")}>
+                {riskDec?.overall_status || "APPROVED"}
+              </span>
             </div>
             <div className="p-2 rounded bg-voltron-cyan/15 border border-voltron-cyan/40">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Action</span>
@@ -389,7 +432,7 @@ export default function AgentCommandCenterPage() {
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <div className="flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>MARKET OBSERVATION (WHAT AGENT SEES)</span>
+                <span>MARKET OBSERVATION ({symbol})</span>
               </div>
               <span className="text-[10px] text-voltron-cyan">{observation?.market_status || "OPEN"}</span>
             </div>
@@ -403,13 +446,13 @@ export default function AgentCommandCenterPage() {
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Change</span>
-                <span className="font-bold text-voltron-emerald text-xs font-tabular">
-                  +{observation?.change?.toFixed(2)} (+{observation?.change_percent?.toFixed(2)}%)
+                <span className={clsx("font-bold text-xs font-tabular", (observation?.change ?? 0) >= 0 ? "text-voltron-emerald" : "text-voltron-rose")}>
+                  {observation?.change !== undefined ? `${observation.change >= 0 ? "+" : ""}${observation.change.toFixed(2)} (${observation.change_percent >= 0 ? "+" : ""}${observation.change_percent.toFixed(2)}%)` : "—"}
                 </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Regime</span>
-                <span className="font-bold text-white text-xs">{observation?.market_regime || "HIGH IV SPREAD"}</span>
+                <span className="font-bold text-white text-xs truncate block">{observation?.market_regime || "HIGH IV SPREAD"}</span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Implied Vol (IV)</span>
@@ -438,7 +481,7 @@ export default function AgentCommandCenterPage() {
               </div>
               <div className="text-right">
                 <span className="text-[9px] text-voltron-400 uppercase block">Opportunity Score</span>
-                <span className="font-bold text-voltron-cyan text-xs font-tabular">{observation?.opportunity_score || 94} / 100</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">{observation?.opportunity_score ?? 94} / 100</span>
               </div>
             </div>
           </div>
@@ -448,7 +491,7 @@ export default function AgentCommandCenterPage() {
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-voltron-cyan" />
-                <span>VOLTRON AI ANALYST & THESIS</span>
+                <span>VOLTRON AI ANALYST & THESIS ({symbol})</span>
               </div>
               <span className="text-[10px] text-voltron-emerald font-bold">
                 CONFIDENCE: {analysis?.confidence || 88}%
@@ -461,11 +504,11 @@ export default function AgentCommandCenterPage() {
                 Quantitative Thesis
               </span>
               <p className="text-xs text-voltron-200 leading-relaxed font-sans font-normal">
-                &ldquo;{analysis?.thesis || "Analyzing variance risk premium and options skew..."}&rdquo;
+                &ldquo;{analysis?.thesis || `Analyzing variance risk premium and options skew for ${symbol}...`}&rdquo;
               </p>
             </div>
 
-            {/* Structured Decision Factors (Section 9) */}
+            {/* Structured Decision Factors */}
             <div className="space-y-1">
               <span className="text-[10px] uppercase text-voltron-emerald font-bold block">
                 DECISION FACTORS
@@ -512,7 +555,7 @@ export default function AgentCommandCenterPage() {
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">IV / RV</span>
-                <span className="font-bold text-voltron-cyan text-xs font-tabular">{stratDec?.iv_rv_ratio || "1.62"}x</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">{stratDec?.iv_rv_ratio || observation?.iv_rv_ratio || "1.62"}x</span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Net Credit</span>
@@ -522,7 +565,7 @@ export default function AgentCommandCenterPage() {
 
             {/* Legs breakdown */}
             <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 space-y-1.5">
-              <span className="text-[10px] text-voltron-400 uppercase font-bold block">Selected Option Legs</span>
+              <span className="text-[10px] text-voltron-400 uppercase font-bold block">Selected Option Legs ({symbol})</span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[11px]">
                 {stratDec?.legs?.map((leg: any, idx: number) => (
                   <div key={idx} className="p-1.5 rounded bg-voltron-900 border border-voltron-800 flex justify-between items-center">
@@ -536,7 +579,7 @@ export default function AgentCommandCenterPage() {
             </div>
 
             <p className="text-[11px] text-voltron-300 leading-relaxed font-sans">
-              <strong>Rationale:</strong> {stratDec?.rationale || "Defined-risk credit harvesting optimized for high variance premium."}
+              <strong>Rationale:</strong> {stratDec?.rationale || "Defined-risk credit harvesting optimized for variance premium."}
             </p>
           </div>
 
@@ -550,12 +593,12 @@ export default function AgentCommandCenterPage() {
               <span
                 className={clsx(
                   "text-[10px] px-2 py-0.5 rounded font-bold uppercase",
-                  riskDec?.overall_status === "APPROVED"
+                  isRiskApproved
                     ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30"
                     : "bg-voltron-rose/15 text-voltron-rose border border-voltron-rose/30"
                 )}
               >
-                {riskDec?.overall_status === "APPROVED" ? "RISK APPROVED" : "RISK BLOCKED"}
+                {isRiskApproved ? "RISK APPROVED" : "RISK BLOCKED"}
               </span>
             </div>
 
@@ -598,47 +641,68 @@ export default function AgentCommandCenterPage() {
                 <Send className="w-3.5 h-3.5 text-voltron-cyan" />
                 <span>EXECUTION STATE</span>
               </div>
-              <span className="text-[10px] text-voltron-emerald font-bold">
-                {execState?.status || "ORDER_SUBMITTED"}
+              <span
+                className={clsx(
+                  "text-[10px] font-bold",
+                  isRiskApproved ? "text-voltron-emerald" : "text-voltron-rose"
+                )}
+              >
+                {isRiskApproved ? (execState?.status || "ORDER_SUBMITTED") : "EXECUTION BLOCKED"}
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Order ID</span>
-                <span className="font-bold text-voltron-cyan text-xs font-tabular">{execState?.order_id || "VLT-8941"}</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">
+                  {isRiskApproved ? (execState?.order_id || `VLT-${symbol}-8941`) : "—"}
+                </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Order Type</span>
-                <span className="font-bold text-white text-xs">{execState?.order_type || "LIMIT_CREDIT"}</span>
+                <span className="font-bold text-white text-xs">
+                  {isRiskApproved ? (execState?.order_type || "LIMIT_CREDIT") : "—"}
+                </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Limit Price</span>
-                <span className="font-bold text-voltron-emerald text-xs font-tabular">${execState?.limit_price?.toFixed(2) || "1.85"}</span>
+                <span className="font-bold text-voltron-emerald text-xs font-tabular">
+                  {isRiskApproved ? `$${execState?.limit_price?.toFixed(2) || "1.85"}` : "—"}
+                </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Quantity</span>
-                <span className="font-bold text-white text-xs">{execState?.quantity || 1} Contract</span>
+                <span className="font-bold text-white text-xs">
+                  {isRiskApproved ? `${execState?.quantity || 1} Contract` : "0"}
+                </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Strategy</span>
-                <span className="font-bold text-white text-xs truncate block">{execState?.strategy || "IRON_CONDOR"}</span>
+                <span className="font-bold text-white text-xs truncate block">
+                  {isRiskApproved ? (execState?.strategy || stratDec?.selected_strategy || "IRON_CONDOR") : "NO_TRADE"}
+                </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Routed Timestamp</span>
-                <span className="font-bold text-white text-xs font-tabular">{execState?.timestamp || "09:31:05 UTC"}</span>
+                <span className="font-bold text-white text-xs font-tabular">
+                  {isRiskApproved ? (execState?.timestamp || "09:31:05 UTC") : "—"}
+                </span>
               </div>
             </div>
 
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800 space-y-1">
               <span className="text-[9px] uppercase text-voltron-400 block font-bold">Executed Legs Multi-Leg Router</span>
               <div className="grid grid-cols-2 gap-1 text-[10px] text-voltron-200">
-                {execState?.legs?.map((l: string, i: number) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <span className="text-voltron-cyan">●</span>
-                    <span>{l}</span>
-                  </div>
-                ))}
+                {isRiskApproved && execState?.legs ? (
+                  execState.legs.map((l: string, i: number) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <span className="text-voltron-cyan">●</span>
+                      <span>{l}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-voltron-400 italic">No orders executed (Risk gate blocked or inactive)</div>
+                )}
               </div>
             </div>
           </div>
@@ -650,43 +714,55 @@ export default function AgentCommandCenterPage() {
                 <Activity className="w-3.5 h-3.5 text-voltron-emerald" />
                 <span>POSITION MONITOR & DYNAMIC EXITS</span>
               </div>
-              <span className="text-[10px] text-voltron-emerald font-bold">
-                {posMon?.status === "POSITION_ACTIVE" ? "● ACTIVE POSITION" : "NO POSITION"}
+              <span className={clsx("text-[10px] font-bold", hasActivePosition ? "text-voltron-emerald" : "text-voltron-400")}>
+                {hasActivePosition ? "● ACTIVE POSITION" : "NO POSITION"}
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Unrealized P&L</span>
-                <span className="font-bold text-voltron-emerald text-xs font-tabular">
-                  +${posMon?.position?.unrealized_pnl?.toFixed(2) || "145.00"} (+{posMon?.position?.unrealized_pnl_pct?.toFixed(2) || "7.84"}%)
+                <span className={clsx("font-bold text-xs font-tabular", hasActivePosition ? "text-voltron-emerald" : "text-voltron-400")}>
+                  {hasActivePosition ? `+$${posMon.position.unrealized_pnl?.toFixed(2)} (+${posMon.position.unrealized_pnl_pct?.toFixed(2)}%)` : "—"}
                 </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Entry Price</span>
-                <span className="font-bold text-white text-xs font-tabular">${posMon?.position?.entry_price?.toFixed(2) || "1.85"}</span>
+                <span className="font-bold text-white text-xs font-tabular">
+                  {hasActivePosition ? `$${posMon.position.entry_price?.toFixed(2)}` : "—"}
+                </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Current Cost to Close</span>
-                <span className="font-bold text-voltron-cyan text-xs font-tabular">${posMon?.position?.current_value?.toFixed(2) || "1.70"}</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">
+                  {hasActivePosition ? `$${posMon.position.current_value?.toFixed(2)}` : "—"}
+                </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Take Profit Target</span>
-                <span className="font-bold text-voltron-emerald text-xs font-tabular">${posMon?.position?.take_profit?.toFixed(2) || "0.92"} (50%)</span>
+                <span className="font-bold text-voltron-emerald text-xs font-tabular">
+                  {hasActivePosition ? `$${posMon.position.take_profit?.toFixed(2)} (50%)` : "—"}
+                </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Stop Loss Limit</span>
-                <span className="font-bold text-voltron-rose text-xs font-tabular">${posMon?.position?.stop_loss?.toFixed(2) || "3.70"} (100%)</span>
+                <span className="font-bold text-voltron-rose text-xs font-tabular">
+                  {hasActivePosition ? `$${posMon.position.stop_loss?.toFixed(2)} (100%)` : "—"}
+                </span>
               </div>
               <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
                 <span className="text-[9px] uppercase text-voltron-400 block">Time in Trade</span>
-                <span className="font-bold text-white text-xs font-tabular">{posMon?.position?.time_open || "1h 42m"}</span>
+                <span className="font-bold text-white text-xs font-tabular">
+                  {hasActivePosition ? (posMon.position.time_open || "1h 42m") : "—"}
+                </span>
               </div>
             </div>
 
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800 flex items-center justify-between text-xs">
               <span className="text-[10px] text-voltron-400 uppercase">Exit Monitoring Status:</span>
-              <span className="text-voltron-emerald font-bold">Dynamic TP/SL Enforced (Check interval: 1s)</span>
+              <span className={clsx("font-bold", hasActivePosition ? "text-voltron-emerald" : "text-voltron-400")}>
+                {hasActivePosition ? "Dynamic TP/SL Enforced (Check interval: 1s)" : "Standby — Waiting for order fill"}
+              </span>
             </div>
           </div>
         </div>
@@ -786,7 +862,7 @@ export default function AgentCommandCenterPage() {
             </div>
 
             <p className="text-xs text-voltron-200 leading-relaxed mb-6 font-sans">
-              Stop autonomous execution? This action will immediately engage the hardware-level circuit breaker, halt all background scanning loops, and cancel active pending orders across Alpaca.
+              Stop autonomous execution on {symbol}? This action will immediately engage the circuit breaker, halt all background scanning loops, and cancel active pending orders across Alpaca.
             </p>
 
             <div className="flex gap-3">
@@ -798,14 +874,29 @@ export default function AgentCommandCenterPage() {
               </button>
               <button
                 onClick={handleEmergencyStop}
-                className="flex-1 py-2 rounded-lg bg-voltron-rose hover:bg-rose-600 text-xs font-bold text-white transition-colors shadow-rose-glow"
+                className="flex-1 py-2 rounded-lg bg-voltron-rose hover:bg-voltron-rose/90 text-xs font-bold text-white shadow-rose-glow transition-all"
               >
-                STOP AGENT
+                DISARM & STOP
               </button>
             </div>
           </div>
         </div>
       )}
     </TerminalLayout>
+  );
+}
+
+export default function AgentCommandCenterPage() {
+  return (
+    <Suspense fallback={
+      <TerminalLayout>
+        <div className="p-8 text-center text-voltron-cyan font-mono text-xs flex items-center justify-center gap-2">
+          <RefreshCw className="w-4 h-4 animate-spin" />
+          <span>INITIALIZING VOLTRON AGENT COMMAND CENTER...</span>
+        </div>
+      </TerminalLayout>
+    }>
+      <AgentCommandCenterContent />
+    </Suspense>
   );
 }
