@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  Zap,
   Bot,
   Layers,
   ShieldCheck,
@@ -35,18 +34,13 @@ export default function LandingPage() {
 
       {/* Header */}
       <header className="h-16 px-6 sm:px-12 flex items-center justify-between border-b border-voltron-750/50 bg-voltron-950/60 backdrop-blur sticky top-0 z-40">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-voltron-cyan/10 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-            <Zap className="w-4 h-4 fill-voltron-cyan" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono font-bold tracking-wider text-base text-white">
-              VOLTRON
-            </span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-voltron-cyan/15 text-voltron-cyan font-mono border border-voltron-cyan/30">
-              VOLATILITY ALPHA
-            </span>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="font-mono font-bold tracking-wider text-base text-white">
+            VOLTRON
+          </span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-voltron-cyan/15 text-voltron-cyan font-mono border border-voltron-cyan/30">
+            VOLATILITY ALPHA
+          </span>
         </div>
 
         <nav className="hidden md:flex items-center gap-6 text-xs font-mono text-voltron-300">
@@ -93,7 +87,6 @@ export default function LandingPage() {
             href="/dashboard"
             className="px-6 py-3.5 rounded-lg bg-voltron-cyan hover:bg-voltron-cyan-dim text-voltron-950 font-mono font-bold text-sm shadow-cyan-glow transition-all flex items-center gap-2"
           >
-            <Zap className="w-4 h-4 fill-voltron-950" />
             <span>Launch Terminal</span>
           </Link>
 
@@ -196,7 +189,6 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="px-6 py-6 border-t border-voltron-750/60 bg-voltron-950 text-xs font-mono text-voltron-400 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-white font-bold">
-          <Zap className="w-4 h-4 text-voltron-cyan" />
           <span>VOLTRON TRADING TERMINAL</span>
         </div>
         <div>

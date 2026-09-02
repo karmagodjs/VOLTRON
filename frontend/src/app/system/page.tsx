@@ -7,7 +7,6 @@ import {
   Activity,
   CheckCircle2,
   Clock,
-  Zap,
   Cpu,
   Database,
   ShieldCheck,
@@ -114,10 +113,7 @@ export default function SystemHealthPage() {
       <div className="space-y-3.5 font-mono text-xs">
         {/* 1. TOP OBSERVABILITY HEADER */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-voltron-cyan/15 border border-voltron-cyan/40 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-              <Server className="w-5 h-5" />
-            </div>
+          <div className="flex items-center">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-white tracking-wider">
@@ -275,10 +271,7 @@ export default function SystemHealthPage() {
               {/* Agent State Machine Telemetry */}
               <div className="p-3.5 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5 text-white font-bold text-xs uppercase">
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-voltron-cyan" />
-                    <span>Autonomous Agent State Flow (Cycle #{telemetry.cycle || 148})</span>
-                  </div>
+                  <span>Autonomous Agent State Flow (Cycle #{telemetry.cycle || 148})</span>
                   <span className="text-voltron-cyan text-[10px]">Transition: {telemetry.transition_latency_ms || 142}ms</span>
                 </div>
 

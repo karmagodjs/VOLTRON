@@ -1,7 +1,7 @@
 "use client";
 
 import { MarketData } from "@/types";
-import { Zap, ShieldCheck, Flame } from "lucide-react";
+import { ShieldCheck, Flame } from "lucide-react";
 import clsx from "clsx";
 
 interface VolatilityAlphaCardProps {
@@ -16,10 +16,7 @@ export default function VolatilityAlphaCard({ market }: VolatilityAlphaCardProps
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-voltron-750/60 pb-3 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan">
-            <Zap className="w-3.5 h-3.5" />
-          </div>
+        <div className="flex items-center">
           <span className="text-xs font-mono font-bold text-white tracking-wider uppercase">
             Volatility Alpha
           </span>

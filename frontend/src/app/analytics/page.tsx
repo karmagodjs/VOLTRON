@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import {
-  BarChart3,
   TrendingUp,
   TrendingDown,
   PieChart as PieIcon,
@@ -11,7 +10,6 @@ import {
   Award,
   ShieldCheck,
   ShieldAlert,
-  Zap,
   Activity,
   Layers,
   ArrowRightLeft,
@@ -113,10 +111,7 @@ export default function AnalyticsPage() {
       <div className="space-y-3.5 font-mono text-xs">
         {/* 1. TOP HEADER & CONTROLS */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-voltron-cyan/15 border border-voltron-cyan/40 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-              <BarChart3 className="w-5 h-5" />
-            </div>
+          <div className="flex items-center">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-white tracking-wider">
@@ -447,9 +442,8 @@ export default function AnalyticsPage() {
               {/* Confidence Buckets */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
-                  <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-voltron-cyan" />
-                    <span>AI Confidence vs Outcome Telemetry</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    AI Confidence vs Outcome Telemetry
                   </span>
                   <span className="text-[10px] text-voltron-400">5 Confidence Buckets</span>
                 </div>
@@ -478,9 +472,8 @@ export default function AnalyticsPage() {
               {/* Opportunity Score Buckets */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
-                  <span className="text-white font-bold text-xs uppercase flex items-center gap-1.5">
-                    <BarChart3 className="w-3.5 h-3.5 text-voltron-cyan" />
-                    <span>Quant Opportunity Score vs Outcome</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    Quant Opportunity Score vs Outcome
                   </span>
                   <span className="text-[10px] text-voltron-400">Hurdle Rate: &ge; 70</span>
                 </div>

@@ -13,7 +13,6 @@ import {
   Lock,
   Flame,
   Activity,
-  Zap,
   Info,
   Layers,
   X,
@@ -76,10 +75,7 @@ export default function RiskCommandPage() {
       <div className="space-y-3.5 font-mono text-xs">
         {/* 1. TOP HEADER & SAFETY CONTROLS */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-voltron-rose/15 border border-voltron-rose/40 flex items-center justify-center text-voltron-rose shadow-rose-glow">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
+          <div className="flex items-center">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-white tracking-wider">
@@ -247,9 +243,8 @@ export default function RiskCommandPage() {
             {/* Candidate Trade Evaluation */}
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
               <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
-                <span className="flex items-center gap-1.5 text-white font-bold text-xs uppercase">
-                  <Zap className="w-3.5 h-3.5 text-voltron-cyan" />
-                  <span>Current Risk Decision</span>
+                <span className="text-white font-bold text-xs uppercase">
+                  Current Risk Decision
                 </span>
                 <span className="text-[10px] px-1.5 py-0.2 rounded bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30 font-bold">
                   {risk.candidate_decision?.decision}

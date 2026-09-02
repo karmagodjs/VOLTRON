@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Send, Sparkles, Bot, User, RefreshCw } from "lucide-react";
+import { X, Send, Bot, User, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { askCopilot } from "@/lib/api";
@@ -113,10 +113,7 @@ export default function AICopilotDrawer({
     <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-voltron-950 border-l border-voltron-750/80 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200 font-mono">
       {/* Header */}
       <div className="p-4 border-b border-voltron-750/80 flex items-center justify-between bg-voltron-900/60 backdrop-blur">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-voltron-cyan/20 to-voltron-violet/20 border border-voltron-cyan/40 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-            <Sparkles className="w-4 h-4" />
-          </div>
+        <div className="flex items-center">
           <div>
             <div className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
               VOLTRON COPILOT

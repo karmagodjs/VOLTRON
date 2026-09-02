@@ -66,10 +66,7 @@ export default function StrategiesPage() {
       <div className="space-y-4">
         {/* Header */}
         <div className="p-4 rounded-xl bg-voltron-850 border border-voltron-750 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-voltron-cyan/15 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-              <SlidersHorizontal className="w-5 h-5" />
-            </div>
+          <div className="flex items-center">
             <div>
               <div className="text-base font-mono font-bold text-white flex items-center gap-2">
                 <span>STRATEGY ENGINE & PAYOFF LAB</span>

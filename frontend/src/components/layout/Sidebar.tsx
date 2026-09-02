@@ -15,7 +15,6 @@ import {
   BarChart3,
   Server,
   Settings,
-  Zap,
   Activity,
 } from "lucide-react";
 import clsx from "clsx";
@@ -42,19 +41,14 @@ export default function Sidebar() {
     <aside className="w-56 flex-shrink-0 bg-voltron-950 border-r border-voltron-750/70 flex flex-col justify-between h-screen sticky top-0 select-none z-30">
       <div>
         {/* Terminal Header */}
-        <div className="h-14 px-4 flex items-center gap-2.5 border-b border-voltron-750/70">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-7 h-7 rounded bg-voltron-cyan/15 border border-voltron-cyan/40 flex items-center justify-center text-voltron-cyan shadow-cyan-glow transition-transform group-hover:scale-105">
-              <Zap className="w-4 h-4 fill-voltron-cyan" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-mono font-black tracking-wider text-xs text-white flex items-center gap-1.5">
-                VOLTRON
-              </span>
-              <span className="text-[9px] text-voltron-cyan font-mono uppercase tracking-widest font-semibold">
-                VOLATILITY ALPHA
-              </span>
-            </div>
+        <div className="h-14 px-4 flex items-center border-b border-voltron-750/70">
+          <Link href="/dashboard" className="flex flex-col group">
+            <span className="font-mono font-black tracking-wider text-xs text-white">
+              VOLTRON
+            </span>
+            <span className="text-[9px] text-voltron-cyan font-mono uppercase tracking-widest font-semibold">
+              VOLATILITY ALPHA
+            </span>
           </Link>
         </div>
 

@@ -16,7 +16,6 @@ import { MarketData, RiskStatus, AccountSummary } from "@/types";
 import {
   TrendingUp,
   TrendingDown,
-  Zap,
   ShieldCheck,
   Briefcase,
   Activity,
@@ -89,11 +88,7 @@ export default function MarketWorkspace({
     <div className="space-y-3 font-mono">
       {/* 1. Market Header Strip */}
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded bg-voltron-cyan/15 border border-voltron-cyan/40 flex items-center justify-center text-voltron-cyan font-bold text-sm shadow-cyan-glow">
-            {market?.symbol || "SPY"}
-          </div>
-
+        <div className="flex items-center">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-base font-bold text-white tracking-wider">
@@ -247,8 +242,7 @@ export default function MarketWorkspace({
       {/* 3. Volatility Alpha Panel */}
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80">
         <div className="flex items-center justify-between border-b border-voltron-800 pb-2 mb-2.5">
-          <div className="flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5 text-voltron-cyan" />
+          <div className="flex items-center">
             <span className="text-xs font-bold text-white uppercase tracking-wider">
               VOLATILITY ALPHA
             </span>

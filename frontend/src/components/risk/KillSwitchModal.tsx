@@ -46,10 +46,8 @@ export default function KillSwitchModal({
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-voltron-rose/15 border border-voltron-rose/30 flex items-center justify-center text-voltron-rose shadow-rose-glow">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
+        <div className="flex items-center gap-2.5 mb-4">
+          <ShieldAlert className="w-5 h-5 text-voltron-rose flex-shrink-0" />
           <div>
             <h3 className="text-base font-bold text-white font-mono uppercase">
               {isEngaging ? "EMERGENCY KILL SWITCH" : "RESET KILL SWITCH"}

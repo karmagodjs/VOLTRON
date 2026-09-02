@@ -23,7 +23,6 @@ import {
 import {
   ArrowRight,
   TrendingUp,
-  Zap,
   Bot,
   SlidersHorizontal,
   ShieldCheck,

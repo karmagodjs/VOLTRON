@@ -8,7 +8,6 @@ import {
   ShieldAlert,
   ChevronDown,
   Sparkles,
-  Zap,
 } from "lucide-react";
 import clsx from "clsx";
 

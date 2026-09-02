@@ -10,13 +10,11 @@ import {
   toggleKillSwitch,
 } from "@/lib/api";
 import {
-  Bot,
   Play,
   Pause,
   Square,
   ShieldAlert,
   ShieldCheck,
-  Zap,
   TrendingUp,
   Cpu,
   CheckCircle2,
@@ -136,10 +134,7 @@ function AgentCommandCenterContent() {
       <div className="space-y-3.5 font-mono text-xs">
         {/* 1. TOP HEADER: VOLTRON INTELLIGENCE — AUTONOMOUS OPTIONS AGENT */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-voltron-cyan/15 border border-voltron-cyan/40 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-              <Bot className="w-5 h-5" />
-            </div>
+          <div className="flex items-center">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-white tracking-wider">
@@ -374,8 +369,7 @@ function AgentCommandCenterContent() {
         {/* 4. VISUAL CENTERPIECE: VOLTRON DECISION CARD */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-cyan/50 shadow-cyan-glow">
           <div className="flex items-center justify-between border-b border-voltron-800 pb-2 mb-2.5">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-voltron-cyan" />
+            <div className="flex items-center">
               <span className="text-xs font-bold text-white uppercase tracking-wider">
                 VOLTRON DECISION CENTERPIECE
               </span>

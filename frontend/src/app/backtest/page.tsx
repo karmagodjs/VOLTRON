@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
 import { runBacktest } from "@/lib/api";
 import {
-  FlaskConical,
   Play,
   TrendingUp,
   TrendingDown,
@@ -124,10 +123,7 @@ export default function QuantBacktestLabPage() {
       <div className="space-y-3.5 font-mono text-xs">
         {/* 1. TOP HEADER: VOLTRON QUANT RESEARCH LAB */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-voltron-cyan/15 border border-voltron-cyan/40 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-              <FlaskConical className="w-5 h-5" />
-            </div>
+          <div className="flex items-center">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-white tracking-wider">

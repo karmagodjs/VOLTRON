@@ -28,10 +28,7 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
       <div>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-voltron-750/60 pb-3 mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-voltron-cyan/15 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-              <Bot className="w-3.5 h-3.5" />
-            </div>
+          <div className="flex items-center">
             <span className="text-xs font-mono font-bold text-white tracking-wider uppercase">
               VOLTRON AI Analyst
             </span>

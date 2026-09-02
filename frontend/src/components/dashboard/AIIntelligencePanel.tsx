@@ -42,10 +42,7 @@ export default function AIIntelligencePanel({
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-voltron-800 pb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-voltron-cyan/15 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-              <Bot className="w-3.5 h-3.5" />
-            </div>
+          <div className="flex items-center">
             <span className="text-xs font-bold text-white uppercase tracking-wider">
               VOLTRON INTELLIGENCE
             </span>

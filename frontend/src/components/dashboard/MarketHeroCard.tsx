@@ -15,11 +15,7 @@ export default function MarketHeroCard({ market }: MarketHeroCardProps) {
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/50 backdrop-blur">
       <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Left: Symbol & Price */}
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-voltron-cyan/10 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
-            <span className="font-mono font-black text-base">{market.symbol}</span>
-          </div>
-
+        <div className="flex items-center">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xl font-bold font-mono text-white tracking-tight">

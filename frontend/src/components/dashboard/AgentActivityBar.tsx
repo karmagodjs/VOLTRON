@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   Radar,
-  Zap,
   Bot,
   SlidersHorizontal,
   ShieldCheck,

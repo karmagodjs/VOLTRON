@@ -169,10 +169,7 @@ export default function MarketsPage() {
                         onClick={() => router.push(`/agent?symbol=${row.symbol}`)}
                         className="hover:bg-voltron-800/40 transition-colors cursor-pointer group"
                       >
-                        <td className="p-3 font-bold text-white flex items-center gap-2">
-                          <div className="w-6 h-6 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan text-[11px] font-bold">
-                            {row.symbol[0]}
-                          </div>
+                        <td className="p-3 font-bold text-white">
                           <div>
                             <span className="group-hover:text-voltron-cyan transition-colors">{row.symbol}</span>
                             <span className="block text-[10px] text-voltron-400 font-normal">
