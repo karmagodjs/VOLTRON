@@ -17,7 +17,6 @@ const navItems = [
   { name: "PORTFOLIO", href: "/portfolio" },
   { name: "RISK", href: "/risk" },
   { name: "ANALYTICS", href: "/analytics" },
-  { name: "SYSTEM", href: "/system" },
 ];
 
 export default function Sidebar() {
