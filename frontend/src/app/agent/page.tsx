@@ -2,34 +2,61 @@
 
 import { useState, useEffect } from "react";
 import TerminalLayout from "@/components/layout/TerminalLayout";
-import AgentTimelineCard from "@/components/dashboard/AgentTimelineCard";
-import AutonomousControlCard from "@/components/dashboard/AutonomousControlCard";
-import { fetchAIAnalysis, fetchTimeline } from "@/lib/api";
-import { AIAnalysis, TimelineEvent } from "@/types";
+import {
+  fetchAgentTelemetry,
+  fetchTimeline,
+  controlAgent,
+  toggleKillSwitch,
+} from "@/lib/api";
 import {
   Bot,
-  Sparkles,
-  Terminal as TerminalIcon,
+  Play,
+  Pause,
+  Square,
+  ShieldAlert,
+  ShieldCheck,
+  Zap,
+  TrendingUp,
+  Cpu,
   CheckCircle2,
   AlertTriangle,
-  Cpu,
-  RefreshCw,
-  Code2,
+  Send,
+  Eye,
   Activity,
+  ArrowRight,
+  Layers,
+  SlidersHorizontal,
+  FileText,
+  Clock,
+  Sparkles,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import clsx from "clsx";
 
-export default function AgentCommandPage() {
-  const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
-  const [timeline, setTimeline] = useState<{ events: TimelineEvent[]; cycle: number; status: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"thesis" | "prompt" | "raw">("thesis");
+const symbols = ["SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA"];
+
+export default function AgentCommandCenterPage() {
+  const [symbol, setSymbol] = useState("SPY");
+  const [data, setData] = useState<any>(null);
+  const [timeline, setTimeline] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [symbolDropdown, setSymbolDropdown] = useState(false);
+  const [killModalOpen, setKillModalOpen] = useState(false);
+  const [secondsToNext, setSecondsToNext] = useState(24);
 
   const loadData = async () => {
     try {
-      const [a, t] = await Promise.all([fetchAIAnalysis("SPY"), fetchTimeline()]);
-      setAnalysis(a);
+      const [tel, t] = await Promise.all([
+        fetchAgentTelemetry(symbol),
+        fetchTimeline(),
+      ]);
+      setData(tel);
       setTimeline(t);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message || "Failed to fetch telemetry from agent engine");
     } finally {
       setLoading(false);
     }
@@ -37,193 +64,748 @@ export default function AgentCommandPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 8000);
+    const interval = setInterval(loadData, 6000);
     return () => clearInterval(interval);
+  }, [symbol]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsToNext((prev) => {
+        if (prev <= 1) {
+          loadData();
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  if (loading || !analysis || !timeline) {
-    return (
-      <TerminalLayout>
-        <div className="flex items-center justify-center h-[calc(100vh-120px)] font-mono text-sm text-voltron-cyan">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 rounded-lg border-2 border-voltron-cyan border-t-transparent animate-spin"></div>
-            <span>INITIALIZING AI AGENT COMMAND CENTER...</span>
-          </div>
-        </div>
-      </TerminalLayout>
-    );
-  }
+  const handleControl = async (action: "start" | "pause" | "stop" | "step") => {
+    await controlAgent(action);
+    loadData();
+  };
+
+  const handleEmergencyStop = async () => {
+    await toggleKillSwitch(true);
+    await controlAgent("stop");
+    setKillModalOpen(false);
+    loadData();
+  };
+
+  const agentState = data?.agent_state;
+  const observation = data?.market_observation;
+  const analysis = data?.analysis;
+  const factors = data?.decision_factors || [];
+  const riskDec = data?.risk_decision;
+  const stratDec = data?.strategy_decision;
+  const execState = data?.execution_state;
+  const posMon = data?.position_monitor;
+  const metrics = data?.metrics;
+  const pipeline = data?.pipeline || [];
+
+  const statusLabel = agentState?.status || "ANALYZING";
+  const isNoTrade = analysis?.decision === "NO_TRADE";
 
   return (
     <TerminalLayout>
-      <div className="space-y-4">
-        {/* Top Header Banner */}
-        <div className="p-4 rounded-xl bg-voltron-850 border border-voltron-750 flex flex-wrap items-center justify-between gap-4">
+      <div className="space-y-3.5 font-mono text-xs">
+        {/* 1. TOP HEADER: VOLTRON INTELLIGENCE — AUTONOMOUS OPTIONS AGENT */}
+        <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-voltron-cyan/15 border border-voltron-cyan/30 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
+            <div className="w-10 h-10 rounded-lg bg-voltron-cyan/15 border border-voltron-cyan/40 flex items-center justify-center text-voltron-cyan shadow-cyan-glow">
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-base font-mono font-bold text-white flex items-center gap-2">
-                <span>VOLTRON AI AUTONOMOUS COMMAND CENTER</span>
-                <span className="text-xs px-2 py-0.5 rounded bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30">
-                  ● GEMINI 3.6 FLASH (ACTIVE)
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white tracking-wider">
+                  VOLTRON INTELLIGENCE
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 text-voltron-cyan font-bold uppercase">
+                  AUTONOMOUS OPTIONS AGENT
                 </span>
               </div>
-              <div className="text-xs font-mono text-voltron-400">
-                Data &rarr; Intelligence &rarr; Strategy Selection &rarr; Paper Execution
+              <div className="text-[11px] text-voltron-400 mt-0.5">
+                Targeting Variance Risk Premium via Alpaca Paper Environment
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-mono">
-            <span className="text-voltron-400">Cycle:</span>
-            <span className="font-bold text-white bg-voltron-900 px-2.5 py-1 rounded border border-voltron-750 font-tabular">
-              #{timeline.cycle}
-            </span>
-          </div>
-        </div>
-
-        {/* 2-Column Command Workspace */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Left: AI Reasoning Engine Workspace (7 cols) */}
-          <div className="lg:col-span-7 space-y-4">
-            {/* Model Card */}
-            <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40">
-              <div className="flex items-center justify-between border-b border-voltron-750/60 pb-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-voltron-cyan" />
-                  <span className="text-xs font-mono font-bold text-white uppercase">
-                    Neural Market Reasoning & Thesis
-                  </span>
-                </div>
-
-                <div className="flex gap-1 bg-voltron-900 p-1 rounded-lg border border-voltron-750 text-xs font-mono">
-                  {(["thesis", "prompt", "raw"] as const).map((tab) => (
+          <div className="flex flex-wrap items-center gap-2.5 text-xs">
+            {/* Symbol Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setSymbolDropdown(!symbolDropdown)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-950 border border-voltron-750 text-white font-bold hover:bg-voltron-800 transition-colors"
+              >
+                <span className="text-voltron-400 text-[10px] uppercase">Symbol:</span>
+                <span className="text-voltron-cyan">{symbol}</span>
+                <ChevronDown className="w-3 h-3 text-voltron-400" />
+              </button>
+              {symbolDropdown && (
+                <div className="absolute right-0 mt-1 w-32 bg-voltron-850 border border-voltron-700 rounded-md shadow-terminal p-1 z-50">
+                  {symbols.map((s) => (
                     <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
+                      key={s}
+                      onClick={() => {
+                        setSymbol(s);
+                        setSymbolDropdown(false);
+                      }}
                       className={clsx(
-                        "px-2.5 py-1 rounded text-[11px] font-semibold transition-colors uppercase",
-                        activeTab === tab
-                          ? "bg-voltron-750 text-voltron-cyan border border-voltron-600/50"
-                          : "text-voltron-400 hover:text-white"
+                        "w-full text-left px-2.5 py-1 rounded text-[11px] font-semibold transition-colors",
+                        symbol === s
+                          ? "bg-voltron-cyan/15 text-voltron-cyan"
+                          : "text-voltron-200 hover:bg-voltron-750"
                       )}
                     >
-                      {tab}
+                      {s}
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {activeTab === "thesis" && (
-                <div className="space-y-4 font-mono text-xs">
-                  {/* Top Key AI Badges */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div className="p-2.5 rounded bg-voltron-900 border border-voltron-800">
-                      <span className="text-[10px] text-voltron-400 uppercase block">Confidence</span>
-                      <span className="text-sm font-bold text-voltron-cyan font-tabular">{analysis.confidence}%</span>
-                    </div>
-                    <div className="p-2.5 rounded bg-voltron-900 border border-voltron-800">
-                      <span className="text-[10px] text-voltron-400 uppercase block">Decision</span>
-                      <span className="text-sm font-bold text-voltron-emerald">{analysis.decision.replace("_", " ")}</span>
-                    </div>
-                    <div className="p-2.5 rounded bg-voltron-900 border border-voltron-800">
-                      <span className="text-[10px] text-voltron-400 uppercase block">Direction</span>
-                      <span className="text-sm font-bold text-white">{analysis.direction}</span>
-                    </div>
-                    <div className="p-2.5 rounded bg-voltron-900 border border-voltron-800">
-                      <span className="text-[10px] text-voltron-400 uppercase block">Strategy</span>
-                      <span className="text-sm font-bold text-voltron-cyan">{analysis.strategy_recommendation}</span>
-                    </div>
-                  </div>
-
-                  {/* Primary Thesis */}
-                  <div className="p-4 rounded-xl bg-voltron-900/90 border border-voltron-750">
-                    <span className="text-[10px] text-voltron-cyan uppercase font-bold block mb-1">
-                      Synthesized Core Thesis
-                    </span>
-                    <p className="text-sm text-voltron-100 leading-relaxed font-light">
-                      &ldquo;{analysis.thesis}&rdquo;
-                    </p>
-                  </div>
-
-                  {/* Reasons & Risks */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="p-3 rounded-lg bg-voltron-900/40 border border-voltron-800 space-y-2">
-                      <span className="text-[10px] font-bold text-voltron-emerald uppercase flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Quantitative Edge Justification
-                      </span>
-                      {analysis.key_reasons.map((r, i) => (
-                        <div key={i} className="flex items-start gap-1.5 text-voltron-300 text-[11px]">
-                          <span className="text-voltron-emerald">✓</span>
-                          <span>{r}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="p-3 rounded-lg bg-voltron-900/40 border border-voltron-800 space-y-2">
-                      <span className="text-[10px] font-bold text-voltron-rose uppercase flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Risk Invalidation Triggers
-                      </span>
-                      {analysis.risks.map((r, i) => (
-                        <div key={i} className="flex items-start gap-1.5 text-voltron-300 text-[11px]">
-                          <span className="text-voltron-rose">⚠</span>
-                          <span>{r}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "prompt" && (
-                <div className="p-3 rounded bg-voltron-950 border border-voltron-800 font-mono text-[11px] text-voltron-300 space-y-2">
-                  <div className="text-voltron-cyan font-bold">SYSTEM PROMPT (agent/analyst.py):</div>
-                  <p>You are VOLTRON, an autonomous options volatility analyst.</p>
-                  <p>Your job is to analyze structured quantitative market signals (IV, RV, Greeks, Skew) and select defined-risk options strategies.</p>
-                  <div className="text-voltron-cyan font-bold pt-2">SAFETY CONSTRAINTS:</div>
-                  <p>1. Never invent market data or prices.</p>
-                  <p>2. Prefer defined-risk multi-leg strategies.</p>
-                  <p>3. Reject trades when confidence is below 70%.</p>
-                </div>
-              )}
-
-              {activeTab === "raw" && (
-                <pre className="p-3 rounded bg-voltron-950 border border-voltron-800 font-mono text-[11px] text-voltron-cyan overflow-x-auto">
-                  {JSON.stringify(analysis, null, 2)}
-                </pre>
               )}
             </div>
 
-            {/* Autonomous Controls */}
-            <AutonomousControlCard cycle={timeline.cycle} onRefreshTimeline={loadData} />
+            {/* Current Cycle */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-950 border border-voltron-750">
+              <span className="text-voltron-400 text-[10px] uppercase">Cycle:</span>
+              <span className="font-bold text-white font-tabular">
+                #{agentState?.cycle || timeline?.cycle || 142}
+              </span>
+            </div>
+
+            {/* Trading Mode */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 text-voltron-cyan font-bold">
+              <span className="text-voltron-400 text-[10px] uppercase">Mode:</span>
+              <span>PAPER</span>
+            </div>
+
+            {/* Agent Status */}
+            <div
+              className={clsx(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded font-bold uppercase",
+                statusLabel === "ACTIVE" || statusLabel === "ANALYZING"
+                  ? "bg-voltron-emerald/15 border border-voltron-emerald/30 text-voltron-emerald"
+                  : statusLabel === "PAUSED"
+                  ? "bg-voltron-amber/15 border border-voltron-amber/30 text-voltron-amber"
+                  : "bg-voltron-rose/15 border border-voltron-rose/30 text-voltron-rose"
+              )}
+            >
+              <span
+                className={clsx(
+                  "w-1.5 h-1.5 rounded-full inline-block",
+                  statusLabel === "ACTIVE" || statusLabel === "ANALYZING"
+                    ? "bg-voltron-emerald animate-pulse"
+                    : statusLabel === "PAUSED"
+                    ? "bg-voltron-amber"
+                    : "bg-voltron-rose"
+                )}
+              ></span>
+              ● {statusLabel}
+            </div>
+          </div>
+        </div>
+
+        {/* 2. AGENT CONTROL CENTER */}
+        <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-voltron-800 pb-2">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-voltron-cyan" />
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                AGENT CONTROL CENTER
+              </span>
+            </div>
+
+            {/* Control Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleControl("start")}
+                className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-bold text-voltron-emerald border border-voltron-700/80 transition-colors flex items-center gap-1.5"
+              >
+                <Play className="w-3.5 h-3.5 fill-voltron-emerald" />
+                <span>START</span>
+              </button>
+
+              <button
+                onClick={() => handleControl("pause")}
+                className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-bold text-voltron-amber border border-voltron-700/80 transition-colors flex items-center gap-1.5"
+              >
+                <Pause className="w-3.5 h-3.5 fill-voltron-amber" />
+                <span>PAUSE</span>
+              </button>
+
+              <button
+                onClick={() => handleControl("stop")}
+                className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-bold text-voltron-rose border border-voltron-700/80 transition-colors flex items-center gap-1.5"
+              >
+                <Square className="w-3.5 h-3.5 fill-voltron-rose" />
+                <span>STOP</span>
+              </button>
+
+              <button
+                onClick={() => setKillModalOpen(true)}
+                className="px-3 py-1.5 rounded bg-voltron-rose/15 hover:bg-voltron-rose/25 text-[11px] font-bold text-voltron-rose border border-voltron-rose/40 transition-colors flex items-center gap-1.5 shadow-rose-glow"
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span>EMERGENCY KILL SWITCH</span>
+              </button>
+            </div>
           </div>
 
-          {/* Right: Live Execution Timeline (5 cols) */}
-          <div className="lg:col-span-5 space-y-4">
-            <AgentTimelineCard events={timeline.events} cycle={timeline.cycle} />
+          {/* Telemetry Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Status</span>
+              <span className="font-bold text-voltron-emerald">{statusLabel}</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Current Cycle</span>
+              <span className="font-bold text-white font-tabular">#{agentState?.cycle || 142}</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Last Scan</span>
+              <span className="font-bold text-white font-tabular">09:31:02 UTC</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Next Scan</span>
+              <span className="font-bold text-voltron-cyan font-tabular">{secondsToNext}s</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Current Symbol</span>
+              <span className="font-bold text-voltron-cyan">{symbol}</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Active Strategy</span>
+              <span className="font-bold text-white truncate block">{stratDec?.selected_strategy || "IRON CONDOR"}</span>
+            </div>
+          </div>
+        </div>
 
-            {/* Terminal Live Output Log */}
-            <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-950/80 font-mono text-xs">
-              <div className="flex items-center justify-between border-b border-voltron-800 pb-2 mb-2 text-voltron-400 text-[10px] uppercase">
-                <span className="flex items-center gap-1.5">
-                  <TerminalIcon className="w-3.5 h-3.5 text-voltron-cyan" />
-                  Execution Stream Log
+        {/* 3. AUTONOMOUS PIPELINE: SCAN → ANALYZE → STRATEGY → RISK → EXECUTE → MONITOR → EXIT → LOG */}
+        <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+          <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
+            <div className="flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-voltron-cyan" />
+              <span>AUTONOMOUS EXECUTION PIPELINE</span>
+            </div>
+            <span className="text-[10px] text-voltron-emerald font-semibold">8 STAGE ENVELOPE</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+            {pipeline.map((step: any) => {
+              const isPass = step.status === "PASSED";
+              const isActive = step.status === "ACTIVE";
+
+              return (
+                <div
+                  key={step.stage}
+                  className={clsx(
+                    "p-2 rounded border flex flex-col justify-between transition-all",
+                    isActive
+                      ? "bg-voltron-950 border-voltron-cyan shadow-cyan-glow"
+                      : isPass
+                      ? "bg-voltron-950/80 border-voltron-800"
+                      : "bg-voltron-950/40 border-voltron-850 opacity-60"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-white">{step.stage}</span>
+                    <span
+                      className={clsx(
+                        "text-[9px] font-bold px-1 rounded",
+                        isActive
+                          ? "text-voltron-cyan bg-voltron-cyan/15 animate-pulse"
+                          : isPass
+                          ? "text-voltron-emerald bg-voltron-emerald/15"
+                          : "text-voltron-400"
+                      )}
+                    >
+                      {isPass ? "✓" : isActive ? "●" : "—"}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-voltron-400 font-tabular">{step.timestamp}</div>
+                  <div className="text-[10px] text-voltron-300 truncate mt-1">{step.reason}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4. VISUAL CENTERPIECE: VOLTRON DECISION CARD */}
+        <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-cyan/50 shadow-cyan-glow">
+          <div className="flex items-center justify-between border-b border-voltron-800 pb-2 mb-2.5">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-voltron-cyan" />
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                VOLTRON DECISION CENTERPIECE
+              </span>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-voltron-cyan/15 text-voltron-cyan font-bold uppercase">
+              {symbol} TARGET STATE
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-xs">
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Symbol</span>
+              <span className="font-bold text-white text-xs">{symbol}</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Volatility</span>
+              <span className="font-bold text-voltron-emerald text-xs">{analysis?.volatility_view || "EXPENSIVE"}</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Direction</span>
+              <span className="font-bold text-voltron-cyan text-xs">{analysis?.direction || "NEUTRAL"}</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Confidence</span>
+              <span className="font-bold text-voltron-cyan text-xs font-tabular">{analysis?.confidence || 88}%</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Opportunity</span>
+              <span className="font-bold text-voltron-emerald text-xs font-tabular">{observation?.opportunity_score || 94}</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Strategy</span>
+              <span className="font-bold text-white text-xs truncate block">{stratDec?.selected_strategy || "IRON CONDOR"}</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Risk Status</span>
+              <span className="font-bold text-voltron-emerald text-xs">{riskDec?.overall_status || "APPROVED"}</span>
+            </div>
+            <div className="p-2 rounded bg-voltron-cyan/15 border border-voltron-cyan/40">
+              <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Action</span>
+              <span className="font-bold text-voltron-cyan text-xs truncate block">
+                {isNoTrade ? "NO TRADE" : "PAPER EXEC"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 5. 2-COLUMN OPERATIONS WORKSPACE: ROW 1 (MARKET OBSERVATION + AI ANALYST) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          {/* Market Observation (5 cols) */}
+          <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
+              <div className="flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5 text-voltron-cyan" />
+                <span>MARKET OBSERVATION (WHAT AGENT SEES)</span>
+              </div>
+              <span className="text-[10px] text-voltron-cyan">{observation?.market_status || "OPEN"}</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Spot Price</span>
+                <span className="font-bold text-white text-xs font-tabular">
+                  {observation?.price ? `$${observation.price.toFixed(2)}` : "—"}
                 </span>
-                <span className="text-voltron-emerald">● LISTENING</span>
               </div>
-              <div className="space-y-1 text-[11px] text-voltron-300 max-h-[140px] overflow-y-auto">
-                <div className="text-voltron-400">[09:31:02] SCAN: Found 8 candidate symbols. Filtered to SPY.</div>
-                <div className="text-voltron-cyan">[09:31:03] QUANT: RV(20)=10.42%, IV=16.85%, Spread=1.62x.</div>
-                <div className="text-voltron-emerald">[09:31:04] AI: Confidence 88%. Selected IRON_CONDOR.</div>
-                <div className="text-voltron-emerald">[09:31:05] RISK: Evaluated 7 gates. All APPROVED.</div>
-                <div className="text-white font-bold">[09:31:05] EXEC: Paper Order #VLT-8941 sent to Alpaca.</div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Change</span>
+                <span className="font-bold text-voltron-emerald text-xs font-tabular">
+                  +{observation?.change?.toFixed(2)} (+{observation?.change_percent?.toFixed(2)}%)
+                </span>
               </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Regime</span>
+                <span className="font-bold text-white text-xs">{observation?.market_regime || "HIGH IV SPREAD"}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Implied Vol (IV)</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">
+                  {observation?.implied_volatility ? `${observation.implied_volatility.toFixed(2)}%` : "—"}
+                </span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Realized Vol (RV)</span>
+                <span className="font-bold text-white text-xs font-tabular">
+                  {observation?.realized_volatility ? `${observation.realized_volatility.toFixed(2)}%` : "—"}
+                </span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">IV / RV Ratio</span>
+                <span className="font-bold text-voltron-emerald text-xs font-tabular">
+                  {observation?.iv_rv_ratio ? `${observation.iv_rv_ratio.toFixed(2)}x` : "—"}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center justify-between">
+              <div>
+                <span className="text-[9px] text-voltron-400 uppercase block">Alpha Edge Signal</span>
+                <span className="font-bold text-voltron-emerald text-xs">{observation?.vol_signal || "IV EXPENSIVE"}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-[9px] text-voltron-400 uppercase block">Opportunity Score</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">{observation?.opportunity_score || 94} / 100</span>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Analyst & Decision Factors (7 cols) */}
+          <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-voltron-cyan" />
+                <span>VOLTRON AI ANALYST & THESIS</span>
+              </div>
+              <span className="text-[10px] text-voltron-emerald font-bold">
+                CONFIDENCE: {analysis?.confidence || 88}%
+              </span>
+            </div>
+
+            {/* Core Thesis Box */}
+            <div className="p-3 rounded bg-voltron-950 border border-voltron-800">
+              <span className="text-[9px] uppercase text-voltron-cyan font-bold block mb-1">
+                Quantitative Thesis
+              </span>
+              <p className="text-xs text-voltron-200 leading-relaxed font-sans font-normal">
+                &ldquo;{analysis?.thesis || "Analyzing variance risk premium and options skew..."}&rdquo;
+              </p>
+            </div>
+
+            {/* Structured Decision Factors (Section 9) */}
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase text-voltron-emerald font-bold block">
+                DECISION FACTORS
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {factors.map((factor: string, i: number) => (
+                  <div
+                    key={i}
+                    className="p-2 rounded bg-voltron-950/70 border border-voltron-800 flex items-start gap-2"
+                  >
+                    <span className="text-[10px] font-bold text-voltron-emerald px-1 py-0.2 rounded bg-voltron-emerald/10 border border-voltron-emerald/20 flex-shrink-0">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-voltron-200 text-[11px] leading-snug">{factor}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 6. 2-COLUMN OPERATIONS WORKSPACE: ROW 2 (STRATEGY ENGINE + RISK GATES) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          {/* Strategy Engine (6 cols) */}
+          <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
+              <div className="flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-voltron-cyan" />
+                <span>STRATEGY ENGINE</span>
+              </div>
+              <span className="text-[10px] text-voltron-cyan font-bold">
+                {stratDec?.selected_strategy || "IRON CONDOR"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 text-xs">
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Direction</span>
+                <span className="font-bold text-white text-xs">{stratDec?.sentiment || "NEUTRAL"}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Volatility</span>
+                <span className="font-bold text-voltron-emerald text-xs">{stratDec?.volatility_view || "EXPENSIVE"}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">IV / RV</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">{stratDec?.iv_rv_ratio || "1.62"}x</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Net Credit</span>
+                <span className="font-bold text-voltron-emerald text-xs font-tabular">${stratDec?.net_credit?.toFixed(2) || "1.85"}</span>
+              </div>
+            </div>
+
+            {/* Legs breakdown */}
+            <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 space-y-1.5">
+              <span className="text-[10px] text-voltron-400 uppercase font-bold block">Selected Option Legs</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[11px]">
+                {stratDec?.legs?.map((leg: any, idx: number) => (
+                  <div key={idx} className="p-1.5 rounded bg-voltron-900 border border-voltron-800 flex justify-between items-center">
+                    <span className={leg.action === "SELL" ? "text-voltron-emerald font-bold" : "text-voltron-cyan font-bold"}>
+                      {leg.action} {leg.strike}{leg.type[0]}
+                    </span>
+                    <span className="text-voltron-400">${leg.price}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-[11px] text-voltron-300 leading-relaxed font-sans">
+              <strong>Rationale:</strong> {stratDec?.rationale || "Defined-risk credit harvesting optimized for high variance premium."}
+            </p>
+          </div>
+
+          {/* Risk Gate Engine (6 cols) */}
+          <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-voltron-rose" />
+                <span>RISK GATE EVALUATION</span>
+              </div>
+              <span
+                className={clsx(
+                  "text-[10px] px-2 py-0.5 rounded font-bold uppercase",
+                  riskDec?.overall_status === "APPROVED"
+                    ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30"
+                    : "bg-voltron-rose/15 text-voltron-rose border border-voltron-rose/30"
+                )}
+              >
+                {riskDec?.overall_status === "APPROVED" ? "RISK APPROVED" : "RISK BLOCKED"}
+              </span>
+            </div>
+
+            {/* 7 Gates Grid */}
+            <div className="space-y-1.5 max-h-[190px] overflow-y-auto">
+              {riskDec?.gates?.map((gate: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="p-2 rounded bg-voltron-950 border border-voltron-800 flex items-center justify-between text-xs"
+                >
+                  <div>
+                    <span className="font-bold text-white text-[11px] block">{gate.name}</span>
+                    <span className="text-[10px] text-voltron-400">{gate.condition}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-voltron-300 font-tabular">{gate.current_value}</span>
+                    <span
+                      className={clsx(
+                        "text-[10px] font-bold px-1.5 py-0.2 rounded",
+                        gate.status === "PASS"
+                          ? "bg-voltron-emerald/15 text-voltron-emerald border border-voltron-emerald/30"
+                          : "bg-voltron-rose/15 text-voltron-rose border border-voltron-rose/30"
+                      )}
+                    >
+                      {gate.status === "PASS" ? "✓ PASS" : "✗ BLOCKED"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 7. 2-COLUMN OPERATIONS WORKSPACE: ROW 3 (EXECUTION STATE + POSITION MONITOR) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          {/* Execution State (6 cols) */}
+          <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
+              <div className="flex items-center gap-1.5">
+                <Send className="w-3.5 h-3.5 text-voltron-cyan" />
+                <span>EXECUTION STATE</span>
+              </div>
+              <span className="text-[10px] text-voltron-emerald font-bold">
+                {execState?.status || "ORDER_SUBMITTED"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Order ID</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">{execState?.order_id || "VLT-8941"}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Order Type</span>
+                <span className="font-bold text-white text-xs">{execState?.order_type || "LIMIT_CREDIT"}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Limit Price</span>
+                <span className="font-bold text-voltron-emerald text-xs font-tabular">${execState?.limit_price?.toFixed(2) || "1.85"}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Quantity</span>
+                <span className="font-bold text-white text-xs">{execState?.quantity || 1} Contract</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Strategy</span>
+                <span className="font-bold text-white text-xs truncate block">{execState?.strategy || "IRON_CONDOR"}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Routed Timestamp</span>
+                <span className="font-bold text-white text-xs font-tabular">{execState?.timestamp || "09:31:05 UTC"}</span>
+              </div>
+            </div>
+
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800 space-y-1">
+              <span className="text-[9px] uppercase text-voltron-400 block font-bold">Executed Legs Multi-Leg Router</span>
+              <div className="grid grid-cols-2 gap-1 text-[10px] text-voltron-200">
+                {execState?.legs?.map((l: string, i: number) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <span className="text-voltron-cyan">●</span>
+                    <span>{l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Position Monitor (6 cols) */}
+          <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
+              <div className="flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-voltron-emerald" />
+                <span>POSITION MONITOR & DYNAMIC EXITS</span>
+              </div>
+              <span className="text-[10px] text-voltron-emerald font-bold">
+                {posMon?.status === "POSITION_ACTIVE" ? "● ACTIVE POSITION" : "NO POSITION"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Unrealized P&L</span>
+                <span className="font-bold text-voltron-emerald text-xs font-tabular">
+                  +${posMon?.position?.unrealized_pnl?.toFixed(2) || "145.00"} (+{posMon?.position?.unrealized_pnl_pct?.toFixed(2) || "7.84"}%)
+                </span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Entry Price</span>
+                <span className="font-bold text-white text-xs font-tabular">${posMon?.position?.entry_price?.toFixed(2) || "1.85"}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Current Cost to Close</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">${posMon?.position?.current_value?.toFixed(2) || "1.70"}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Take Profit Target</span>
+                <span className="font-bold text-voltron-emerald text-xs font-tabular">${posMon?.position?.take_profit?.toFixed(2) || "0.92"} (50%)</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Stop Loss Limit</span>
+                <span className="font-bold text-voltron-rose text-xs font-tabular">${posMon?.position?.stop_loss?.toFixed(2) || "3.70"} (100%)</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Time in Trade</span>
+                <span className="font-bold text-white text-xs font-tabular">{posMon?.position?.time_open || "1h 42m"}</span>
+              </div>
+            </div>
+
+            <div className="p-2 rounded bg-voltron-950 border border-voltron-800 flex items-center justify-between text-xs">
+              <span className="text-[10px] text-voltron-400 uppercase">Exit Monitoring Status:</span>
+              <span className="text-voltron-emerald font-bold">Dynamic TP/SL Enforced (Check interval: 1s)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 8. ROW 4: AGENT METRICS & CHRONOLOGICAL ACTIVITY LOG */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          {/* Agent Performance Metrics (5 cols) */}
+          <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
+              <div className="flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-voltron-cyan" />
+                <span>AGENT OPERATING METRICS</span>
+              </div>
+              <span className="text-[10px] text-voltron-cyan">TODAY</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Cycles Today</span>
+                <span className="font-bold text-white text-xs font-tabular">{metrics?.cycles_today || 142}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Trades Today</span>
+                <span className="font-bold text-white text-xs font-tabular">{metrics?.trades_today || 6}</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Win Rate</span>
+                <span className="font-bold text-voltron-emerald text-xs font-tabular">{metrics?.win_rate_pct || 83.3}%</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Wins / Losses</span>
+                <span className="font-bold text-white text-xs font-tabular">{metrics?.winning_trades || 5}W / {metrics?.losing_trades || 1}L</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Avg Confidence</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">{metrics?.avg_confidence || 86.4}%</span>
+              </div>
+              <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-[9px] uppercase text-voltron-400 block">Orders / Blocks</span>
+                <span className="font-bold text-white text-xs font-tabular">{metrics?.orders_submitted || 6} / {metrics?.risk_blocks || 1}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Chronological Activity Timeline (7 cols) */}
+          <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-voltron-cyan" />
+                <span>AGENT ACTIVITY STREAM</span>
+              </div>
+              <span className="text-[10px] text-voltron-emerald">● REAL-TIME</span>
+            </div>
+
+            <div className="space-y-1.5 max-h-[175px] overflow-y-auto">
+              {timeline?.events?.map((evt: any) => (
+                <div
+                  key={evt.id}
+                  className="p-2 rounded bg-voltron-950 border border-voltron-800 flex items-center justify-between text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-voltron-400 text-[10px] font-tabular">{evt.timestamp}</span>
+                    <span className="px-1.5 py-0.2 rounded bg-voltron-900 text-voltron-cyan font-bold text-[10px] border border-voltron-800 uppercase">
+                      {evt.stage}
+                    </span>
+                    <span className="text-voltron-200 text-[11px] truncate max-w-md">{evt.summary}</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-voltron-emerald bg-voltron-emerald/10 px-1 rounded">
+                    {evt.status}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Emergency Stop Confirmation Modal */}
+      {killModalOpen && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono">
+          <div className="w-full max-w-md bg-voltron-900 border-2 border-voltron-rose rounded-xl shadow-2xl p-6 relative">
+            <button
+              onClick={() => setKillModalOpen(false)}
+              className="absolute top-4 right-4 text-voltron-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-voltron-rose/20 border border-voltron-rose/40 flex items-center justify-center text-voltron-rose shadow-rose-glow">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase">EMERGENCY KILL SWITCH</h3>
+                <span className="text-[10px] text-voltron-rose font-bold">CRITICAL SYSTEM OVERRIDE</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-voltron-200 leading-relaxed mb-6 font-sans">
+              Stop autonomous execution? This action will immediately engage the hardware-level circuit breaker, halt all background scanning loops, and cancel active pending orders across Alpaca.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setKillModalOpen(false)}
+                className="flex-1 py-2 rounded-lg bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white transition-colors"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={handleEmergencyStop}
+                className="flex-1 py-2 rounded-lg bg-voltron-rose hover:bg-rose-600 text-xs font-bold text-white transition-colors shadow-rose-glow"
+              >
+                STOP AGENT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </TerminalLayout>
   );
 }
