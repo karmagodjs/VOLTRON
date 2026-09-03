@@ -7,6 +7,7 @@ import {
   Settings as SettingsIcon,
   ChevronDown,
   Menu,
+  AlertTriangle,
 } from "lucide-react";
 import clsx from "clsx";
 import ThemeToggle from "@/components/common/ThemeToggle";
@@ -53,9 +54,9 @@ export default function TopNav({
   const [notificationOpen, setNotificationOpen] = useState(false);
 
   return (
-    <header className="h-14 bg-voltron-950/95 backdrop-blur border-b border-voltron-750/70 px-2 sm:px-4 flex items-center justify-between sticky top-0 z-20 font-mono text-xs max-w-full overflow-hidden">
-      {/* Left: Mobile Hamburger & Live Market Status Bar */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-shrink">
+    <header className="h-14 bg-voltron-950/95 backdrop-blur border-b border-voltron-750/70 px-2.5 sm:px-4 flex items-center justify-between sticky top-0 z-20 font-mono text-xs max-w-full overflow-hidden">
+      {/* Left: Mobile Navigation, Brand, Asset Selector & Live Status */}
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-shrink overflow-x-auto no-scrollbar py-0.5">
         {/* Mobile Hamburger Menu Trigger */}
         {onOpenMobileMenu && (
           <button
@@ -67,29 +68,31 @@ export default function TopNav({
           </button>
         )}
 
-        {/* Mobile Brand Logo */}
+        {/* Brand Logo (Visible on mobile/tablet when sidebar is hidden) */}
         <Link
           href={`/dashboard?symbol=${currentSymbol}`}
-          className="lg:hidden font-mono font-bold tracking-wider text-xs text-white hover:text-voltron-cyan transition-colors flex-shrink-0 mr-1"
+          className="lg:hidden flex items-center gap-1.5 font-mono font-bold tracking-wider text-xs sm:text-sm text-white hover:text-voltron-cyan transition-colors flex-shrink-0 mr-1"
         >
-          VOLTRON
+          <span className="w-2 h-2 rounded-xs bg-voltron-cyan shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+          <span>VOLTRON</span>
         </Link>
 
-        {/* Market Symbol Dropdown */}
+        {/* Asset Selector Dropdown */}
         <div className="relative flex-shrink-0">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded bg-voltron-850 hover:bg-voltron-800 border border-voltron-700/80 font-bold text-white transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded bg-voltron-850 hover:bg-voltron-800 border border-voltron-700/80 hover:border-voltron-600 font-bold text-white transition-all shadow-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-voltron-cyan"
+            aria-label="Select asset"
           >
-            <span className="text-voltron-400 text-[10px] sm:text-[11px] hidden xs:inline">Market:</span>
+            <span className="text-voltron-400 text-[10px] sm:text-[11px] uppercase tracking-wider hidden xs:inline">Asset:</span>
             <span className="text-voltron-cyan font-bold text-xs">{currentSymbol}</span>
-            <ChevronDown className="w-3 h-3 text-voltron-400 ml-0.5" />
+            <ChevronDown className={clsx("w-3 h-3 text-voltron-400 ml-0.5 transition-transform duration-150", dropdownOpen && "rotate-180")} />
           </button>
 
           {dropdownOpen && (
             <div className="absolute left-0 mt-1.5 w-48 bg-voltron-850 border border-voltron-700 rounded-md shadow-terminal p-1 z-50">
               <div className="px-2 py-1 text-[9px] uppercase text-voltron-400 tracking-wider">
-                Select Market
+                Select Asset
               </div>
               {symbols.map((item) => (
                 <button
@@ -116,62 +119,40 @@ export default function TopNav({
         </div>
 
         {/* Real Price Display */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span className="text-voltron-400 text-[10px] uppercase">Price:</span>
-          <span className="font-bold text-white font-tabular">
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
+          <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Price:</span>
+          <span className="font-bold text-white font-tabular text-xs">
             {marketPrice != null ? `$${marketPrice.toFixed(2)}` : "—"}
           </span>
         </div>
 
         {/* Market Status (OPEN / CLOSED) */}
         <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span className="text-voltron-400 text-[10px] uppercase">Market:</span>
+          <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Market:</span>
           <span
             className={clsx(
-              "font-bold flex items-center gap-1 text-[11px]",
+              "font-bold flex items-center gap-1.5 text-[11px]",
               marketStatus === "OPEN" ? "text-voltron-emerald" : "text-voltron-rose"
             )}
           >
             <span
               className={clsx(
                 "w-1.5 h-1.5 rounded-full",
-                marketStatus === "OPEN" ? "bg-voltron-emerald inline-block" : "bg-voltron-rose inline-block"
+                marketStatus === "OPEN"
+                  ? "bg-voltron-emerald shadow-[0_0_6px_rgba(16,185,129,0.8)]"
+                  : "bg-voltron-rose shadow-[0_0_6px_rgba(244,63,94,0.8)]"
               )}
-            ></span>
+            />
             {marketStatus || "—"}
           </span>
         </div>
 
-        {/* Market Data Feed Badge */}
-        <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span className="text-voltron-400 text-[9px] uppercase">Market:</span>
-          <span className="text-voltron-cyan font-bold text-[10px]">ALPACA IEX</span>
-        </div>
-
-        {/* Options Feed Badge */}
-        <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span className="text-voltron-400 text-[9px] uppercase">Options:</span>
-          <span className="text-purple-400 font-bold text-[10px]">INDICATIVE</span>
-        </div>
-
-        {/* AI Engine Badge */}
-        <div className="hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span className="text-voltron-400 text-[9px] uppercase">AI:</span>
-          <span className="text-voltron-emerald font-bold text-[10px]">GEMINI</span>
-        </div>
-
-        {/* Trading Mode (PAPER) */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex-shrink-0">
-          <span className="text-voltron-400 text-[9px] uppercase">Trading:</span>
-          <span className="text-voltron-cyan font-bold text-[10px]">PAPER (DISABLED)</span>
-        </div>
-
-        {/* Agent Status (ACTIVE / IDLE / STOPPED) */}
-        <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span className="text-voltron-400 text-[10px] uppercase">Agent:</span>
+        {/* Agent Status (ACTIVE / PAUSED / IDLE) */}
+        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
+          <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Agent:</span>
           <span
             className={clsx(
-              "font-bold flex items-center gap-1 text-[11px]",
+              "font-bold flex items-center gap-1.5 text-[11px]",
               agentStatus === "ACTIVE"
                 ? "text-voltron-emerald"
                 : agentStatus === "PAUSED"
@@ -183,25 +164,31 @@ export default function TopNav({
               className={clsx(
                 "w-1.5 h-1.5 rounded-full",
                 agentStatus === "ACTIVE"
-                  ? "bg-voltron-emerald animate-pulse"
+                  ? "bg-voltron-emerald animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]"
                   : agentStatus === "PAUSED"
-                  ? "bg-voltron-amber"
-                  : "bg-voltron-rose"
+                  ? "bg-voltron-amber shadow-[0_0_6px_rgba(245,158,11,0.8)]"
+                  : "bg-voltron-rose shadow-[0_0_6px_rgba(244,63,94,0.8)]"
               )}
-            ></span>
+            />
             {agentStatus || "—"}
           </span>
+        </div>
+
+        {/* Trading Mode (PAPER DISABLED) */}
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex-shrink-0">
+          <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Trading:</span>
+          <span className="text-voltron-cyan font-bold text-[10.5px]">PAPER (DISABLED)</span>
         </div>
       </div>
 
       {/* Right: Portfolio Metric, Copilot, Kill Switch, Alerts & Theme */}
-      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0 ml-2">
         {/* Real Portfolio Value */}
-        <div className="hidden md:flex flex-col items-end px-2 py-0.5 bg-voltron-900 border border-voltron-750/70 rounded">
-          <span className="text-[8.5px] uppercase text-voltron-400 tracking-wider">
-            Portfolio
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-voltron-900 border border-voltron-750/70 rounded flex-shrink-0">
+          <span className="text-[10px] uppercase text-voltron-400 tracking-wider">
+            Portfolio:
           </span>
-          <span className="text-[11px] font-bold text-white font-tabular">
+          <span className="text-xs font-bold text-white font-tabular">
             {portfolioValue != null
               ? `$${portfolioValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
               : "—"}
@@ -211,7 +198,7 @@ export default function TopNav({
         {/* AI Copilot Button */}
         <button
           onClick={onOpenCopilot}
-          className="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded bg-voltron-900 hover:bg-voltron-850 border border-voltron-750 text-[11px] sm:text-xs font-mono font-bold text-voltron-cyan transition-colors"
+          className="px-2.5 py-1 sm:py-1.5 rounded bg-voltron-900 hover:bg-voltron-850 border border-voltron-750 hover:border-voltron-cyan/60 text-[11px] sm:text-xs font-mono font-bold text-voltron-cyan transition-colors flex-shrink-0"
         >
           COPILOT
         </button>
@@ -219,20 +206,20 @@ export default function TopNav({
         {/* Emergency Kill Switch Button */}
         <button
           onClick={onOpenKillSwitch}
+          title="Emergency Circuit Breaker / Kill Switch"
           className={clsx(
-            "px-2 py-1 sm:px-2.5 sm:py-1.5 rounded text-[11px] sm:text-xs font-mono font-bold transition-colors border",
+            "flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 rounded text-[11px] sm:text-xs font-mono font-bold tracking-tight transition-all border shadow-sm flex-shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-rose",
             killSwitchActive
-              ? "bg-voltron-rose text-white border-voltron-rose"
-              : "bg-voltron-rose/10 hover:bg-voltron-rose/20 text-voltron-rose border-voltron-rose/30"
+              ? "bg-voltron-rose text-white border-voltron-rose shadow-[0_0_12px_rgba(244,63,94,0.5)] animate-pulse"
+              : "bg-voltron-rose/15 hover:bg-voltron-rose/25 text-voltron-rose border-voltron-rose/40 hover:border-voltron-rose/70 active:scale-95"
           )}
         >
-          <span>
-            {killSwitchActive ? "HALTED" : "KILL"}
-          </span>
+          <AlertTriangle className={clsx("w-3.5 h-3.5 flex-shrink-0", killSwitchActive ? "text-white" : "text-voltron-rose")} />
+          <span className="whitespace-nowrap">{killSwitchActive ? "KILL SWITCH: ACTIVE" : "KILL SWITCH"}</span>
         </button>
 
         {/* System Notifications */}
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <button
             onClick={() => setNotificationOpen(!notificationOpen)}
             className="p-1 sm:p-1.5 rounded text-voltron-400 hover:text-white hover:bg-voltron-800 transition-colors"
@@ -262,12 +249,14 @@ export default function TopNav({
         </div>
 
         {/* Theme Toggle */}
-        <ThemeToggle variant="icon" />
+        <div className="flex-shrink-0">
+          <ThemeToggle variant="icon" />
+        </div>
 
         {/* Settings Link */}
         <Link
           href={currentSymbol ? `/settings?symbol=${currentSymbol}` : "/settings"}
-          className="p-1 sm:p-1.5 rounded text-voltron-400 hover:text-white hover:bg-voltron-800 transition-colors"
+          className="p-1 sm:p-1.5 rounded text-voltron-400 hover:text-white hover:bg-voltron-800 transition-colors flex-shrink-0"
           title="Settings"
         >
           <SettingsIcon className="w-4 h-4" />
