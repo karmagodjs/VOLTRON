@@ -8,6 +8,19 @@ from pydantic import BaseModel
 
 # Load .env for local development (safe no-op in production if file is absent)
 load_dotenv()
+load_dotenv("/etc/secrets/.env")
+if os.path.isdir("/etc/secrets"):
+    for fname in os.listdir("/etc/secrets"):
+        fpath = os.path.join("/etc/secrets", fname)
+        if os.path.isfile(fpath) and fname != ".env":
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    val = f.read().strip()
+                if val:
+                    os.environ[fname] = val
+                    os.environ[fname.upper()] = val
+            except Exception:
+                pass
 
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -92,7 +105,9 @@ class BacktestRequest(BaseModel):
 def root():
     return {
         "status": "OPERATIONAL",
-        "mode": "PAPER_TRADING"
+        "mode": "PAPER_TRADING",
+        "version": "2.1.0",
+        "build": "PHASE_4.1"
     }
 
 @app.get("/api/account")

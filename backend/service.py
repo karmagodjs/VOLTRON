@@ -10,6 +10,18 @@ from dotenv import load_dotenv
 # Load environment (local .env or Render secret file)
 load_dotenv()
 load_dotenv("/etc/secrets/.env")
+if os.path.isdir("/etc/secrets"):
+    for fname in os.listdir("/etc/secrets"):
+        fpath = os.path.join("/etc/secrets", fname)
+        if os.path.isfile(fpath) and fname != ".env":
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    val = f.read().strip()
+                if val:
+                    os.environ[fname] = val
+                    os.environ[fname.upper()] = val
+            except Exception:
+                pass
 
 # Alpaca clients
 from alpaca.trading.client import TradingClient
@@ -161,14 +173,19 @@ class VoltronService:
     def get_account_summary(self) -> Dict[str, Any]:
         equity = 100000.0
         cash = 100000.0
-        buying_power = 200000.0
+        buying_power = 400000.0
         options_buying_power = 100000.0
         regt_buying_power = 200000.0
         portfolio_value = 100000.0
         status = "ACTIVE"
         trading_blocked = False
         buying_power_source = "DEFAULT_PAPER_BUDGET"
+        account_id_fingerprint = "PA_DEFAULT"
+        options_level = "Level 3"
+        options_trading_approved = True
+        open_orders_count = 0
 
+        self._ensure_clients()
         if self.trading_client:
             try:
                 acc = self.trading_client.get_account()
@@ -181,6 +198,15 @@ class VoltronService:
                 status = str(acc.status)
                 trading_blocked = bool(acc.trading_blocked)
                 buying_power_source = "ALPACA_PAPER_REAL_TIME"
+                account_id_fingerprint = str(getattr(acc, "account_number", "") or getattr(acc, "id", ""))
+                options_level = str(getattr(acc, "options_approved_level", None) or getattr(acc, "options_trading_level", None) or "Level 3")
+                options_trading_approved = not bool(getattr(acc, "options_trading_blocked", False))
+                try:
+                    open_orders_req = GetOrdersRequest(status="open", limit=50)
+                    open_orders = self.trading_client.get_orders(open_orders_req)
+                    open_orders_count = len(open_orders)
+                except Exception:
+                    open_orders_count = 0
             except Exception as e:
                 print(f"[VOLTRON] Error reading Alpaca account: {e}")
 
@@ -201,16 +227,23 @@ class VoltronService:
             "regt_buying_power": regt_buying_power,
             "buying_power_source": buying_power_source,
             "portfolio_value": portfolio_value,
+            "account_id_fingerprint": account_id_fingerprint,
+            "options_approved_level": options_level,
+            "options_trading_approved": options_trading_approved,
+            "open_positions_count": len(open_positions),
+            "open_orders_count": open_orders_count,
             "daily_pnl": 0.0,
             "daily_pnl_percent": 0.0,
             "unrealized_pnl": round(unrealized_pnl, 2),
             "realized_pnl": 0.0,
             "portfolio_exposure_pct": portfolio_exposure_pct,
-            "open_positions_count": len(open_positions),
             "status": status,
             "trading_blocked": trading_blocked,
             "paper_mode": True,
             "kill_switch_active": self.risk_engine.kill_switch,
+            "trading_flag": VOLTRON_TRADING_ENABLED,
+            "submit_order_calls": 0,
+            "orders_submitted": 0,
         }
 
     # ==========================================
