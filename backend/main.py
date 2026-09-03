@@ -1,12 +1,41 @@
 import os
 import sys
 from typing import Optional
+from dotenv import load_dotenv
 from fastapi import FastAPI, Query, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+# Load .env for local development (safe no-op in production if file is absent)
+load_dotenv()
+
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+def validate_startup_config() -> dict:
+    alpaca_key = (os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID") or "").strip().strip("'").strip('"')
+    alpaca_sec = (os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY") or "").strip().strip("'").strip('"')
+    gemini_key = (os.getenv("GEMINI_API_KEY") or "").strip().strip("'").strip('"')
+    trading_enabled = os.getenv("VOLTRON_TRADING_ENABLED", "false").lower() == "true"
+
+    status = {
+        "ALPACA_API_KEY": "PRESENT" if bool(alpaca_key) else "MISSING",
+        "ALPACA_SECRET_KEY": "PRESENT" if bool(alpaca_sec) else "MISSING",
+        "GEMINI_API_KEY": "PRESENT" if bool(gemini_key) else "MISSING",
+        "VOLTRON_TRADING_ENABLED": "true" if trading_enabled else "false",
+    }
+
+    print("[VOLTRON CONFIG] ========================================")
+    print(f"[VOLTRON CONFIG] ALPACA_API_KEY:         {status['ALPACA_API_KEY']}")
+    print(f"[VOLTRON CONFIG] ALPACA_SECRET_KEY:      {status['ALPACA_SECRET_KEY']}")
+    print(f"[VOLTRON CONFIG] GEMINI_API_KEY:         {status['GEMINI_API_KEY']}")
+    print(f"[VOLTRON CONFIG] VOLTRON_TRADING_ENABLED: {status['VOLTRON_TRADING_ENABLED']}")
+    print("[VOLTRON CONFIG] ========================================")
+
+    return status
+
+# Run startup validation (never logs secrets, only PRESENT/MISSING)
+validate_startup_config()
 
 from backend.service import voltron_service
 

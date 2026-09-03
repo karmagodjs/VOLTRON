@@ -8,13 +8,36 @@ from alpaca.data.timeframe import TimeFrame
 
 load_dotenv()
 
-API_KEY = os.getenv("ALPACA_API_KEY")
-SECRET_KEY = os.getenv("ALPACA_SECRET_KEY")
+def _get_market_alpaca_credentials():
+    api_key = os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID")
+    secret_key = os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY")
+    if api_key:
+        api_key = api_key.strip().strip("'").strip('"')
+    if secret_key:
+        secret_key = secret_key.strip().strip("'").strip('"')
+    return api_key, secret_key
 
-client = StockHistoricalDataClient(
-    API_KEY,
-    SECRET_KEY
-)
+API_KEY, SECRET_KEY = _get_market_alpaca_credentials()
+
+client = None
+if API_KEY and SECRET_KEY:
+    try:
+        client = StockHistoricalDataClient(API_KEY, SECRET_KEY)
+    except Exception as e:
+        print(f"[VOLTRON] StockHistoricalDataClient initialization warning: {e}")
+        client = None
+
+
+def get_stock_client():
+    global client
+    if client is None:
+        key, sec = _get_market_alpaca_credentials()
+        if key and sec:
+            try:
+                client = StockHistoricalDataClient(key, sec)
+            except Exception:
+                client = None
+    return client
 
 
 def get_daily_bars(symbol="SPY", days=60):

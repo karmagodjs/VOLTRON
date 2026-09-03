@@ -54,9 +54,9 @@ from backtest.metrics import (
 )
 
 # API Keys & Safety Switch
-ALPACA_API_KEY = os.getenv("ALPACA_API_KEY", "")
-ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY", "")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+ALPACA_API_KEY = (os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID") or "").strip().strip("'").strip('"')
+ALPACA_SECRET_KEY = (os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY") or "").strip().strip("'").strip('"')
+GEMINI_API_KEY = (os.getenv("GEMINI_API_KEY") or "").strip().strip("'").strip('"')
 VOLTRON_TRADING_ENABLED = os.getenv("VOLTRON_TRADING_ENABLED", "false").lower() == "true"
 
 SUPPORTED_UNIVERSE = ["SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA", "MSFT", "AMZN"]
@@ -1198,6 +1198,12 @@ class VoltronService:
             "uptime_seconds": int(time.time() - self._start_time if hasattr(self, "_start_time") else 3600),
             "overall_latency_ms": 110,
             "paper_trading_mode": True,
+            "config_validation": {
+                "ALPACA_API_KEY": "PRESENT" if bool(ALPACA_API_KEY) else "MISSING",
+                "ALPACA_SECRET_KEY": "PRESENT" if bool(ALPACA_SECRET_KEY) else "MISSING",
+                "GEMINI_API_KEY": "PRESENT" if bool(GEMINI_API_KEY) else "MISSING",
+                "VOLTRON_TRADING_ENABLED": "true" if VOLTRON_TRADING_ENABLED else "false",
+            },
             "services": services,
             "system_time": datetime.now(timezone.utc).isoformat(),
         }

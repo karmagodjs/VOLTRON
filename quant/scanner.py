@@ -20,15 +20,40 @@ from quant.alpha import (
 from quant.options_scanner import get_option_chain
 
 
+# Load .env for local development (safe no-op in production if file is absent)
 load_dotenv()
 
-API_KEY = os.getenv("ALPACA_API_KEY")
-SECRET_KEY = os.getenv("ALPACA_SECRET_KEY")
+def _get_scanner_alpaca_credentials():
+    api_key = os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID")
+    secret_key = os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY")
+    if api_key:
+        api_key = api_key.strip().strip("'").strip('"')
+    if secret_key:
+        secret_key = secret_key.strip().strip("'").strip('"')
+    return api_key, secret_key
 
-stock_client = StockHistoricalDataClient(
-    API_KEY,
-    SECRET_KEY
-)
+API_KEY, SECRET_KEY = _get_scanner_alpaca_credentials()
+
+stock_client = None
+if API_KEY and SECRET_KEY:
+    try:
+        stock_client = StockHistoricalDataClient(API_KEY, SECRET_KEY)
+    except Exception as e:
+        print(f"[VOLTRON] StockHistoricalDataClient initialization warning: {e}")
+        stock_client = None
+
+
+def get_stock_client():
+    global stock_client
+    if stock_client is None:
+        key, sec = _get_scanner_alpaca_credentials()
+        if key and sec:
+            try:
+                stock_client = StockHistoricalDataClient(key, sec)
+            except Exception as e:
+                print(f"[VOLTRON] StockHistoricalDataClient initialization warning: {e}")
+                stock_client = None
+    return stock_client
 
 
 def _get_value(obj, key, default=None):
@@ -59,7 +84,11 @@ def get_stock_prices(symbol="SPY", days=90):
         end=end,
     )
 
-    response = stock_client.get_stock_bars(request)
+    client = get_stock_client() or stock_client
+    if not client:
+        raise ValueError("Alpaca credentials missing (ALPACA_API_KEY / ALPACA_SECRET_KEY)")
+
+    response = client.get_stock_bars(request)
 
     try:
         bars = response[symbol]
