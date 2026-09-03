@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { proxyToBackend } from "@/lib/backendProxy";
 
-export async function POST() {
-  return NextResponse.json({ status: "ACTIVE", message: "Autonomous agent started." });
+export async function POST(request: NextRequest) {
+  return proxyToBackend(request, "/api/agent/start");
 }

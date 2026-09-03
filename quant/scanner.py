@@ -257,6 +257,11 @@ def _find_atm_option(
         if option_type != "C":
             continue
 
+        # Filter contracts near ATM (within 8% of spot) to avoid unnecessary computation
+        distance = abs(strike - stock_price)
+        if distance > stock_price * 0.08:
+            continue
+
         quote = _get_value(
             snapshot,
             "latest_quote"
@@ -297,24 +302,35 @@ def _find_atm_option(
             (ask - bid) / mid_price
         )
 
-        if spread_percent > 0.20:
+        if spread_percent > 0.30:
             continue
 
         days_to_expiry = (
             expiration - today
         ).days
 
+        if days_to_expiry < 1:
+            continue
+
         time_to_expiry = (
             days_to_expiry / 365.0
         )
 
-        iv = calculate_implied_volatility(
-            option_price=mid_price,
-            stock_price=stock_price,
-            strike=strike,
-            time_to_expiry=time_to_expiry,
-            option_type=option_type,
-        )
+        # Check if Alpaca provides implied_volatility directly
+        iv = _get_value(snapshot, "implied_volatility")
+        try:
+            iv = float(iv) if iv is not None and float(iv) > 0 else None
+        except (TypeError, ValueError):
+            iv = None
+
+        if iv is None:
+            iv = calculate_implied_volatility(
+                option_price=mid_price,
+                stock_price=stock_price,
+                strike=strike,
+                time_to_expiry=time_to_expiry,
+                option_type=option_type,
+            )
 
         if iv is None:
             continue

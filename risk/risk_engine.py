@@ -84,7 +84,18 @@ class RiskEngine:
 
         self.kill_switch = False
 
-def check_liquidity(self, spread_percent):
+    def check_liquidity(self, spread_percent):
+
+        if spread_percent is None:
+            return False, "NO_SPREAD_DATA"
+
+        if spread_percent > MAX_SPREAD_PERCENT:
+            return False, "SPREAD_TOO_WIDE"
+
+        return True, "LIQUIDITY_APPROVED"
+
+
+def check_liquidity(spread_percent):
 
     if spread_percent is None:
         return False, "NO_SPREAD_DATA"
@@ -92,4 +103,4 @@ def check_liquidity(self, spread_percent):
     if spread_percent > MAX_SPREAD_PERCENT:
         return False, "SPREAD_TOO_WIDE"
 
-    return True, "LIQUIDITY_APPROVED"
+    return True, "LIQUIDITY_APPROVED"

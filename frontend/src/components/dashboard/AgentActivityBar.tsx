@@ -18,25 +18,6 @@ interface AgentActivityBarProps {
   onRefresh?: () => void;
 }
 
-const pipelineStages = [
-  { name: "SCAN", status: "PASSED", detail: "SPY liquid filters passed" },
-  { name: "ANALYZE", status: "PASSED", detail: "IV/RV 1.62x (Confidence 88%)" },
-  { name: "STRATEGY", status: "PASSED", detail: "IRON CONDOR (45 DTE)" },
-  { name: "RISK", status: "PASSED", detail: "7 Gates Approved (0.31% Risk)" },
-  { name: "EXECUTE", status: "PASSED", detail: "Order #VLT-8941 Submitted @ $1.85" },
-  { name: "MONITOR", status: "ACTIVE", detail: "Unrealized P&L +$145.00 (+7.8%)" },
-];
-
-const systemServices = [
-  { name: "ALPACA", status: "CONNECTED", type: "emerald" },
-  { name: "MARKET DATA", status: "CONNECTED", type: "emerald" },
-  { name: "OPTIONS DATA", status: "CONNECTED", type: "emerald" },
-  { name: "GEMINI", status: "CONNECTED", type: "emerald" },
-  { name: "RISK ENGINE", status: "ACTIVE", type: "cyan" },
-  { name: "EXECUTION ENGINE", status: "PAPER", type: "cyan" },
-  { name: "POSITION MONITOR", status: "ACTIVE", type: "cyan" },
-];
-
 export default function AgentActivityBar({
   agentState,
   activeOrder = "VLT-8941",
@@ -81,11 +62,45 @@ export default function AgentActivityBar({
   };
 
   const currentSymbol = agentState?.symbol || "SPY";
-  const currentStrategy = agentState?.strategy || "IRON_CONDOR";
-  const currentConfidence = agentState?.confidence != null ? agentState.confidence : 88;
-  const currentScore = agentState?.opportunity_score != null ? agentState.opportunity_score : 94;
-  const currentDecision = agentState?.decision || "TRADE_CANDIDATE";
-  const currentReason = agentState?.last_reason || "Risk evaluation passed / Paper order submitted";
+  const currentStrategy = agentState?.strategy || "NO_TRADE";
+  const currentConfidence = agentState?.confidence != null ? agentState.confidence : 0;
+  const currentScore = agentState?.opportunity_score != null ? agentState.opportunity_score : 0;
+  const currentDecision = agentState?.decision || "NO_TRADE";
+  const isRateLimited = agentState?.ai_status === "RATE_LIMITED" || agentState?.status === "RATE_LIMITED";
+  const currentReason = isRateLimited
+    ? "Gemini API rate limited (429) — Trading safely disarmed"
+    : (agentState?.last_reason || "Risk evaluation passed / Paper order submitted");
+
+  const pipelineStages = [
+    { name: "SCAN", status: "PASSED", detail: `${currentSymbol} liquid filters passed` },
+    {
+      name: "ANALYZE",
+      status: isRateLimited ? "RATE_LIMITED" : currentConfidence >= 70 ? "PASSED" : "NO_TRADE",
+      detail: isRateLimited ? "Gemini Rate Limited (0%)" : `Confidence ${currentConfidence}%`,
+    },
+    {
+      name: "STRATEGY",
+      status: isRateLimited || currentStrategy === "NO_TRADE" || currentStrategy === "NO TRADE" ? "NO_TRADE" : "PASSED",
+      detail: currentStrategy,
+    },
+    { name: "RISK", status: "PASSED", detail: "7 Gates Evaluated" },
+    { name: "EXECUTE", status: "DISABLED", detail: "VOLTRON_TRADING_ENABLED=false (Safe)" },
+    { name: "MONITOR", status: "ACTIVE", detail: "Position monitor active" },
+  ];
+
+  const systemServices = [
+    { name: "ALPACA", status: "CONNECTED", type: "emerald" },
+    { name: "MARKET DATA", status: "CONNECTED", type: "emerald" },
+    { name: "OPTIONS DATA", status: "CONNECTED", type: "emerald" },
+    {
+      name: "GEMINI",
+      status: isRateLimited ? "RATE LIMITED" : "CONNECTED",
+      type: isRateLimited ? "amber" : "emerald",
+    },
+    { name: "RISK ENGINE", status: "ACTIVE", type: "cyan" },
+    { name: "EXECUTION ENGINE", status: "SAFE (DISABLED)", type: "cyan" },
+    { name: "POSITION MONITOR", status: "ACTIVE", type: "cyan" },
+  ];
 
   return (
     <div className="space-y-3 font-mono">
@@ -122,6 +137,8 @@ export default function AgentActivityBar({
           {pipelineStages.map((stage) => {
             const isCompleted = stage.status === "PASSED";
             const isActive = stage.status === "ACTIVE";
+            const isRateLimit = stage.status === "RATE_LIMITED";
+            const isNoTrade = stage.status === "NO_TRADE";
 
             return (
               <div
@@ -130,6 +147,8 @@ export default function AgentActivityBar({
                   "p-2.5 rounded border transition-all flex flex-col justify-between",
                   isActive
                     ? "bg-voltron-950 border-voltron-cyan"
+                    : isRateLimit
+                    ? "bg-voltron-amber/5 border-voltron-amber/30"
                     : isCompleted
                     ? "bg-voltron-950/80 border-voltron-800"
                     : "bg-voltron-950/40 border-voltron-850 opacity-60"
@@ -145,12 +164,16 @@ export default function AgentActivityBar({
                       "text-[9px] font-bold px-1 rounded",
                       isActive
                         ? "text-voltron-cyan bg-voltron-cyan/15 animate-pulse"
+                        : isRateLimit
+                        ? "text-voltron-amber bg-voltron-amber/15"
+                        : isNoTrade
+                        ? "text-voltron-400 bg-voltron-800"
                         : isCompleted
                         ? "text-voltron-emerald bg-voltron-emerald/15"
                         : "text-voltron-400"
                     )}
                   >
-                    {isCompleted ? "PASS" : isActive ? "LIVE" : "WAIT"}
+                    {isCompleted ? "PASS" : isRateLimit ? "RATE_LIM" : isNoTrade ? "NO_TRD" : isActive ? "LIVE" : "WAIT"}
                   </span>
                 </div>
 

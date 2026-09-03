@@ -319,6 +319,8 @@ function AgentCommandCenterContent() {
               const isPass = step.status === "PASSED";
               const isActive = step.status === "ACTIVE";
               const isBlocked = step.status === "BLOCKED";
+              const isRateLimit = step.status === "RATE_LIMITED";
+              const isNoTrade = step.status === "NO_TRADE";
 
               return (
                 <div
@@ -327,6 +329,8 @@ function AgentCommandCenterContent() {
                     "p-2 rounded border flex flex-col justify-between transition-all",
                     isActive
                       ? "bg-voltron-950 border-voltron-cyan"
+                      : isRateLimit
+                      ? "bg-voltron-amber/10 border-voltron-amber/40"
                       : isBlocked
                       ? "bg-voltron-rose/10 border-voltron-rose/40"
                       : isPass
@@ -341,6 +345,8 @@ function AgentCommandCenterContent() {
                         "text-[9px] font-bold px-1 rounded",
                         isActive
                           ? "text-voltron-cyan bg-voltron-cyan/15 animate-pulse"
+                          : isRateLimit
+                          ? "text-voltron-amber bg-voltron-amber/15"
                           : isBlocked
                           ? "text-voltron-rose bg-voltron-rose/15"
                           : isPass
@@ -348,7 +354,7 @@ function AgentCommandCenterContent() {
                           : "text-voltron-400"
                       )}
                     >
-                      {isPass ? "PASS" : isBlocked ? "BLOCKED" : isActive ? "LIVE" : "WAIT"}
+                      {isPass ? "PASS" : isRateLimit ? "RATE_LIM" : isBlocked ? "BLOCKED" : isNoTrade ? "NO_TRD" : isActive ? "LIVE" : "WAIT"}
                     </span>
                   </div>
                   <div className="text-[10px] text-voltron-400 font-tabular">{step.timestamp}</div>
@@ -387,7 +393,7 @@ function AgentCommandCenterContent() {
             </div>
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Confidence</span>
-              <span className="font-bold text-voltron-cyan text-xs font-tabular">{analysis?.confidence || 88}%</span>
+              <span className="font-bold text-voltron-cyan text-xs font-tabular">{analysis?.confidence != null ? analysis.confidence : 0}%</span>
             </div>
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Opportunity</span>
@@ -474,9 +480,21 @@ function AgentCommandCenterContent() {
           <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>VOLTRON AI ANALYST & THESIS ({symbol})</span>
-              <span className="text-[10px] text-voltron-emerald font-bold">
-                CONFIDENCE: {analysis?.confidence || 88}%
-              </span>
+              <div className="flex items-center gap-2">
+                {analysis?.ai_status === "RATE_LIMITED" && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-voltron-amber/15 border border-voltron-amber/30 text-voltron-amber font-bold">
+                    RATE LIMITED
+                  </span>
+                )}
+                {analysis?.ai_status === "CACHED" && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-voltron-cyan/15 border border-voltron-cyan/30 text-voltron-cyan font-bold">
+                    CACHED
+                  </span>
+                )}
+                <span className="text-[10px] text-voltron-cyan font-bold font-tabular">
+                  CONFIDENCE: {analysis?.confidence != null ? analysis.confidence : 0}%
+                </span>
+              </div>
             </div>
 
             {/* Core Thesis Box */}

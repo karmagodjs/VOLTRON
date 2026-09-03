@@ -1,10 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { proxyToBackend } from "@/lib/backendProxy";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({ active: false }));
-  return NextResponse.json({
-    success: true,
-    kill_switch: !!body.active,
-    message: body.active ? "Emergency Kill Switch Activated - All Trading Halted" : "Kill Switch Reset - System Ready",
-  });
+  return proxyToBackend(request, "/api/risk/kill-switch");
 }

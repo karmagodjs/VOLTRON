@@ -142,10 +142,28 @@ export default function TopNav({
           </span>
         </div>
 
+        {/* Market Data Feed Badge */}
+        <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
+          <span className="text-voltron-400 text-[9px] uppercase">Market:</span>
+          <span className="text-voltron-cyan font-bold text-[10px]">ALPACA IEX</span>
+        </div>
+
+        {/* Options Feed Badge */}
+        <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
+          <span className="text-voltron-400 text-[9px] uppercase">Options:</span>
+          <span className="text-purple-400 font-bold text-[10px]">INDICATIVE</span>
+        </div>
+
+        {/* AI Engine Badge */}
+        <div className="hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
+          <span className="text-voltron-400 text-[9px] uppercase">AI:</span>
+          <span className="text-voltron-emerald font-bold text-[10px]">GEMINI</span>
+        </div>
+
         {/* Trading Mode (PAPER) */}
         <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex-shrink-0">
-          <span className="text-voltron-400 text-[9px] uppercase">Mode:</span>
-          <span className="text-voltron-cyan font-bold text-[10px]">PAPER</span>
+          <span className="text-voltron-400 text-[9px] uppercase">Trading:</span>
+          <span className="text-voltron-cyan font-bold text-[10px]">PAPER (DISABLED)</span>
         </div>
 
         {/* Agent Status (ACTIVE / IDLE / STOPPED) */}

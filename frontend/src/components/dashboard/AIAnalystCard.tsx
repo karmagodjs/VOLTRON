@@ -14,20 +14,43 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"reasoning" | "data" | "risk">("reasoning");
 
+  const isRateLimited = analysis.ai_status === "RATE_LIMITED" || analysis.status === "RATE_LIMITED";
+  const isCached = analysis.ai_status === "CACHED" || Boolean(analysis.is_cached);
+  const statusText = isRateLimited ? "RATE LIMITED" : isCached ? "CACHED" : analysis.status;
+  const decisionText = isRateLimited ? "NO TRADE" : analysis.decision.replace("_", " ");
+
   return (
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col justify-between">
       <div>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-voltron-750/60 pb-3 mb-3">
-          <div className="flex items-center">
+          <div className="flex flex-col">
             <span className="text-xs font-mono font-bold text-white tracking-wider uppercase">
-              VOLTRON AI Analyst
+              {isRateLimited ? "AI: GEMINI" : isCached ? "GEMINI" : "VOLTRON AI Analyst"}
             </span>
+            {isRateLimited && (
+              <span className="text-[10px] text-voltron-amber font-bold">STATUS: RATE LIMITED</span>
+            )}
+            {isCached && (
+              <span className="text-[10px] text-voltron-cyan font-semibold">
+                CACHED ANALYSIS {analysis.cached_at ? `(${new Date(analysis.cached_at).toLocaleTimeString()})` : ""}
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-voltron-emerald/10 border border-voltron-emerald/30 text-[10px] font-mono text-voltron-emerald font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-voltron-emerald animate-pulse"></span>
-            {analysis.status}
+          <div className={clsx(
+            "flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold",
+            isRateLimited
+              ? "bg-voltron-amber/15 border border-voltron-amber/30 text-voltron-amber"
+              : isCached
+              ? "bg-voltron-cyan/15 border border-voltron-cyan/30 text-voltron-cyan"
+              : "bg-voltron-emerald/10 border border-voltron-emerald/30 text-voltron-emerald"
+          )}>
+            <span className={clsx(
+              "w-1.5 h-1.5 rounded-full animate-pulse",
+              isRateLimited ? "bg-voltron-amber" : isCached ? "bg-voltron-cyan" : "bg-voltron-emerald"
+            )}></span>
+            {statusText}
           </div>
         </div>
 
@@ -37,8 +60,11 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
             <span className="text-[9px] font-mono uppercase text-voltron-400 block">
               Decision
             </span>
-            <span className="text-xs font-mono font-bold text-voltron-emerald">
-              {analysis.decision.replace("_", " ")}
+            <span className={clsx(
+              "text-xs font-mono font-bold",
+              isRateLimited ? "text-voltron-amber" : "text-voltron-emerald"
+            )}>
+              {decisionText}
             </span>
           </div>
 

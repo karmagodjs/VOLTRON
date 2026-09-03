@@ -19,14 +19,34 @@ export default function AIIntelligencePanel({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"reasoning" | "data" | "risk">("reasoning");
 
-  const statusLabel = analysis?.status || "ANALYZING";
-  const decisionLabel = analysis?.decision ? analysis.decision.replace("_", " ") : "WAITING";
+  const isRateLimited = analysis?.ai_status === "RATE_LIMITED" || analysis?.status === "RATE_LIMITED";
+  const isCached = analysis?.ai_status === "CACHED" || Boolean(analysis?.is_cached);
+  const isError = analysis?.ai_status === "ERROR";
+
+  const statusBadge = isRateLimited
+    ? "RATE LIMITED"
+    : isCached
+    ? "CACHED ANALYSIS"
+    : isError
+    ? "ERROR"
+    : (analysis?.status || "ANALYZING");
+
+  const decisionLabel = isRateLimited
+    ? "NO TRADE"
+    : analysis?.decision
+    ? analysis.decision.replace("_", " ")
+    : "WAITING";
+
   const actionLabel =
-    riskStatus === "APPROVED" && analysis?.decision === "TRADE_CANDIDATE"
+    isRateLimited || analysis?.decision === "NO_TRADE"
+      ? "NO TRADE"
+      : riskStatus === "APPROVED" && analysis?.decision === "TRADE_CANDIDATE"
       ? "PAPER EXECUTION"
       : riskStatus === "BLOCKED"
       ? "BLOCKED"
       : "NO TRADE";
+
+  const displayStrategy = isRateLimited ? "NO TRADE" : (strategyName || "IRON CONDOR");
 
   return (
     <div className="space-y-3 font-mono">
@@ -34,18 +54,41 @@ export default function AIIntelligencePanel({
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-voltron-800 pb-2">
-          <div className="flex items-center">
-            <span className="text-xs font-bold text-white uppercase tracking-wider">
-              VOLTRON INTELLIGENCE
-            </span>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                {isRateLimited ? "AI: GEMINI" : isCached ? "GEMINI" : "VOLTRON INTELLIGENCE"}
+              </span>
+              {isRateLimited && (
+                <span className="text-[10px] font-bold text-voltron-amber uppercase">
+                  STATUS: RATE LIMITED
+                </span>
+              )}
+            </div>
+            {isCached && (
+              <span className="text-[10px] text-voltron-cyan font-semibold">
+                CACHED ANALYSIS {analysis?.cached_at ? `• Generated ${new Date(analysis.cached_at).toLocaleTimeString()}` : ""}
+              </span>
+            )}
+            {!isRateLimited && !isCached && (
+              <span className="text-[10px] text-voltron-400">
+                Autonomous Volatility Analyst
+              </span>
+            )}
           </div>
 
           <div
             className={clsx(
               "flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider",
-              statusLabel === "COMPLETE"
+              isRateLimited
+                ? "bg-voltron-amber/15 border border-voltron-amber/30 text-voltron-amber"
+                : isCached
+                ? "bg-voltron-cyan/15 border border-voltron-cyan/30 text-voltron-cyan"
+                : isError
+                ? "bg-voltron-rose/15 border border-voltron-rose/30 text-voltron-rose"
+                : statusBadge === "COMPLETE"
                 ? "bg-voltron-emerald/10 border border-voltron-emerald/30 text-voltron-emerald"
-                : statusLabel === "ANALYZING"
+                : statusBadge === "ANALYZING"
                 ? "bg-voltron-cyan/10 border border-voltron-cyan/30 text-voltron-cyan"
                 : "bg-voltron-800 border border-voltron-700 text-voltron-300"
             )}
@@ -53,14 +96,20 @@ export default function AIIntelligencePanel({
             <span
               className={clsx(
                 "w-1.5 h-1.5 rounded-full inline-block",
-                statusLabel === "ANALYZING"
+                isRateLimited
+                  ? "bg-voltron-amber animate-pulse"
+                  : isCached
+                  ? "bg-voltron-cyan"
+                  : isError
+                  ? "bg-voltron-rose"
+                  : statusBadge === "ANALYZING"
                   ? "bg-voltron-cyan animate-pulse"
-                  : statusLabel === "COMPLETE"
+                  : statusBadge === "COMPLETE"
                   ? "bg-voltron-emerald"
                   : "bg-voltron-400"
               )}
             ></span>
-            ● {statusLabel}
+            ● {isRateLimited ? "RATE LIMITED" : isCached ? "CACHED" : statusBadge}
           </div>
         </div>
 
@@ -70,7 +119,10 @@ export default function AIIntelligencePanel({
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">
               Decision
             </span>
-            <span className="font-bold text-voltron-emerald truncate block">
+            <span className={clsx(
+              "font-bold truncate block",
+              isRateLimited ? "text-voltron-amber" : "text-voltron-emerald"
+            )}>
               {decisionLabel}
             </span>
           </div>
@@ -104,9 +156,20 @@ export default function AIIntelligencePanel({
         </div>
 
         {/* AI Thesis Box */}
-        <div className="p-3 rounded bg-voltron-950 border border-voltron-800">
-          <div className="text-[10px] uppercase text-voltron-cyan font-bold mb-1 tracking-wider">
-            AI THESIS
+        <div className={clsx(
+          "p-3 rounded border",
+          isRateLimited
+            ? "bg-voltron-amber/10 border-voltron-amber/30"
+            : "bg-voltron-950 border-voltron-800"
+        )}>
+          <div className={clsx(
+            "text-[10px] uppercase font-bold mb-1 tracking-wider flex items-center justify-between",
+            isRateLimited ? "text-voltron-amber" : "text-voltron-cyan"
+          )}>
+            <span>{isRateLimited ? "AI QUOTA LIMIT NOTICE" : "AI THESIS"}</span>
+            {isCached && (
+              <span className="text-[9px] text-voltron-cyan/70 font-normal">CACHED MODEL OUTPUT</span>
+            )}
           </div>
           <p className="text-xs text-voltron-200 leading-relaxed font-sans font-normal">
             {analysis?.thesis ? `“${analysis.thesis}”` : "WAITING FOR AI ANALYSIS..."}
@@ -205,7 +268,7 @@ export default function AIIntelligencePanel({
 
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
             <span className="text-[9px] uppercase text-voltron-400 block">Strategy</span>
-            <span className="font-bold text-white text-xs truncate block">{strategyName || "IRON CONDOR"}</span>
+            <span className="font-bold text-white text-xs truncate block">{displayStrategy}</span>
           </div>
 
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
@@ -222,9 +285,17 @@ export default function AIIntelligencePanel({
         </div>
 
         {/* Action Button Strip */}
-        <div className="p-2 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex items-center justify-between">
+        <div className={clsx(
+          "p-2 rounded flex items-center justify-between",
+          isRateLimited || actionLabel === "NO TRADE"
+            ? "bg-voltron-950 border border-voltron-800"
+            : "bg-voltron-cyan/10 border border-voltron-cyan/30"
+        )}>
           <span className="text-[10px] uppercase text-voltron-400">Action:</span>
-          <span className="text-xs font-bold text-voltron-cyan">
+          <span className={clsx(
+            "text-xs font-bold",
+            isRateLimited || actionLabel === "NO TRADE" ? "text-voltron-400" : "text-voltron-cyan"
+          )}>
             {actionLabel}
           </span>
         </div>

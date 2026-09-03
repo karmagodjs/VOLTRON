@@ -69,22 +69,25 @@ export interface OptionChainData {
 
 export interface AIAnalysis {
   symbol: string;
-  status: "ANALYZING" | "IDLE" | "COMPLETE" | "TRADE_CANDIDATE" | "NO_TRADE";
+  status: "ANALYZING" | "IDLE" | "COMPLETE" | "TRADE_CANDIDATE" | "NO_TRADE" | "RATE_LIMITED" | string;
   decision: "TRADE_CANDIDATE" | "NO_TRADE";
   confidence: number;
   direction: "BULLISH" | "BEARISH" | "NEUTRAL";
-  volatility_view: "EXPENSIVE" | "CHEAP" | "FAIR";
+  volatility_view: "EXPENSIVE" | "CHEAP" | "FAIR" | string;
   strategy_recommendation: string;
   thesis: string;
   key_reasons: string[];
   risks: string[];
   opportunity_score: number;
   timestamp: string;
+  ai_status?: "LIVE" | "CACHED" | "RATE_LIMITED" | "ERROR";
+  cached_at?: string;
+  is_cached?: boolean;
 }
 
 export interface AgentState {
   cycle: number;
-  status: "IDLE" | "ANALYZING" | "COMPLETE" | "PAUSED" | "STOPPED";
+  status: "IDLE" | "ANALYZING" | "COMPLETE" | "PAUSED" | "STOPPED" | "RATE_LIMITED" | string;
   symbol: string | null;
   decision: "TRADE_CANDIDATE" | "NO_TRADE" | null;
   strategy: string | null;
@@ -94,6 +97,7 @@ export interface AgentState {
   active_position: string | null;
   last_reason: string | null;
   errors: string[];
+  ai_status?: "LIVE" | "CACHED" | "RATE_LIMITED" | "ERROR";
 }
 
 export interface TimelineEvent {

@@ -86,12 +86,7 @@ function MarketProviderInner({ children }: { children: React.ReactNode }) {
       setMarketData(data);
       setError(null);
     } catch (err: any) {
-      // Fallback to verified SUPPORTED_ASSETS
-      const fallback = SUPPORTED_ASSETS[sym] || SUPPORTED_ASSETS["SPY"];
-      setMarketData({
-        ...fallback,
-        timestamp: new Date().toISOString(),
-      });
+      setMarketData(null);
       setError(err?.message || "Market data service temporarily unavailable");
     } finally {
       setIsLoading(false);

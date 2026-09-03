@@ -17,9 +17,18 @@ app = FastAPI(
 )
 
 # Enable CORS for Next.js frontend
+allowed_origins = [
+    "https://voltron-cyan.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+extra_origins = os.getenv("CORS_ORIGINS", "")
+if extra_origins:
+    allowed_origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,11 +61,8 @@ class BacktestRequest(BaseModel):
 @app.get("/")
 def root():
     return {
-        "terminal": "VOLTRON",
-        "tagline": "Volatility Alpha — Autonomous AI Options Trading",
         "status": "OPERATIONAL",
-        "mode": "PAPER_TRADING",
-        "version": "2.0.0"
+        "mode": "PAPER_TRADING"
     }
 
 @app.get("/api/account")
@@ -64,7 +70,17 @@ def get_account():
     return voltron_service.get_account_summary()
 
 @app.get("/api/market")
-def get_market(symbol: str = Query("SPY")):
+def get_market(symbol: Optional[str] = Query(None), all: Optional[bool] = Query(False)):
+    from backend.service import SUPPORTED_UNIVERSE
+    from datetime import datetime, timezone
+
+    if all or not symbol:
+        assets = [voltron_service.get_market_data(symbol=s) for s in SUPPORTED_UNIVERSE]
+        return {
+            "count": len(assets),
+            "assets": assets,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
     return voltron_service.get_market_data(symbol=symbol.upper())
 
 @app.get("/api/options")
@@ -88,28 +104,11 @@ def get_volatility(symbol: str = Query("SPY")):
 
 @app.get("/api/agent")
 def get_agent_state(symbol: str = Query("SPY")):
-    analysis = voltron_service.get_ai_analysis(symbol=symbol.upper())
-    acc = voltron_service.get_account_summary()
-    return {
-        "status": "ACTIVE" if voltron_service.agent_running else "IDLE" if not voltron_service.agent_paused else "PAUSED",
-        "running": voltron_service.agent_running,
-        "paused": voltron_service.agent_paused,
-        "cycle": voltron_service.cycle_count,
-        "symbol": symbol.upper(),
-        "analysis": analysis,
-        "active_order": "VLT-8941",
-        "kill_switch": voltron_service.risk_engine.kill_switch,
-        "paper_connected": True,
-        "portfolio_value": acc["portfolio_value"]
-    }
+    return voltron_service.get_agent_state(symbol=symbol.upper())
 
 @app.get("/api/agent/timeline")
 def get_agent_timeline():
-    return {
-        "events": voltron_service.timeline_events,
-        "cycle": voltron_service.cycle_count,
-        "status": "ACTIVE" if voltron_service.agent_running else "MONITORING"
-    }
+    return voltron_service.get_agent_timeline()
 
 @app.post("/api/agent/start")
 def start_agent():
@@ -139,8 +138,8 @@ def get_strategy(strategy: str = Query("IRON_CONDOR"), symbol: str = Query("SPY"
     return voltron_service.get_strategy_details(strategy_type=strategy.upper(), symbol=symbol.upper())
 
 @app.get("/api/risk")
-def get_risk():
-    return voltron_service.get_risk_status()
+def get_risk(symbol: str = Query("SPY")):
+    return voltron_service.get_risk_status(symbol=symbol.upper())
 
 @app.post("/api/risk/kill-switch")
 def toggle_kill_switch(payload: KillSwitchRequest):
@@ -209,4 +208,6 @@ def chat_copilot(req: CopilotRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)

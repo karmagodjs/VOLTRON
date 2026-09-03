@@ -48,21 +48,37 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = async (sym = selectedSymbol) => {
+  const loadMarketData = async (sym = selectedSymbol) => {
     try {
-      setLoading(true);
-      const [m, a, t, r, acc] = await Promise.all([
+      const [m, t, r, acc] = await Promise.all([
         fetchMarket(sym),
-        fetchAIAnalysis(sym),
         fetchTimeline(sym),
         fetchRisk(sym),
         fetchAccount(),
       ]);
       setMarket(m);
-      setAnalysis(a);
       setTimeline(t);
       setRisk(r);
       setAccount(acc);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load telemetry from backend");
+    }
+  };
+
+  const loadAIData = async (sym = selectedSymbol) => {
+    try {
+      const a = await fetchAIAnalysis(sym);
+      setAnalysis(a);
+    } catch (err: any) {
+      console.warn("Failed to load AI analysis", err);
+    }
+  };
+
+  const loadAll = async (sym = selectedSymbol) => {
+    try {
+      setLoading(true);
+      await Promise.all([loadMarketData(sym), loadAIData(sym)]);
       setError(null);
     } catch (err: any) {
       setError(err?.message || "Failed to load telemetry from backend");
@@ -72,23 +88,38 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    loadData(selectedSymbol);
-    const interval = setInterval(() => loadData(selectedSymbol), 10000); // 10s auto-refresh
-    return () => clearInterval(interval);
+    loadAll(selectedSymbol);
+    // Market data refreshes every 15s (frequent refresh)
+    const marketInterval = setInterval(() => loadMarketData(selectedSymbol), 15000);
+    // AI Analysis refreshes every 45s (cached on backend with 180s TTL)
+    const aiInterval = setInterval(() => loadAIData(selectedSymbol), 45000);
+
+    return () => {
+      clearInterval(marketInterval);
+      clearInterval(aiInterval);
+    };
   }, [selectedSymbol]);
+
+  const isRateLimited = analysis?.ai_status === "RATE_LIMITED" || analysis?.status === "RATE_LIMITED";
+  const confidenceVal = analysis?.confidence != null ? analysis.confidence : 0;
+  const decisionVal = isRateLimited ? "NO_TRADE" : (analysis?.decision || "NO_TRADE");
+  const strategyVal = isRateLimited ? "NO TRADE" : (analysis?.strategy_recommendation || "NO TRADE");
 
   const agentState: AgentState = {
     cycle: timeline?.cycle || 142,
-    status: "ANALYZING",
+    status: isRateLimited ? "RATE_LIMITED" : (analysis?.status || "ANALYZING"),
     symbol: selectedSymbol,
-    decision: analysis?.decision || "TRADE_CANDIDATE",
-    strategy: analysis?.strategy_recommendation || "IRON_CONDOR",
-    confidence: analysis?.confidence || 88,
-    opportunity_score: analysis?.opportunity_score || 94,
-    active_order_id: `VLT-${selectedSymbol}-8941`,
-    active_position: `${selectedSymbol} ${analysis?.strategy_recommendation || "IRON CONDOR"}`,
-    last_reason: "7 Risk gates approved; paper execution active",
-    errors: [],
+    decision: decisionVal,
+    strategy: strategyVal,
+    confidence: confidenceVal,
+    opportunity_score: market?.opportunity_score ?? analysis?.opportunity_score ?? 0,
+    active_order_id: null,
+    active_position: strategyVal !== "NO TRADE" ? `${selectedSymbol} ${strategyVal}` : null,
+    last_reason: isRateLimited
+      ? "Gemini API rate limited (429) — Autonomous trading safely disarmed"
+      : (analysis?.thesis || "Market volatility analysis complete"),
+    errors: analysis?.risks || [],
+    ai_status: analysis?.ai_status,
   };
 
   return (
@@ -119,8 +150,19 @@ export default function DashboardPage() {
           {/* Step 3: AI Intelligence */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">3. AI DECISION</span>
-            <span className="px-1.5 py-0.5 rounded bg-voltron-cyan/15 border border-voltron-cyan/40 text-voltron-cyan font-bold text-[11px]">
-              {analysis?.decision ? analysis.decision.replace("_", " ") : "ANALYZING"} ({analysis?.confidence || 88}%)
+            <span
+              className={clsx(
+                "px-1.5 py-0.5 rounded border font-bold text-[11px]",
+                isRateLimited
+                  ? "bg-voltron-amber/15 border-voltron-amber/40 text-voltron-amber"
+                  : analysis?.ai_status === "CACHED"
+                  ? "bg-voltron-cyan/15 border-voltron-cyan/40 text-voltron-cyan"
+                  : "bg-voltron-cyan/15 border-voltron-cyan/40 text-voltron-cyan"
+              )}
+            >
+              {isRateLimited
+                ? "NO TRADE (0%)"
+                : `${analysis?.decision ? analysis.decision.replace("_", " ") : "ANALYZING"} (${confidenceVal}%)`}
             </span>
           </div>
 
@@ -130,7 +172,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">4. STRATEGY</span>
             <span className="px-1.5 py-0.5 rounded bg-voltron-950 border border-voltron-800 text-white font-bold text-[11px]">
-              {analysis?.strategy_recommendation || "IRON CONDOR"}
+              {strategyVal}
             </span>
           </div>
 
@@ -156,8 +198,15 @@ export default function DashboardPage() {
           {/* Step 6: Action */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">6. ACTION</span>
-            <span className="px-2 py-0.5 rounded bg-voltron-cyan/20 border border-voltron-cyan text-voltron-cyan font-bold text-[11px]">
-              PAPER EXECUTION
+            <span
+              className={clsx(
+                "px-2 py-0.5 rounded border font-bold text-[11px]",
+                isRateLimited || decisionVal === "NO_TRADE"
+                  ? "bg-voltron-950 border-voltron-800 text-voltron-400"
+                  : "bg-voltron-cyan/20 border border-voltron-cyan text-voltron-cyan"
+              )}
+            >
+              {isRateLimited || decisionVal === "NO_TRADE" ? "NO ACTION" : "PAPER EXECUTION"}
             </span>
           </div>
         </div>
@@ -189,7 +238,7 @@ export default function DashboardPage() {
           agentState={agentState}
           activeOrder="VLT-8941"
           lastUpdated={analysis?.timestamp ? new Date(analysis.timestamp).toLocaleTimeString() : undefined}
-          onRefresh={loadData}
+          onRefresh={loadAll}
         />
       </div>
     </TerminalLayout>
