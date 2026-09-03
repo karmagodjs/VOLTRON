@@ -88,9 +88,9 @@ def _find_env_var(*candidates) -> Optional[str]:
     return None
 
 # API Keys & Safety Switch
-ALPACA_API_KEY = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY") or ""
-ALPACA_SECRET_KEY = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY") or ""
-GEMINI_API_KEY = _find_env_var("GEMINI_API_KEY", "GOOGLE_API_KEY") or ""
+ALPACA_API_KEY = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY", "ALPACA_KEY") or ""
+ALPACA_SECRET_KEY = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY", "ALPACA_SECRET") or ""
+GEMINI_API_KEY = _find_env_var("GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI_KEY") or ""
 VOLTRON_TRADING_ENABLED = os.getenv("VOLTRON_TRADING_ENABLED", "false").lower() == "true"
 
 SUPPORTED_UNIVERSE = ["SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA", "MSFT", "AMZN"]
@@ -147,8 +147,8 @@ class VoltronService:
         self.logger = TradeLogger(filename="voltron_trades.csv")
 
     def _ensure_clients(self):
-        key = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY")
-        sec = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY")
+        key = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY", "ALPACA_KEY")
+        sec = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY", "ALPACA_SECRET")
         if key and sec:
             if not self.trading_client:
                 try:
@@ -1256,9 +1256,9 @@ class VoltronService:
     # ==========================================
     def get_system_health(self) -> Dict[str, Any]:
         self._ensure_clients()
-        alpaca_k = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY")
-        alpaca_s = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY")
-        gemini_k = _find_env_var("GEMINI_API_KEY", "GOOGLE_API_KEY")
+        alpaca_k = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY", "ALPACA_KEY")
+        alpaca_s = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY", "ALPACA_SECRET")
+        gemini_k = _find_env_var("GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI_KEY")
         trading_en = os.getenv("VOLTRON_TRADING_ENABLED", "false").lower() == "true"
 
         alpaca_connected = bool(self.trading_client)

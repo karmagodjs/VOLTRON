@@ -26,9 +26,9 @@ if os.path.isdir("/etc/secrets"):
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 def validate_startup_config() -> dict:
-    alpaca_key = (os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID") or "").strip().strip("'").strip('"')
-    alpaca_sec = (os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY") or "").strip().strip("'").strip('"')
-    gemini_key = (os.getenv("GEMINI_API_KEY") or "").strip().strip("'").strip('"')
+    alpaca_key = (os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_KEY") or "").strip().strip("'").strip('"')
+    alpaca_sec = (os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY") or os.getenv("ALPACA_SECRET") or "").strip().strip("'").strip('"')
+    gemini_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_KEY") or "").strip().strip("'").strip('"')
     trading_enabled = os.getenv("VOLTRON_TRADING_ENABLED", "false").lower() == "true"
 
     status = {

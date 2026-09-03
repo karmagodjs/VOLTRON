@@ -162,7 +162,9 @@ Rules:
 def create_analysis(data):
     global _rate_limit_until, _last_retry_delay
 
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_KEY")
+    if api_key:
+        api_key = api_key.strip().strip("'").strip('"')
 
     if not api_key:
         return {

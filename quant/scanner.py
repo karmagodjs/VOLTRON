@@ -24,8 +24,8 @@ from quant.options_scanner import get_option_chain
 load_dotenv()
 
 def _get_scanner_alpaca_credentials():
-    api_key = os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID")
-    secret_key = os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY")
+    api_key = os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_KEY")
+    secret_key = os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY") or os.getenv("ALPACA_SECRET")
     if api_key:
         api_key = api_key.strip().strip("'").strip('"')
     if secret_key:
