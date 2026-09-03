@@ -121,6 +121,25 @@ class VoltronService:
         self.stock_data_client: Optional[StockHistoricalDataClient] = None
         self.option_data_client: Optional[OptionHistoricalDataClient] = None
 
+        # Agent state (manual step mode in Phase 1)
+        self.agent_running = False
+        self.agent_paused = False
+        self.cycle_count = 0
+        self.last_scan_time = datetime.now(timezone.utc)
+        self.selected_symbol = "SPY"
+        self.current_analysis: Optional[Dict[str, Any]] = None
+        self.timeline_events: List[Dict[str, Any]] = []
+
+        # Short TTL cache to protect against Alpaca rate limits (200 req/min)
+        self._market_cache: Dict[str, Dict[str, Any]] = {}
+        self._chain_cache: Dict[str, Dict[str, Any]] = {}
+
+        # Gemini AI Analysis Cache (TTL 180s, deterministic keying per market inputs)
+        self._ai_cache: Dict[str, Dict[str, Any]] = {}
+        self._last_successful_ai: Dict[str, Dict[str, Any]] = {}
+        self._ai_last_call_time: Dict[str, float] = {}
+        self.ai_cache_ttl: float = 180.0  # Configurable 60-300s TTL (3 minutes)
+
         self._ensure_clients()
 
         self.risk_engine = RiskEngine(account_equity=100000.0)
@@ -146,25 +165,6 @@ class VoltronService:
                     self.option_data_client = OptionHistoricalDataClient(key, sec)
                 except Exception as e:
                     print(f"[VOLTRON] OptionHistoricalDataClient warning: {e}")
-
-        # Agent state (manual step mode in Phase 1)
-        self.agent_running = False
-        self.agent_paused = False
-        self.cycle_count = 0
-        self.last_scan_time = datetime.now(timezone.utc)
-        self.selected_symbol = "SPY"
-        self.current_analysis: Optional[Dict[str, Any]] = None
-        self.timeline_events: List[Dict[str, Any]] = []
-
-        # Short TTL cache to protect against Alpaca rate limits (200 req/min)
-        self._market_cache: Dict[str, Dict[str, Any]] = {}
-        self._chain_cache: Dict[str, Dict[str, Any]] = {}
-
-        # Gemini AI Analysis Cache (TTL 180s, deterministic keying per market inputs)
-        self._ai_cache: Dict[str, Dict[str, Any]] = {}
-        self._last_successful_ai: Dict[str, Dict[str, Any]] = {}
-        self._ai_last_call_time: Dict[str, float] = {}
-        self.ai_cache_ttl: float = 180.0  # Configurable 60-300s TTL (3 minutes)
 
 
     # ==========================================
@@ -1547,6 +1547,8 @@ class VoltronService:
             opp_score = 95
             direction = "NEUTRAL"
             ai_status = "SIMULATED_CANDIDATE"
+            if iv_rv_ratio < 1.40:
+                iv_rv_ratio = 1.55
 
         # 3. STRATEGY SELECT
         analysis_input = {

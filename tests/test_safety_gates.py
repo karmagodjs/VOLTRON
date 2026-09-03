@@ -763,7 +763,7 @@ def test_cached_successful_analysis_remains_usable():
     }
     # Mock cache key generator to match
     original_make_key = voltron_service._make_ai_cache_key
-    voltron_service._make_ai_cache_key = lambda s, m: cache_key
+    voltron_service._make_ai_cache_key = lambda *args, **kwargs: cache_key
 
     try:
         res = voltron_service.get_ai_analysis("SPY")
@@ -788,7 +788,7 @@ def test_cache_expiry_triggers_fresh_request(monkeypatch):
         "symbol": "SPY",
     }
     original_make_key = voltron_service._make_ai_cache_key
-    voltron_service._make_ai_cache_key = lambda s, m: cache_key
+    voltron_service._make_ai_cache_key = lambda *args, **kwargs: cache_key
 
     # Mock create_analysis to verify fresh invocation
     called = []
