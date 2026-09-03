@@ -638,3 +638,49 @@ def test_disabled_trading_strictly_prevents_submit_order_call(monkeypatch):
 
     # Crucial assertion: broker submit_order was NEVER invoked
     assert not mock_client.submit_order.called
+
+
+# ==========================================
+# PHASE 3.4: NORMAL AI PATH VERIFICATION TESTS
+# ==========================================
+def test_normal_dry_run_uses_genuine_ai_path_and_never_injects_candidate():
+    from backend.service import voltron_service
+
+    result = voltron_service.run_dry_run("SPY", simulate_candidate=False)
+
+    # 1. Must report valid Gemini status
+    assert "gemini_cache_status" in result
+    assert result["gemini_cache_status"] in ("LIVE", "CACHED", "RATE_LIMITED", "ERROR")
+
+    # 2. Must report factual input data sent to Gemini
+    assert "gemini_input_data" in result
+    input_data = result["gemini_input_data"]
+    for k in ["symbol", "price", "rv", "iv", "iv_rv_ratio", "opportunity_score"]:
+        assert k in input_data
+
+    # 3. simulate_candidate=False must NEVER inject SIMULATED_CANDIDATE
+    assert result.get("ai_status") != "SIMULATED_CANDIDATE"
+
+    # 4. Zero Alpaca orders submitted
+    assert result["alpaca_order_submitted"] is False
+
+
+def test_simulate_candidate_is_the_only_synthetic_candidate_path():
+    from backend.service import voltron_service
+
+    res_sim = voltron_service.run_dry_run("SPY", simulate_candidate=True)
+    assert res_sim["ai_status"] == "SIMULATED_CANDIDATE"
+    assert res_sim["alpaca_order_submitted"] is False
+
+    res_normal = voltron_service.run_dry_run("SPY", simulate_candidate=False)
+    assert res_normal["ai_status"] != "SIMULATED_CANDIDATE"
+    assert res_normal["alpaca_order_submitted"] is False
+
+
+def test_zero_alpaca_orders_submitted_across_multiple_runs():
+    from backend.service import voltron_service
+
+    for i in range(3):
+        res = voltron_service.run_dry_run("SPY", simulate_candidate=False)
+        assert res["alpaca_order_submitted"] is False
+        assert "BLOCKED (VOLTRON_TRADING_ENABLED=false)" in res["final_safety_gate"]

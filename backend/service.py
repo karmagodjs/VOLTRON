@@ -1492,7 +1492,20 @@ class VoltronService:
         ai_analysis = self.get_ai_analysis(sym)
         ai_decision = ai_analysis.get("decision", "NO_TRADE")
         ai_confidence = float(ai_analysis.get("confidence", 0.0) or 0.0)
+        ai_status = ai_analysis.get("ai_status", "LIVE")
         direction = ai_analysis.get("direction", "NEUTRAL")
+        thesis = ai_analysis.get("thesis", "")
+
+        gemini_input_data = {
+            "symbol": sym,
+            "price": spot_price,
+            "rv": rv,
+            "iv": iv,
+            "iv_rv_ratio": iv_rv_ratio,
+            "opportunity_score": opp_score,
+            "market_regime": market.get("market_regime", "NORMAL"),
+            "vol_signal": market.get("vol_signal", "FAIR"),
+        }
 
         # If simulate_candidate is explicitly requested for testing candidate execution path
         if simulate_candidate:
@@ -1500,6 +1513,7 @@ class VoltronService:
             ai_confidence = 88.0
             opp_score = 95
             direction = "NEUTRAL"
+            ai_status = "SIMULATED_CANDIDATE"
 
         # 3. STRATEGY SELECT
         analysis_input = {
@@ -1540,6 +1554,9 @@ class VoltronService:
                 "opportunity_score": opp_score,
                 "ai_decision": ai_decision,
                 "ai_confidence": round(ai_confidence, 1),
+                "ai_status": ai_status,
+                "gemini_cache_status": ai_status,
+                "gemini_input_data": gemini_input_data,
                 "selected_strategy": "NO_TRADE",
                 "hypothetical_strategy": {
                     "strategy": hypothetical_name,
@@ -1737,6 +1754,9 @@ class VoltronService:
             "opportunity_score": opp_score,
             "ai_decision": ai_decision,
             "ai_confidence": round(ai_confidence, 1),
+            "ai_status": ai_status,
+            "gemini_cache_status": ai_status,
+            "gemini_input_data": gemini_input_data,
             "selected_strategy": selected_strategy,
             "selected_contracts": selected_contracts,
             "entry_price": round(entry_price, 2),
