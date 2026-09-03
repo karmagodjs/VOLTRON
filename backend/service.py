@@ -133,6 +133,7 @@ class VoltronService:
         # Short TTL cache to protect against Alpaca rate limits (200 req/min)
         self._market_cache: Dict[str, Dict[str, Any]] = {}
         self._chain_cache: Dict[str, Dict[str, Any]] = {}
+        self._clock_cache: Dict[str, Any] = {}
 
         # Gemini AI Analysis Cache (TTL 180s, deterministic keying per market inputs)
         self._ai_cache: Dict[str, Dict[str, Any]] = {}
@@ -247,6 +248,90 @@ class VoltronService:
         }
 
     # ==========================================
+    # MARKET CLOCK & SESSION STATUS (ALPACA API)
+    # ==========================================
+    def get_market_clock(self) -> Dict[str, Any]:
+        """
+        Fetch real-time market session status from Alpaca Trading API (/v2/clock).
+        Correctly accounts for weekends, US market holidays, early-close sessions,
+        and daylight saving time.
+        Caches result for 15 seconds to prevent rate-limit exhaustion.
+        """
+        now = time.time()
+        if hasattr(self, "_clock_cache") and self._clock_cache:
+            if now - self._clock_cache.get("_cached_at", 0) < 15.0:
+                return dict(self._clock_cache["data"])
+
+        self._ensure_clients()
+        clock_data = None
+
+        # 1. Primary: Alpaca TradingClient get_clock()
+        if self.trading_client:
+            try:
+                clock = self.trading_client.get_clock()
+                is_open = bool(getattr(clock, "is_open", False))
+                next_open = str(getattr(clock, "next_open", ""))
+                next_close = str(getattr(clock, "next_close", ""))
+                timestamp = str(getattr(clock, "timestamp", datetime.now(timezone.utc).isoformat()))
+                clock_data = {
+                    "is_open": is_open,
+                    "market_status": "OPEN" if is_open else "CLOSED",
+                    "next_open": next_open,
+                    "next_close": next_close,
+                    "timestamp": timestamp,
+                    "source": "ALPACA_CLOCK",
+                }
+            except Exception as e:
+                print(f"[VOLTRON] TradingClient.get_clock() warning: {e}")
+
+        # 2. Defensive Fallback: Direct Alpaca /v2/clock REST endpoint
+        if not clock_data:
+            key = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY", "ALPACA_KEY")
+            sec = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY", "ALPACA_SECRET")
+            if key and sec:
+                try:
+                    import urllib.request
+                    import json
+                    req = urllib.request.Request(
+                        "https://paper-api.alpaca.markets/v2/clock",
+                        headers={
+                            "APCA-API-KEY-ID": key,
+                            "APCA-API-SECRET-KEY": sec,
+                            "User-Agent": "VOLTRON/1.0",
+                        }
+                    )
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        res_json = json.loads(resp.read().decode())
+                        is_open = bool(res_json.get("is_open", False))
+                        clock_data = {
+                            "is_open": is_open,
+                            "market_status": "OPEN" if is_open else "CLOSED",
+                            "next_open": str(res_json.get("next_open", "")),
+                            "next_close": str(res_json.get("next_close", "")),
+                            "timestamp": str(res_json.get("timestamp", datetime.now(timezone.utc).isoformat())),
+                            "source": "ALPACA_CLOCK_REST",
+                        }
+                except Exception as e:
+                    print(f"[VOLTRON] Alpaca /v2/clock REST warning: {e}")
+
+        # 3. Fail-safe: if clock cannot be retrieved, return UNKNOWN (never falsely return OPEN)
+        if not clock_data:
+            clock_data = {
+                "is_open": False,
+                "market_status": "UNKNOWN",
+                "next_open": None,
+                "next_close": None,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "source": "UNAVAILABLE",
+            }
+
+        self._clock_cache = {
+            "data": clock_data,
+            "_cached_at": now,
+        }
+        return dict(clock_data)
+
+    # ==========================================
     # MARKET INTELLIGENCE & VOLATILITY (REAL DATA)
     # ==========================================
     def get_market_data(self, symbol: str = "SPY") -> Dict[str, Any]:
@@ -269,6 +354,7 @@ class VoltronService:
         history: List[Dict[str, Any]] = []
 
         self._ensure_clients()
+        clock_data = self.get_market_clock()
         if not self.stock_data_client:
             return {
                 "symbol": sym,
@@ -287,6 +373,9 @@ class VoltronService:
                 "market_regime": "DATA_UNAVAILABLE",
                 "vol_signal": "DATA_UNAVAILABLE",
                 "data_source": "ALPACA_DATA_UNAVAILABLE",
+                "market_status": clock_data.get("market_status", "UNKNOWN"),
+                "is_market_open": clock_data.get("is_open", False),
+                "market_clock": clock_data,
                 "history": [],
                 "options_volume": 0,
                 "put_call_ratio": 1.0,
@@ -398,6 +487,10 @@ class VoltronService:
             except Exception as e:
                 print(f"[VOLTRON] Options scan error for {sym}: {e}")
 
+        clock_data = self.get_market_clock()
+        market_status = clock_data.get("market_status", "UNKNOWN")
+        is_market_open = clock_data.get("is_open", False)
+
         result = {
             "symbol": sym,
             "name": ASSET_NAMES.get(sym, f"{sym} Equity"),
@@ -418,7 +511,9 @@ class VoltronService:
             "vol_signal": vol_signal,
             "data_source": "ALPACA_IEX",
             "options_data_source": "ALPACA_INDICATIVE",
-            "market_status": "OPEN",
+            "market_status": market_status,
+            "is_market_open": is_market_open,
+            "market_clock": clock_data,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "history": history,

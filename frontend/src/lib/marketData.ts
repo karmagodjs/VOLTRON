@@ -37,7 +37,7 @@ export const SUPPORTED_ASSETS: Record<string, AssetMarketRecord> = {
     market_regime: "HIGH IV SPREAD",
     vol_signal: "EXPENSIVE",
     strategy: "IRON_CONDOR",
-    market_status: "OPEN",
+    market_status: "UNKNOWN",
     last_updated: new Date().toISOString(),
   },
   QQQ: {
@@ -57,7 +57,7 @@ export const SUPPORTED_ASSETS: Record<string, AssetMarketRecord> = {
     market_regime: "BULLISH EXPANSION",
     vol_signal: "EXPENSIVE",
     strategy: "BULL_PUT_SPREAD",
-    market_status: "OPEN",
+    market_status: "UNKNOWN",
     last_updated: new Date().toISOString(),
   },
   IWM: {
@@ -77,7 +77,7 @@ export const SUPPORTED_ASSETS: Record<string, AssetMarketRecord> = {
     market_regime: "BEARISH ROTATION",
     vol_signal: "EXPENSIVE",
     strategy: "BEAR_CALL_SPREAD",
-    market_status: "OPEN",
+    market_status: "UNKNOWN",
     last_updated: new Date().toISOString(),
   },
   NVDA: {
@@ -97,7 +97,7 @@ export const SUPPORTED_ASSETS: Record<string, AssetMarketRecord> = {
     market_regime: "EARNINGS HIGH IV",
     vol_signal: "EXPENSIVE",
     strategy: "IRON_CONDOR",
-    market_status: "OPEN",
+    market_status: "UNKNOWN",
     last_updated: new Date().toISOString(),
   },
   AAPL: {
@@ -117,7 +117,7 @@ export const SUPPORTED_ASSETS: Record<string, AssetMarketRecord> = {
     market_regime: "LOW SPREAD",
     vol_signal: "FAIR",
     strategy: "NO_TRADE",
-    market_status: "OPEN",
+    market_status: "UNKNOWN",
     last_updated: new Date().toISOString(),
   },
   TSLA: {
@@ -137,7 +137,7 @@ export const SUPPORTED_ASSETS: Record<string, AssetMarketRecord> = {
     market_regime: "VOLATILITY COMPRESSED",
     vol_signal: "CHEAP",
     strategy: "LONG_STRADDLE",
-    market_status: "OPEN",
+    market_status: "UNKNOWN",
     last_updated: new Date().toISOString(),
   },
   MSFT: {
@@ -157,7 +157,7 @@ export const SUPPORTED_ASSETS: Record<string, AssetMarketRecord> = {
     market_regime: "FAIR VALUE",
     vol_signal: "FAIR",
     strategy: "NO_TRADE",
-    market_status: "OPEN",
+    market_status: "UNKNOWN",
     last_updated: new Date().toISOString(),
   },
   AMZN: {
@@ -177,7 +177,7 @@ export const SUPPORTED_ASSETS: Record<string, AssetMarketRecord> = {
     market_regime: "MODERATE SPREAD",
     vol_signal: "EXPENSIVE",
     strategy: "BULL_PUT_SPREAD",
-    market_status: "OPEN",
+    market_status: "UNKNOWN",
     last_updated: new Date().toISOString(),
   },
 };

@@ -128,6 +128,14 @@ def get_market(symbol: Optional[str] = Query(None), all: Optional[bool] = Query(
         }
     return voltron_service.get_market_data(symbol=symbol.upper())
 
+@app.get("/api/market/clock")
+def get_market_clock():
+    """
+    Get live US market session clock directly from Alpaca (/v2/clock).
+    Accurately accounts for weekends, US market holidays, and early close sessions.
+    """
+    return voltron_service.get_market_clock()
+
 @app.get("/api/options")
 def get_options(symbol: str = Query("SPY"), expiration: Optional[str] = Query(None)):
     return voltron_service.get_options_chain(symbol=symbol.upper(), expiration=expiration)

@@ -43,7 +43,7 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
   };
 
   const marketPrice = marketData?.price ?? null;
-  const marketStatus = marketData?.market_status ?? "OPEN";
+  const marketStatus = marketData?.market_status ?? null;
 
   return (
     <div className="flex min-h-screen bg-voltron-950 text-foreground overflow-x-hidden">

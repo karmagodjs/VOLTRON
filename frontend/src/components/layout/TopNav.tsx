@@ -46,7 +46,7 @@ export default function TopNav({
   killSwitchActive = false,
   portfolioValue,
   marketPrice,
-  marketStatus = "OPEN",
+  marketStatus = null,
   agentStatus = "ACTIVE",
   isConnected = true,
 }: TopNavProps) {
@@ -126,13 +126,16 @@ export default function TopNav({
           </span>
         </div>
 
-        {/* Market Status (OPEN / CLOSED) */}
+        {/* Market Status (OPEN / CLOSED / LOADING) */}
         <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Market:</span>
           <span
             className={clsx(
               "font-bold flex items-center gap-1.5 text-[11px]",
-              marketStatus === "OPEN" ? "text-voltron-emerald" : "text-voltron-rose"
+              marketStatus === "OPEN"
+                ? "text-voltron-emerald"
+                : marketStatus === "CLOSED"
+                ? "text-voltron-rose"
+                : "text-voltron-400"
             )}
           >
             <span
@@ -140,10 +143,16 @@ export default function TopNav({
                 "w-1.5 h-1.5 rounded-full",
                 marketStatus === "OPEN"
                   ? "bg-voltron-emerald shadow-[0_0_6px_rgba(16,185,129,0.8)]"
-                  : "bg-voltron-rose shadow-[0_0_6px_rgba(244,63,94,0.8)]"
+                  : marketStatus === "CLOSED"
+                  ? "bg-voltron-rose shadow-[0_0_6px_rgba(244,63,94,0.8)]"
+                  : "bg-voltron-400 animate-pulse"
               )}
             />
-            {marketStatus || "—"}
+            {marketStatus === "OPEN"
+              ? "MARKET OPEN"
+              : marketStatus === "CLOSED"
+              ? "MARKET CLOSED"
+              : "MARKET --"}
           </span>
         </div>
 
