@@ -165,8 +165,8 @@ def step_agent():
 
 @app.post("/api/agent/dry-run")
 @app.get("/api/agent/dry-run")
-def dry_run_agent(symbol: str = Query("SPY")):
-    return voltron_service.run_dry_run(symbol=symbol.upper())
+def dry_run_agent(symbol: str = Query("SPY"), simulate_candidate: bool = Query(False)):
+    return voltron_service.run_dry_run(symbol=symbol.upper(), simulate_candidate=simulate_candidate)
 
 @app.get("/api/strategy")
 def get_strategy(strategy: str = Query("IRON_CONDOR"), symbol: str = Query("SPY")):

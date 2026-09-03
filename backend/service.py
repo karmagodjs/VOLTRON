@@ -806,13 +806,30 @@ class VoltronService:
     # ==========================================
     def get_strategy_details(self, strategy_type: str = "IRON_CONDOR", symbol: str = "SPY") -> Dict[str, Any]:
         market = self.get_market_data(symbol)
-        spot = float(market["price"]) if market.get("price", 0.0) > 0 else 595.0
+        spot = float(market.get("price", 0.0) or 0.0)
 
         # Strategy selection from real analysis
         ai_analysis = self.get_ai_analysis(symbol)
         selected_strategy = ai_analysis["strategy_recommendation"].replace(" ", "_")
 
         strat = strategy_type.upper() if strategy_type else selected_strategy
+
+        if spot <= 0:
+            return {
+                "symbol": symbol.upper(),
+                "strategy": strat,
+                "spot_price": 0.0,
+                "legs": [],
+                "error": "MARKET_DATA_UNAVAILABLE",
+                "sentiment": "NEUTRAL",
+                "max_profit": 0.0,
+                "max_loss": 0.0,
+                "net_credit": 0.0,
+                "capital_required": 0.0,
+                "win_probability_percent": 0.0,
+                "breakeven_points": [],
+                "payoff_curve": [],
+            }
 
         strike_step = 5.0 if spot > 300 else 2.5 if spot > 100 else 1.0
         base_strike = round(spot / strike_step) * strike_step
@@ -1426,34 +1443,50 @@ class VoltronService:
         }
 
     # ==========================================
-    # PHASE 3: AUTONOMOUS PAPER TRADING DRY-RUN
+    # PHASE 3.1: AUTONOMOUS PAPER TRADING DRY-RUN
     # ==========================================
-    def run_dry_run(self, symbol: str = "SPY") -> Dict[str, Any]:
+    def run_dry_run(self, symbol: str = "SPY", simulate_candidate: bool = False) -> Dict[str, Any]:
         """
-        Phase 3: Autonomous Paper Trading Engine Audit DRY-RUN.
+        Phase 3.1: Autonomous Paper Trading Engine Audit DRY-RUN.
         Traces one complete trade through the entire pipeline:
         SCAN -> ANALYZE -> STRATEGY SELECT -> RISK ENGINE -> ORDER BUILDER -> SAFETY GATE
         Stops immediately BEFORE order submission. NEVER submits an Alpaca order.
         """
         sym = symbol.upper()
-        # 1. SCAN
+        # 1. SCAN (Real live Alpaca market data)
         market = self.get_market_data(sym)
         spot_price = float(market.get("price", 0.0) or 0.0)
-        display_price = spot_price if spot_price > 0 else 595.0
-        rv = float(market.get("rv", 0.0) or (7.4 if spot_price <= 0 else 0.0))
-        iv = float(market.get("iv", 0.0) or (rv * 1.5 if rv > 0 else 20.0))
-        iv_rv = float(market.get("iv_rv_ratio", 1.0) or (1.52 if spot_price <= 0 else 1.0))
-        opp_score = float(market.get("opportunity_score", 0.0) or (95.0 if spot_price <= 0 else 0.0))
+        rv = float(market.get("rv", 0.0) or 0.0)
+        raw_iv = market.get("iv")
+        iv = float(raw_iv) if raw_iv is not None else 0.0
 
-        # 2. ANALYZE
+        # Mathematical consistency: iv_rv_ratio = iv / rv (no pre-rounding)
+        if rv > 0 and iv > 0:
+            iv_rv_ratio = round(iv / rv, 2)
+        else:
+            iv_rv_ratio = 0.0
+
+        opp_score = int(market.get("opportunity_score", 0) or 0)
+        market_data_timestamp = market.get("timestamp") or datetime.now(timezone.utc).isoformat()
+        data_source = market.get("data_source", "ALPACA_IEX")
+        options_data_source = market.get("options_data_source", "ALPACA_INDICATIVE")
+
+        # 2. ANALYZE (Real Gemini AI analysis)
         ai_analysis = self.get_ai_analysis(sym)
         ai_decision = ai_analysis.get("decision", "NO_TRADE")
         ai_confidence = float(ai_analysis.get("confidence", 0.0) or 0.0)
         direction = ai_analysis.get("direction", "NEUTRAL")
 
+        # If simulate_candidate is explicitly requested for testing candidate execution path
+        if simulate_candidate:
+            ai_decision = "TRADE_CANDIDATE"
+            ai_confidence = 88.0
+            opp_score = 95
+            direction = "NEUTRAL"
+
         # 3. STRATEGY SELECT
         analysis_input = {
-            "iv_rv_ratio": iv_rv,
+            "iv_rv_ratio": iv_rv_ratio,
             "opportunity_score": opp_score,
             "decision": ai_decision,
             "confidence": ai_confidence,
@@ -1461,85 +1494,156 @@ class VoltronService:
         }
         selected_strategy = select_strategy(analysis_input)
 
-        # For comprehensive dry run audit demonstration of a full trade structure:
-        # If market score/confidence is below 70 in observation mode, use candidate parameters
-        strat_for_details = selected_strategy if selected_strategy != "NO_TRADE" else (
-            "IRON_CONDOR" if iv_rv >= 1.40 else "BULL_CALL_SPREAD" if direction == "BULLISH" else "IRON_CONDOR"
-        )
-
-        strat_details = self.get_strategy_details(strategy_type=strat_for_details, symbol=sym)
-
-        legs = strat_details.get("legs", [])
-        selected_contracts = []
-        for leg in legs:
-            action = leg.get("action", "BUY")
-            opt_type = leg.get("type", "CALL")
-            strike = leg.get("strike", spot_price if spot_price > 0 else 595.0)
-            # Standard OCC contract notation with next monthly expiration
-            exp_str = "260918"
-            strike_str = f"{int(strike * 1000):08d}"
-            contract_sym = f"{sym}{exp_str}{opt_type[0]}{strike_str}"
-            selected_contracts.append({
-                "action": action,
-                "type": opt_type,
-                "strike": strike,
-                "symbol": contract_sym,
-                "price": leg.get("price", 1.25),
-            })
-
-        entry_price = float(strat_details.get("net_credit", 1.25))
-        max_loss = float(strat_details.get("max_loss", 350.0))
-        max_profit = float(strat_details.get("max_profit", 150.0))
-
-        # 4. POSITION SIZING
+        # Base account & capital data
         account = self.get_account_summary()
         equity = float(account.get("equity", 100000.0))
         buying_power = float(account.get("buying_power", 200000.0))
+
+        # Liquidity check for ATM options
+        spread_pct = 0.04
+        liq_approved, liq_reason = self.risk_engine.check_liquidity(spread_pct)
+
+        # 4. IF NO_TRADE: Do NOT construct executable orders or select an unapproved strategy!
+        if selected_strategy == "NO_TRADE":
+            hypothetical_name = (
+                "IRON_CONDOR" if iv_rv_ratio >= 1.35
+                else "BULL_CALL_SPREAD" if direction == "BULLISH"
+                else "BEAR_PUT_SPREAD" if direction == "BEARISH"
+                else "LONG_STRADDLE" if (0 < iv_rv_ratio <= 0.88)
+                else "NO_TRADE"
+            )
+
+            return {
+                "symbol": sym,
+                "underlying_price": round(spot_price, 2),
+                "realized_volatility": round(rv, 2),
+                "implied_volatility": round(iv, 2),
+                "iv_rv_ratio": iv_rv_ratio,
+                "opportunity_score": opp_score,
+                "ai_decision": ai_decision,
+                "ai_confidence": round(ai_confidence, 1),
+                "selected_strategy": "NO_TRADE",
+                "hypothetical_strategy": {
+                    "strategy": hypothetical_name,
+                    "executable": False,
+                    "reason": "AI produced NO_TRADE or confidence/score below 70 threshold (Non-executable demonstration only)"
+                },
+                "selected_contracts": [],
+                "entry_price": 0.0,
+                "maximum_loss": 0.0,
+                "maximum_profit": 0.0,
+                "position_size": 0,
+                "risk_approval": {
+                    "approved": False,
+                    "reason": "NO_TRADE_DECISION",
+                    "max_allowed_loss": round(equity * 0.01, 2),
+                    "account_equity": equity,
+                },
+                "liquidity_approval": {
+                    "approved": liq_approved,
+                    "spread_percent": spread_pct,
+                    "reason": liq_reason,
+                },
+                "contract_validation": {
+                    "approved": True,
+                    "contracts_checked": 0,
+                    "defined_risk": True,
+                },
+                "buying_power_check": {
+                    "approved": True,
+                    "buying_power": buying_power,
+                    "required_capital": 0.0,
+                },
+                "final_safety_gate": "BLOCKED (VOLTRON_TRADING_ENABLED=false)",
+                "execution_status": "NO_TRADE_DECISION",
+                "execution_mode": "PAPER_DRY_RUN",
+                "alpaca_order_submitted": False,
+                "data_source": data_source,
+                "options_data_source": options_data_source,
+                "market_data_timestamp": market_data_timestamp,
+                "option_data_timestamp": market_data_timestamp,
+                "rv_data_window": "20_DAY_HISTORICAL_BARS",
+                "iv_source": "ALPACA_INDICATIVE_ATM" if iv > 0 else "NONE",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
+        # 5. IF STRATEGY APPROVED:
+        # Extract REAL contracts from the live Alpaca indicative options chain!
+        chain_res = self.get_options_chain(sym)
+        chain_rows = chain_res.get("chain", [])
+        selected_contracts = []
+        entry_price = 0.0
+        max_loss = 350.0
+        max_profit = 150.0
+
+        if chain_rows:
+            atm_idx = next((i for i, r in enumerate(chain_rows) if r.get("is_atm")), len(chain_rows) // 2)
+            if selected_strategy == "IRON_CONDOR":
+                lp_row = chain_rows[max(0, atm_idx - 2)]
+                sp_row = chain_rows[max(0, atm_idx - 1)]
+                sc_row = chain_rows[min(len(chain_rows) - 1, atm_idx + 1)]
+                lc_row = chain_rows[min(len(chain_rows) - 1, atm_idx + 2)]
+
+                selected_contracts = [
+                    {"action": "SELL", "type": "PUT", "strike": sp_row["strike"], "symbol": sp_row["put"]["contract"], "bid": sp_row["put"]["bid"], "ask": sp_row["put"]["ask"], "iv": sp_row["put"]["iv"]},
+                    {"action": "BUY", "type": "PUT", "strike": lp_row["strike"], "symbol": lp_row["put"]["contract"], "bid": lp_row["put"]["bid"], "ask": lp_row["put"]["ask"], "iv": lp_row["put"]["iv"]},
+                    {"action": "SELL", "type": "CALL", "strike": sc_row["strike"], "symbol": sc_row["call"]["contract"], "bid": sc_row["call"]["bid"], "ask": sc_row["call"]["ask"], "iv": sc_row["call"]["iv"]},
+                    {"action": "BUY", "type": "CALL", "strike": lc_row["strike"], "symbol": lc_row["call"]["contract"], "bid": lc_row["call"]["bid"], "ask": lc_row["call"]["ask"], "iv": lc_row["call"]["iv"]},
+                ]
+                net_credit = (sp_row["put"]["mid"] - lp_row["put"]["mid"]) + (sc_row["call"]["mid"] - lc_row["call"]["mid"])
+                spread_w = abs(sp_row["strike"] - lp_row["strike"])
+                entry_price = max(0.20, round(net_credit, 2))
+                max_profit = round(entry_price * 100.0, 2)
+                max_loss = round((spread_w - entry_price) * 100.0, 2)
+            elif "SPREAD" in selected_strategy:
+                is_call = "CALL" in selected_strategy
+                opt_key = "call" if is_call else "put"
+                long_row = chain_rows[min(len(chain_rows) - 1, atm_idx + 1)]
+                short_row = chain_rows[min(len(chain_rows) - 1, atm_idx + 2)]
+                selected_contracts = [
+                    {"action": "BUY", "type": opt_key.upper(), "strike": long_row["strike"], "symbol": long_row[opt_key]["contract"], "bid": long_row[opt_key]["bid"], "ask": long_row[opt_key]["ask"], "iv": long_row[opt_key]["iv"]},
+                    {"action": "SELL", "type": opt_key.upper(), "strike": short_row["strike"], "symbol": short_row[opt_key]["contract"], "bid": short_row[opt_key]["bid"], "ask": short_row[opt_key]["ask"], "iv": short_row[opt_key]["iv"]},
+                ]
+                spread_w = abs(short_row["strike"] - long_row["strike"])
+                net_debit = abs(long_row[opt_key]["mid"] - short_row[opt_key]["mid"])
+                entry_price = max(0.20, round(net_debit, 2))
+                max_loss = round(entry_price * 100.0, 2)
+                max_profit = round((spread_w - entry_price) * 100.0, 2)
+
+        # Position Sizing
         pos_size = int((equity * 0.01) / max(1.0, max_loss))
         pos_size = max(1, pos_size)
         total_max_loss = max_loss * pos_size
 
-        # 5. RISK ENGINE (7 Gates)
-        # Evaluate hypothetical candidate against 70+ opportunity score
-        risk_opp_score = opp_score if opp_score >= 70 else 85.0
+        # Risk Engine (7 Gates)
         risk_approved, risk_reason = self.risk_engine.evaluate(
             max_loss=total_max_loss,
-            opportunity_score=risk_opp_score,
+            opportunity_score=opp_score,
             proposed_exposure=total_max_loss,
         )
 
-        # 6. LIQUIDITY GATE
-        spread_pct = 0.04  # 4% SPY spread
-        liq_approved, liq_reason = self.risk_engine.check_liquidity(spread_pct)
-
-        # 7. CONTRACT & DEFINED RISK VALIDATION
-        contracts_valid = all(validate_occ_symbol(c["symbol"])[0] for c in selected_contracts)
-        defined_risk_valid = True
+        # Contract Validation
+        contracts_valid = bool(selected_contracts) and all(validate_occ_symbol(c["symbol"])[0] for c in selected_contracts)
         buy_count = sum(1 for c in selected_contracts if c["action"] == "BUY")
         sell_count = sum(1 for c in selected_contracts if c["action"] == "SELL")
-        if sell_count > buy_count:
-            defined_risk_valid = False
+        defined_risk_valid = (buy_count >= sell_count)
 
-        # 8. BUYING POWER VALIDATION
+        # Buying Power Validation
         bp_valid, bp_reason = validate_buying_power(total_max_loss, buying_power)
 
-        # 9. FINAL SAFETY GATE
-        final_safety_gate = "BLOCKED (VOLTRON_TRADING_ENABLED=false)"
-
-        # 10. DRY-RUN EXECUTION STATUS
         all_passed = (risk_approved and liq_approved and contracts_valid and defined_risk_valid and bp_valid)
         execution_status = "DRY_RUN_PASSED" if all_passed else "DRY_RUN_BLOCKED"
 
         return {
             "symbol": sym,
-            "underlying_price": round(display_price, 2),
+            "underlying_price": round(spot_price, 2),
             "realized_volatility": round(rv, 2),
             "implied_volatility": round(iv, 2),
-            "iv_rv_ratio": round(iv_rv, 2),
-            "opportunity_score": int(opp_score),
+            "iv_rv_ratio": iv_rv_ratio,
+            "opportunity_score": opp_score,
             "ai_decision": ai_decision,
             "ai_confidence": round(ai_confidence, 1),
-            "selected_strategy": selected_strategy if selected_strategy != "NO_TRADE" else f"{strat_for_details} (HYPOTHETICAL DRY RUN)",
+            "selected_strategy": selected_strategy,
             "selected_contracts": selected_contracts,
             "entry_price": round(entry_price, 2),
             "maximum_loss": round(total_max_loss, 2),
@@ -1566,10 +1670,16 @@ class VoltronService:
                 "buying_power": buying_power,
                 "required_capital": total_max_loss,
             },
-            "final_safety_gate": final_safety_gate,
+            "final_safety_gate": "BLOCKED (VOLTRON_TRADING_ENABLED=false)",
             "execution_status": execution_status,
             "execution_mode": "PAPER_DRY_RUN",
             "alpaca_order_submitted": False,
+            "data_source": data_source,
+            "options_data_source": options_data_source,
+            "market_data_timestamp": market_data_timestamp,
+            "option_data_timestamp": market_data_timestamp,
+            "rv_data_window": "20_DAY_HISTORICAL_BARS",
+            "iv_source": "ALPACA_INDICATIVE_ATM" if iv > 0 else "NONE",
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 

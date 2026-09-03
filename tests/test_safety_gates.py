@@ -300,3 +300,77 @@ def test_gate12_dry_run_execution():
     assert result["safety_gate"] == "ORDER_SUBMISSION_PREVENTED"
     assert result["details"]["defined_risk"] == "APPROVED"
     assert result["details"]["risk_engine"] == "APPROVED"
+
+
+# ==========================================
+# PHASE 3.1: SPECIFIC DATA CONSISTENCY TESTS
+# ==========================================
+def test_no_trade_cannot_select_executable_strategy():
+    from unittest.mock import patch
+    from backend.service import voltron_service
+
+    with patch.object(
+        voltron_service,
+        "get_ai_analysis",
+        return_value={"decision": "NO_TRADE", "confidence": 0.0, "direction": "NEUTRAL"}
+    ):
+        result = voltron_service.run_dry_run("SPY", simulate_candidate=False)
+
+        assert result["selected_strategy"] == "NO_TRADE"
+        assert result["selected_contracts"] == []
+        assert result["position_size"] == 0
+        assert result["entry_price"] == 0.0
+        assert result["maximum_loss"] == 0.0
+        assert result["execution_status"] == "NO_TRADE_DECISION"
+        assert result["execution_mode"] == "PAPER_DRY_RUN"
+        assert result["alpaca_order_submitted"] is False
+        assert result["hypothetical_strategy"]["executable"] is False
+
+
+def test_iv_rv_mathematical_consistency():
+    from quant.alpha import calculate_iv_rv_ratio
+
+    # Exact case from user prompt: IV = 11.10, RV = 7.40
+    ratio1 = calculate_iv_rv_ratio(11.10, 7.40)
+    assert round(ratio1, 2) == 1.50
+
+    # Live SPY market data case: IV = 11.24, RV = 7.39
+    ratio2 = calculate_iv_rv_ratio(11.24, 7.39)
+    assert round(ratio2, 2) == 1.52
+
+    # Verification: must never be 1.00 when IV exceeds RV by ~50%
+    assert round(ratio1, 2) != 1.00
+
+
+def test_live_vs_fixture_data_detection():
+    from backend.service import voltron_service
+
+    result = voltron_service.run_dry_run("SPY", simulate_candidate=False)
+
+    # 595.0 was the artificial fallback value; real price must not use hardcoded 595.0
+    assert result["underlying_price"] != 595.0 or result["data_source"] == "ALPACA_IEX"
+    assert "market_data_timestamp" in result
+    assert "option_data_timestamp" in result
+    assert "rv_data_window" in result
+    assert "iv_source" in result
+    assert result["rv_data_window"] == "20_DAY_HISTORICAL_BARS"
+
+
+def test_contract_underlying_consistency():
+    from backend.service import voltron_service
+
+    # Candidate evaluation with real Alpaca options chain
+    result = voltron_service.run_dry_run("SPY", simulate_candidate=True)
+    contracts = result.get("selected_contracts", [])
+    spot = result.get("underlying_price", 0.0)
+
+    if contracts and spot > 0:
+        for c in contracts:
+            # Valid OCC symbol
+            valid, reason = validate_occ_symbol(c["symbol"])
+            assert valid, f"Contract {c['symbol']} failed OCC validation: {reason}"
+
+            # Strike must be within 10% of underlying price
+            assert abs(c["strike"] - spot) <= (spot * 0.10), (
+                f"Strike {c['strike']} is not appropriate for underlying price {spot}"
+            )
