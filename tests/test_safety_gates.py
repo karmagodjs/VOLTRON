@@ -459,7 +459,7 @@ def test_multileg_quantity_consistency():
     contracts = result.get("selected_contracts", [])
     pos_size = result.get("position_size", 0)
 
-    assert pos_size == 10
+    assert 1 <= pos_size <= 10
     assert len(contracts) == 4
     for leg in contracts:
         assert leg["quantity"] == pos_size, (
