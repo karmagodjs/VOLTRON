@@ -1327,7 +1327,10 @@ class VoltronService:
                 "GEMINI_API_KEY": "PRESENT" if bool(gemini_k) else "MISSING",
                 "VOLTRON_TRADING_ENABLED": "true" if trading_en else "false",
             },
-            "env_keys_detected": sorted(list(os.environ.keys())),
+            "env_keys_detected": sorted([
+                k for k in os.environ.keys()
+                if any(x in k.upper() for x in ["ALPACA", "APCA", "GEMINI", "TRADING"])
+            ]),
             "services": services,
             "system_time": datetime.now(timezone.utc).isoformat(),
         }
