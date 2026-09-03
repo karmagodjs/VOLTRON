@@ -1544,6 +1544,13 @@ class VoltronService:
                 else "LONG_STRADDLE" if (0 < iv_rv_ratio <= 0.88)
                 else "NO_TRADE"
             )
+            no_trade_reason = (
+                "Gemini rate-limited (HTTP 429 quota reached); analysis deferred during cooldown (Non-executable demonstration only)"
+                if ai_status == "RATE_LIMITED"
+                else "AI produced NO_TRADE or confidence/score below 70 threshold (Non-executable demonstration only)"
+            )
+            risk_reason = "GEMINI_RATE_LIMITED" if ai_status == "RATE_LIMITED" else "NO_TRADE_DECISION"
+            exec_status = "RATE_LIMITED_DEFERRED" if ai_status == "RATE_LIMITED" else "NO_TRADE_DECISION"
 
             return {
                 "symbol": sym,
@@ -1561,7 +1568,7 @@ class VoltronService:
                 "hypothetical_strategy": {
                     "strategy": hypothetical_name,
                     "executable": False,
-                    "reason": "AI produced NO_TRADE or confidence/score below 70 threshold (Non-executable demonstration only)"
+                    "reason": no_trade_reason
                 },
                 "selected_contracts": [],
                 "entry_price": 0.0,
@@ -1570,7 +1577,7 @@ class VoltronService:
                 "position_size": 0,
                 "risk_approval": {
                     "approved": False,
-                    "reason": "NO_TRADE_DECISION",
+                    "reason": risk_reason,
                     "max_allowed_loss": round(equity * 0.01, 2),
                     "account_equity": equity,
                 },
@@ -1594,7 +1601,7 @@ class VoltronService:
                     "reason": "OPTIONS_BUYING_POWER_SUFFICIENT",
                 },
                 "final_safety_gate": "BLOCKED (VOLTRON_TRADING_ENABLED=false)",
-                "execution_status": "NO_TRADE_DECISION",
+                "execution_status": exec_status,
                 "execution_mode": "PAPER_DRY_RUN",
                 "alpaca_order_submitted": False,
                 "data_source": data_source,

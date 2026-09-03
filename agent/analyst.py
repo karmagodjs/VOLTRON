@@ -52,24 +52,33 @@ def _is_rate_limit_error(exc: Exception) -> bool:
 def _parse_retry_delay(exc: Exception, default: float = 60.0) -> float:
     """Extract retryDelay from exception message/details if supplied by Gemini."""
     exc_str = str(exc)
+
+    # Check for milliseconds first e.g. "retry in 679.47ms"
+    m_ms = re.search(r"retry in (\d+(?:\.\d+)?)ms", exc_str, re.IGNORECASE)
+    if m_ms:
+        try:
+            return max(2.0, (float(m_ms.group(1)) / 1000.0) + 1.0)
+        except (ValueError, TypeError):
+            pass
+
     m = re.search(r"retryDelay['\":\s]+(\d+(?:\.\d+)?)s?", exc_str, re.IGNORECASE)
     if m:
         try:
-            return max(10.0, float(m.group(1)))
+            return max(5.0, float(m.group(1)))
         except (ValueError, TypeError):
             pass
 
     m2 = re.search(r"retry in (\d+(?:\.\d+)?)s", exc_str, re.IGNORECASE)
     if m2:
         try:
-            return max(10.0, float(m2.group(1)))
+            return max(5.0, float(m2.group(1)))
         except (ValueError, TypeError):
             pass
 
     m3 = re.search(r"retry[- ]after[:\s]+(\d+(?:\.\d+)?)", exc_str, re.IGNORECASE)
     if m3:
         try:
-            return max(10.0, float(m3.group(1)))
+            return max(5.0, float(m3.group(1)))
         except (ValueError, TypeError):
             pass
 
@@ -220,6 +229,11 @@ def create_analysis(data):
                     )
                 )
                 output_text = getattr(interaction, "output_text", getattr(interaction, "text", None))
+                if not output_text and hasattr(interaction, "outputs"):
+                    for out in getattr(interaction, "outputs", []):
+                        if hasattr(out, "text") and out.text:
+                            output_text = out.text
+                            break
             except Exception as exc:
                 if _is_rate_limit_error(exc):
                     raise exc
@@ -262,7 +276,7 @@ def create_analysis(data):
     except Exception as exc:
         if _is_rate_limit_error(exc):
             delay = _parse_retry_delay(exc, default=60.0)
-            effective_delay = max(60.0, delay)
+            effective_delay = max(5.0, delay)
             _rate_limit_until = time.time() + effective_delay
             _last_retry_delay = effective_delay
 
