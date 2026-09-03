@@ -76,9 +76,75 @@ def validate_buying_power(
         return False, "INVALID_REQUIRED_CAPITAL"
 
     if available_buying_power < required_capital:
-        return False, f"INSUFFICIENT_BUYING_POWER: needed ${required_capital:.2f}, available ${available_buying_power:.2f}"
+        return False, f"BUYING_POWER_INSUFFICIENT: INSUFFICIENT_BUYING_POWER - needed ${required_capital:.2f}, available ${available_buying_power:.2f}"
 
     return True, "BUYING_POWER_SUFFICIENT"
+
+
+def validate_options_buying_power(
+    required_capital: float,
+    options_buying_power: float,
+    general_buying_power: Optional[float] = None
+) -> Tuple[bool, str]:
+    """
+    Ensure the account has sufficient available OPTIONS buying power.
+    Options collateral MUST be covered strictly by options_buying_power.
+    General/day-trading buying power CANNOT be used to approve options orders.
+    """
+    if required_capital <= 0:
+        return False, "INVALID_REQUIRED_CAPITAL"
+
+    if options_buying_power < required_capital:
+        reason = f"BUYING_POWER_INSUFFICIENT: needed ${required_capital:.2f}, options buying power ${options_buying_power:.2f}"
+        if general_buying_power is not None and general_buying_power >= required_capital:
+            reason += f" (general buying power ${general_buying_power:.2f} cannot be used for options)"
+        return False, reason
+
+    return True, "OPTIONS_BUYING_POWER_SUFFICIENT"
+
+
+def validate_multileg_liquidity(
+    legs: list,
+    max_spread_percent: float = 10.0
+) -> Tuple[bool, str, list]:
+    """
+    Independently verify liquidity across every leg of a multi-leg strategy.
+    All required legs must have valid bid/ask quotes and spread <= max_spread_percent.
+    """
+    if not legs:
+        return False, "EMPTY_LEGS_LIST", []
+
+    leg_reports = []
+    for idx, leg in enumerate(legs):
+        symbol = leg.get("symbol") or f"LEG_{idx}"
+        bid = leg.get("bid")
+        ask = leg.get("ask")
+
+        if bid is None or ask is None or bid <= 0 or ask <= 0:
+            return False, f"LEG_MISSING_QUOTE_DATA: {symbol} has invalid bid/ask", leg_reports
+
+        if ask < bid:
+            return False, f"INVERTED_MARKET: {symbol} ask ${ask:.2f} < bid ${bid:.2f}", leg_reports
+
+        mid = (bid + ask) / 2.0
+        spread = ask - bid
+        spread_pct = round((spread / mid) * 100.0, 2) if mid > 0 else 999.0
+
+        leg_report = {
+            "symbol": symbol,
+            "bid": bid,
+            "ask": ask,
+            "mid": round(mid, 2),
+            "spread": round(spread, 2),
+            "spread_percent": spread_pct,
+            "liquid": spread_pct <= max_spread_percent
+        }
+        leg_reports.append(leg_report)
+
+        if spread_pct > max_spread_percent:
+            return False, f"LEG_SPREAD_TOO_WIDE: {symbol} spread {spread_pct}% exceeds {max_spread_percent}% limit", leg_reports
+
+    return True, "ALL_LEGS_LIQUIDITY_APPROVED", leg_reports
 
 
 def validate_strategy_name(strategy: str) -> Tuple[bool, str]:

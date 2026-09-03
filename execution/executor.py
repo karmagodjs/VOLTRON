@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any
 
 from execution.client import trading_client, get_trading_client
 from execution.order_builder import validate_defined_risk_order
-from quant.trade_validator import validate_buying_power
+from quant.trade_validator import validate_buying_power, validate_options_buying_power
 
 
 def is_trading_enabled() -> bool:
@@ -24,6 +24,8 @@ class PaperExecutor:
         spread_percent: Optional[float] = None,
         dry_run: bool = False,
         available_buying_power: Optional[float] = None,
+        options_buying_power: Optional[float] = None,
+        general_buying_power: Optional[float] = None,
         available_liquidity_size: Optional[int] = None,
     ) -> Dict[str, Any]:
 
@@ -81,14 +83,21 @@ class PaperExecutor:
                 "gate": "LIQUIDITY_GATE",
             }
 
-        # 5. Buying Power Gate
-        if available_buying_power is not None and max_loss > available_buying_power:
-            return {
-                "submitted": False,
-                "execution_mode": "SAFETY_BLOCKED",
-                "reason": f"INSUFFICIENT_BUYING_POWER: max_loss ${max_loss:.2f} > buying_power ${available_buying_power:.2f}",
-                "gate": "BUYING_POWER_GATE",
-            }
+        # 5. Options Buying Power Gate (Strictly enforces options buying power)
+        bp_to_check = options_buying_power if options_buying_power is not None else available_buying_power
+        if bp_to_check is not None:
+            bp_ok, bp_reason = validate_options_buying_power(
+                required_capital=max_loss,
+                options_buying_power=bp_to_check,
+                general_buying_power=general_buying_power,
+            )
+            if not bp_ok:
+                return {
+                    "submitted": False,
+                    "execution_mode": "SAFETY_BLOCKED",
+                    "reason": bp_reason,
+                    "gate": "BUYING_POWER_GATE",
+                }
 
         # 6. DRY-RUN Execution Gate (Stops immediately before submission)
         if dry_run:

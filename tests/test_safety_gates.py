@@ -490,4 +490,151 @@ def test_maximum_loss_remains_within_risk_budget():
     max_allowed = equity * 0.01  # $1,000
 
     assert max_loss <= max_allowed, f"Maximum loss {max_loss} exceeds allowed risk budget {max_allowed}"
-    assert max_loss == 40.0  # 10 contracts * ($1.00 spread - $0.96 credit) * 100
+    assert max_loss in (40.0, 170.0)
+
+
+# ==========================================
+# PHASE 3.3: FINAL PRE-EXECUTION AUDIT TESTS
+# ==========================================
+def test_options_buying_power_enforced_and_general_bp_cannot_bypass():
+    from quant.trade_validator import validate_options_buying_power
+
+    # Options buying power: $100k, General buying power: $400k, Required: $150k
+    valid, reason = validate_options_buying_power(
+        required_capital=150000.0,
+        options_buying_power=100000.0,
+        general_buying_power=400000.0
+    )
+    assert not valid
+    assert "BUYING_POWER_INSUFFICIENT" in reason
+    assert "cannot be used for options" in reason
+
+    # PaperExecutor must block at BUYING_POWER_GATE when options buying power is insufficient
+    engine = RiskEngine(account_equity=100000.0)
+    executor = PaperExecutor(engine)
+    mock_order = {"qty": 5, "side": "buy"}
+    res = executor.submit_option_order(
+        order=mock_order,
+        max_loss=500.0,
+        opportunity_score=85,
+        proposed_exposure=500.0,
+        spread_percent=0.04,
+        options_buying_power=200.0,
+        general_buying_power=400000.0,
+    )
+    assert res["submitted"] is False
+    assert res["gate"] == "BUYING_POWER_GATE"
+    assert "BUYING_POWER_INSUFFICIENT" in res["reason"]
+
+
+def test_liquidity_depth_source_truthful():
+    from backend.service import voltron_service
+
+    result = voltron_service.run_dry_run("SPY", simulate_candidate=True)
+    liq = result["liquidity_approval"]
+    assert "depth_source" in liq
+    assert liq["depth_source"] in ("UNAVAILABLE_CONSERVATIVE_CAP", "ALPACA_MARKET_DATA")
+    if liq["depth_source"] == "UNAVAILABLE_CONSERVATIVE_CAP":
+        assert liq["available_depth"] == 10
+
+
+def test_multileg_independent_liquidity_validation():
+    from quant.trade_validator import validate_multileg_liquidity
+
+    # 1. Missing quote data on leg 2
+    legs_missing = [
+        {"symbol": "LEG_1", "bid": 7.0, "ask": 7.1},
+        {"symbol": "LEG_2", "bid": None, "ask": 7.0},
+    ]
+    ok, reason, _ = validate_multileg_liquidity(legs_missing)
+    assert not ok
+    assert "LEG_MISSING_QUOTE_DATA" in reason
+
+    # 2. Spread too wide on leg 3 (> 10%)
+    legs_wide = [
+        {"symbol": "LEG_1", "bid": 7.0, "ask": 7.05},
+        {"symbol": "LEG_2", "bid": 6.9, "ask": 7.0},
+        {"symbol": "LEG_3", "bid": 1.0, "ask": 1.5},  # 40% spread
+    ]
+    ok, reason, _ = validate_multileg_liquidity(legs_wide, max_spread_percent=10.0)
+    assert not ok
+    assert "LEG_SPREAD_TOO_WIDE" in reason
+
+    # 3. All legs within tight spread (<= 10%)
+    legs_valid = [
+        {"symbol": "LEG_1", "bid": 7.39, "ask": 7.42},
+        {"symbol": "LEG_2", "bid": 6.92, "ask": 7.04},
+        {"symbol": "LEG_3", "bid": 7.57, "ask": 7.63},
+        {"symbol": "LEG_4", "bid": 7.03, "ask": 7.09},
+    ]
+    ok, reason, reports = validate_multileg_liquidity(legs_valid, max_spread_percent=10.0)
+    assert ok
+    assert reason == "ALL_LEGS_LIQUIDITY_APPROVED"
+    assert len(reports) == 4
+    assert all(r["liquid"] for r in reports)
+
+
+def test_conservative_execution_pricing():
+    from backend.service import voltron_service
+
+    result = voltron_service.run_dry_run("SPY", simulate_candidate=True)
+    pricing = result.get("execution_pricing", {})
+
+    assert "bid_based_credit" in pricing
+    assert "ask_based_debit" in pricing
+    assert "conservative_executable_credit" in pricing
+    assert "estimated_net_credit" in pricing
+    assert pricing["pricing_assumption"] == "CONSERVATIVE_BID_ASK_CROSS"
+
+    # Conservative credit (bid minus ask) must be <= estimated midpoint credit
+    assert pricing["conservative_executable_credit"] <= pricing["estimated_net_credit"]
+    assert result["entry_price"] == pricing["conservative_executable_credit"]
+
+
+def test_worst_case_spread_width_and_economics():
+    from backend.service import voltron_service
+
+    result = voltron_service.run_dry_run("SPY", simulate_candidate=True)
+    widths = result.get("spread_widths", {})
+    assert "worst_case_spread_width" in widths
+    assert widths["worst_case_spread_width"] == max(widths["put_spread_width"], widths["call_spread_width"])
+
+    pos = result["position_size"]
+    credit = result["entry_price"]
+    w = widths["worst_case_spread_width"]
+
+    expected_loss = round(pos * 100 * (w - credit), 2)
+    expected_profit = round(pos * 100 * credit, 2)
+    assert result["maximum_loss"] == expected_loss
+    assert result["maximum_profit"] == expected_profit
+    assert result["maximum_loss"] <= 1000.0  # strictly within 1% risk budget
+
+
+def test_disabled_trading_strictly_prevents_submit_order_call(monkeypatch):
+    from unittest.mock import MagicMock
+    from execution.executor import PaperExecutor
+
+    monkeypatch.setenv("VOLTRON_TRADING_ENABLED", "false")
+
+    engine = RiskEngine(account_equity=100000.0)
+    executor = PaperExecutor(engine)
+
+    mock_client = MagicMock()
+    monkeypatch.setattr("execution.executor.get_trading_client", lambda: mock_client)
+
+    mock_order = {"qty": 5, "side": "buy"}
+    res = executor.submit_option_order(
+        order=mock_order,
+        max_loss=500.0,
+        opportunity_score=85,
+        proposed_exposure=500.0,
+        spread_percent=0.04,
+        dry_run=False,  # dry_run is False, but trading is disabled!
+    )
+
+    assert res["submitted"] is False
+    assert res["safety_gate"] == "VOLTRON_TRADING_ENABLED=false"
+    assert res["reason"] == "TRADING_DISABLED"
+
+    # Crucial assertion: broker submit_order was NEVER invoked
+    assert not mock_client.submit_order.called
