@@ -34,7 +34,7 @@ export default function AIIntelligencePanel({
   const decisionLabel = isRateLimited
     ? "NO TRADE"
     : analysis?.decision
-    ? analysis.decision.replace("_", " ")
+    ? analysis.decision.replace("_", " ") || "NO TRADE"
     : "WAITING";
 
   const actionLabel =

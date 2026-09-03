@@ -17,7 +17,7 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
   const isRateLimited = analysis.ai_status === "RATE_LIMITED" || analysis.status === "RATE_LIMITED";
   const isCached = analysis.ai_status === "CACHED" || Boolean(analysis.is_cached);
   const statusText = isRateLimited ? "RATE LIMITED" : isCached ? "CACHED" : analysis.status;
-  const decisionText = isRateLimited ? "NO TRADE" : analysis.decision.replace("_", " ");
+  const decisionText = isRateLimited ? "NO TRADE" : analysis.decision.replace("_", " ") || "NO TRADE";
 
   return (
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col justify-between">

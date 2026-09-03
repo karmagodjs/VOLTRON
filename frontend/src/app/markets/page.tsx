@@ -375,7 +375,7 @@ export default function MarketsPage() {
 
                         <td className="p-3">
                           <span className="px-2 py-0.5 rounded bg-voltron-900 border border-voltron-750 text-[10px] text-voltron-200">
-                            {row.strategy.replace(/_/g, " ")}
+                            {row.strategy?.replace(/_/g, " ") || "NO TRADE"}
                           </span>
                         </td>
 
