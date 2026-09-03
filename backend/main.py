@@ -88,6 +88,7 @@ class BacktestRequest(BaseModel):
 # ==========================================
 
 @app.get("/")
+@app.get("/api/health")
 def root():
     return {
         "status": "OPERATIONAL",

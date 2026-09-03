@@ -7,8 +7,9 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
-# Load environment
+# Load environment (local .env or Render secret file)
 load_dotenv()
+load_dotenv("/etc/secrets/.env")
 
 # Alpaca clients
 from alpaca.trading.client import TradingClient
@@ -53,10 +54,21 @@ from backtest.metrics import (
     sharpe_ratio,
 )
 
+def _find_env_var(*candidates) -> Optional[str]:
+    for c in candidates:
+        v = os.getenv(c)
+        if v:
+            return v.strip().strip("'").strip('"')
+    for env_k, env_v in os.environ.items():
+        for c in candidates:
+            if env_k.strip().upper() == c.upper() and env_v:
+                return env_v.strip().strip("'").strip('"')
+    return None
+
 # API Keys & Safety Switch
-ALPACA_API_KEY = (os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID") or "").strip().strip("'").strip('"')
-ALPACA_SECRET_KEY = (os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY") or "").strip().strip("'").strip('"')
-GEMINI_API_KEY = (os.getenv("GEMINI_API_KEY") or "").strip().strip("'").strip('"')
+ALPACA_API_KEY = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY") or ""
+ALPACA_SECRET_KEY = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY") or ""
+GEMINI_API_KEY = _find_env_var("GEMINI_API_KEY", "GOOGLE_API_KEY") or ""
 VOLTRON_TRADING_ENABLED = os.getenv("VOLTRON_TRADING_ENABLED", "false").lower() == "true"
 
 SUPPORTED_UNIVERSE = ["SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA", "MSFT", "AMZN"]
@@ -87,17 +99,31 @@ class VoltronService:
         self.stock_data_client: Optional[StockHistoricalDataClient] = None
         self.option_data_client: Optional[OptionHistoricalDataClient] = None
 
-        if ALPACA_API_KEY and ALPACA_SECRET_KEY:
-            try:
-                self.trading_client = TradingClient(ALPACA_API_KEY, ALPACA_SECRET_KEY, paper=True)
-                self.stock_data_client = StockHistoricalDataClient(ALPACA_API_KEY, ALPACA_SECRET_KEY)
-                self.option_data_client = OptionHistoricalDataClient(ALPACA_API_KEY, ALPACA_SECRET_KEY)
-            except Exception as e:
-                print(f"[VOLTRON] Alpaca client initialization warning: {e}")
+        self._ensure_clients()
 
         self.risk_engine = RiskEngine(account_equity=100000.0)
         self.monitor = PositionMonitor()
         self.logger = TradeLogger(filename="voltron_trades.csv")
+
+    def _ensure_clients(self):
+        key = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY")
+        sec = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY")
+        if key and sec:
+            if not self.trading_client:
+                try:
+                    self.trading_client = TradingClient(key, sec, paper=True)
+                except Exception as e:
+                    print(f"[VOLTRON] TradingClient warning: {e}")
+            if not self.stock_data_client:
+                try:
+                    self.stock_data_client = StockHistoricalDataClient(key, sec)
+                except Exception as e:
+                    print(f"[VOLTRON] StockHistoricalDataClient warning: {e}")
+            if not self.option_data_client:
+                try:
+                    self.option_data_client = OptionHistoricalDataClient(key, sec)
+                except Exception as e:
+                    print(f"[VOLTRON] OptionHistoricalDataClient warning: {e}")
 
         # Agent state (manual step mode in Phase 1)
         self.agent_running = False
@@ -190,8 +216,30 @@ class VoltronService:
         rv = 0.0
         history: List[Dict[str, Any]] = []
 
+        self._ensure_clients()
         if not self.stock_data_client:
-            raise RuntimeError("Alpaca Stock client not initialized. Check ALPACA_API_KEY/SECRET.")
+            return {
+                "symbol": sym,
+                "name": ASSET_NAMES.get(sym, sym),
+                "price": 0.0,
+                "high": 0.0,
+                "low": 0.0,
+                "volume": 0,
+                "change": 0.0,
+                "change_percent": 0.0,
+                "rv": 0.0,
+                "iv": 0.0,
+                "iv_rv_ratio": 1.0,
+                "iv_premium": 0.0,
+                "opportunity_score": 0,
+                "market_regime": "DATA_UNAVAILABLE",
+                "vol_signal": "DATA_UNAVAILABLE",
+                "data_source": "ALPACA_DATA_UNAVAILABLE",
+                "history": [],
+                "options_volume": 0,
+                "put_call_ratio": 1.0,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
 
         # 1. Fetch historical bars via IEX feed for 20-day RV and history
         now = datetime.now(timezone.utc)
@@ -1138,8 +1186,14 @@ class VoltronService:
     # SYSTEM OBSERVABILITY
     # ==========================================
     def get_system_health(self) -> Dict[str, Any]:
+        self._ensure_clients()
+        alpaca_k = _find_env_var("ALPACA_API_KEY", "APCA_API_KEY_ID", "ALPACA_KEY_ID", "APCA_API_KEY")
+        alpaca_s = _find_env_var("ALPACA_SECRET_KEY", "APCA_API_SECRET_KEY", "ALPACA_SECRET_KEY_ID", "APCA_SECRET_KEY")
+        gemini_k = _find_env_var("GEMINI_API_KEY", "GOOGLE_API_KEY")
+        trading_en = os.getenv("VOLTRON_TRADING_ENABLED", "false").lower() == "true"
+
         alpaca_connected = bool(self.trading_client)
-        gemini_connected = bool(GEMINI_API_KEY)
+        gemini_connected = bool(gemini_k)
 
         services = [
             {
@@ -1199,11 +1253,15 @@ class VoltronService:
             "overall_latency_ms": 110,
             "paper_trading_mode": True,
             "config_validation": {
-                "ALPACA_API_KEY": "PRESENT" if bool(ALPACA_API_KEY) else "MISSING",
-                "ALPACA_SECRET_KEY": "PRESENT" if bool(ALPACA_SECRET_KEY) else "MISSING",
-                "GEMINI_API_KEY": "PRESENT" if bool(GEMINI_API_KEY) else "MISSING",
-                "VOLTRON_TRADING_ENABLED": "true" if VOLTRON_TRADING_ENABLED else "false",
+                "ALPACA_API_KEY": "PRESENT" if bool(alpaca_k) else "MISSING",
+                "ALPACA_SECRET_KEY": "PRESENT" if bool(alpaca_s) else "MISSING",
+                "GEMINI_API_KEY": "PRESENT" if bool(gemini_k) else "MISSING",
+                "VOLTRON_TRADING_ENABLED": "true" if trading_en else "false",
             },
+            "env_keys_detected": sorted([
+                k for k in os.environ.keys()
+                if any(x in k.upper() for x in ["ALPACA", "APCA", "GEMINI", "TRADING"])
+            ]),
             "services": services,
             "system_time": datetime.now(timezone.utc).isoformat(),
         }
