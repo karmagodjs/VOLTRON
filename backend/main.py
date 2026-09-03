@@ -107,7 +107,7 @@ def root():
         "status": "OPERATIONAL",
         "mode": "PAPER_TRADING",
         "version": "2.1.0",
-        "build": "PHASE_4.1"
+        "build": "PHASE_4.1_DIAG"
     }
 
 @app.get("/api/account")
