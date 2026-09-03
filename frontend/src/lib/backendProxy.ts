@@ -9,6 +9,7 @@ export async function proxyToBackend(
   request: NextRequest,
   backendPath: string
 ) {
+  const url = new URL(request.url);
   const targetUrl = backendPath.includes("?")
     ? `${BACKEND_URL}${backendPath}`
     : `${BACKEND_URL}${backendPath}${url.search}`;
