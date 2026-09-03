@@ -374,3 +374,120 @@ def test_contract_underlying_consistency():
             assert abs(c["strike"] - spot) <= (spot * 0.10), (
                 f"Strike {c['strike']} is not appropriate for underlying price {spot}"
             )
+
+
+# ==========================================
+# PHASE 3.2: EXECUTION SAFETY HARDENING TESTS
+# ==========================================
+def test_250_contract_candidate_rejected():
+    from risk.limits import MAX_CONTRACT_QUANTITY
+    engine = RiskEngine(account_equity=100000.0)
+    executor = PaperExecutor(engine)
+
+    # RiskEngine check_order_size must reject 250
+    ok, reason = engine.check_order_size(250)
+    assert not ok
+    assert reason == "ORDER_SIZE_TOO_LARGE"
+
+    # Executor must block order submission for 250 contracts
+    mock_order = {"qty": 250, "side": "buy"}
+    result = executor.submit_option_order(
+        order=mock_order,
+        max_loss=1000.0,
+        opportunity_score=85,
+        proposed_exposure=1000.0,
+        spread_percent=0.04,
+        dry_run=True,
+    )
+    assert result["submitted"] is False
+    assert result["reason"] == "ORDER_SIZE_TOO_LARGE"
+    assert result["gate"] == "ORDER_SIZE_GATE"
+
+
+def test_10_contract_candidate_accepted():
+    from risk.limits import MAX_CONTRACT_QUANTITY
+    engine = RiskEngine(account_equity=100000.0)
+
+    # 10 contracts must be approved
+    ok, reason = engine.check_order_size(MAX_CONTRACT_QUANTITY)
+    assert ok
+    assert reason == "ORDER_SIZE_APPROVED"
+
+    # Full evaluate with quantity=10 must pass
+    approved, reason = engine.evaluate(
+        max_loss=500.0,
+        opportunity_score=85,
+        proposed_exposure=500.0,
+        quantity=MAX_CONTRACT_QUANTITY,
+    )
+    assert approved
+    assert reason == "RISK_APPROVED"
+
+
+def test_quantity_cap_cannot_be_bypassed():
+    from risk.position_sizing import calculate_position_size
+    from risk.limits import MAX_CONTRACT_QUANTITY
+
+    # Large equity / low max loss per contract ($4) must cap at 10, not 250
+    qty = calculate_position_size(account_equity=100000.0, max_loss_per_contract=4.0)
+    assert qty == MAX_CONTRACT_QUANTITY
+    assert qty <= 10
+
+    # Huge equity ($1,000,000) must still cap at 10
+    huge_qty = calculate_position_size(account_equity=1000000.0, max_loss_per_contract=1.0)
+    assert huge_qty == MAX_CONTRACT_QUANTITY
+
+    # Order builder functions must reject attempts to construct > 10 contracts
+    with pytest.raises(ValueError, match="exceeds maximum contract limit"):
+        build_option_buy_order("SPY260918C00765000", quantity=250, limit_price=2.50)
+
+    with pytest.raises(ValueError, match="exceeds maximum contract limit"):
+        build_iron_condor(
+            long_put="SPY260918P00760000",
+            short_put="SPY260918P00762000",
+            short_call="SPY260918C00768000",
+            long_call="SPY260918C00770000",
+            quantity=250,
+            limit_price=1.50
+        )
+
+
+def test_multileg_quantity_consistency():
+    from backend.service import voltron_service
+
+    result = voltron_service.run_dry_run("SPY", simulate_candidate=True)
+    contracts = result.get("selected_contracts", [])
+    pos_size = result.get("position_size", 0)
+
+    assert pos_size == 10
+    assert len(contracts) == 4
+    for leg in contracts:
+        assert leg["quantity"] == pos_size, (
+            f"Leg {leg['symbol']} quantity {leg['quantity']} != position_size {pos_size}"
+        )
+
+
+def test_liquidity_depth_failure():
+    engine = RiskEngine(account_equity=100000.0)
+
+    # Quantity exceeds conservative depth cap of 10
+    ok, reason = engine.check_liquidity(spread_percent=0.04, quantity=15, available_size=10)
+    assert not ok
+    assert reason == "ORDER_SIZE_TOO_LARGE"
+
+    # Quantity exceeds specified market depth
+    ok, reason = engine.check_liquidity(spread_percent=0.04, quantity=8, available_size=5)
+    assert not ok
+    assert reason == "INSUFFICIENT_LIQUIDITY_FOR_SIZE"
+
+
+def test_maximum_loss_remains_within_risk_budget():
+    from backend.service import voltron_service
+
+    result = voltron_service.run_dry_run("SPY", simulate_candidate=True)
+    max_loss = result.get("maximum_loss", 0.0)
+    equity = result.get("risk_approval", {}).get("account_equity", 100000.0)
+    max_allowed = equity * 0.01  # $1,000
+
+    assert max_loss <= max_allowed, f"Maximum loss {max_loss} exceeds allowed risk budget {max_allowed}"
+    assert max_loss == 40.0  # 10 contracts * ($1.00 spread - $0.96 credit) * 100

@@ -4,6 +4,7 @@ from alpaca.trading.enums import (
     OrderSide,
     TimeInForce
 )
+from risk.limits import MAX_CONTRACT_QUANTITY
 
 
 def build_option_buy_order(
@@ -17,6 +18,9 @@ def build_option_buy_order(
 
     if quantity <= 0:
         raise ValueError("Quantity must be positive")
+
+    if quantity > MAX_CONTRACT_QUANTITY:
+        raise ValueError(f"Quantity {quantity} exceeds maximum contract limit of {MAX_CONTRACT_QUANTITY}")
 
     if limit_price <= 0:
         raise ValueError(
@@ -44,12 +48,17 @@ def build_option_sell_order(symbol, quantity, limit_price):
 def validate_defined_risk_order(order) -> Tuple[bool, str]:
     """
     Verify that an order has strictly defined risk:
+    - Order quantity must not exceed MAX_CONTRACT_QUANTITY.
     - Single-leg orders MUST be BUY orders (long option).
     - Multi-leg orders MUST have every short leg covered by an equal-quantity long leg.
     - No naked or uncovered short options are allowed.
     """
     if not order:
         return False, "EMPTY_ORDER"
+
+    qty = getattr(order, "qty", None)
+    if isinstance(qty, (int, float)) and qty > MAX_CONTRACT_QUANTITY:
+        return False, "ORDER_SIZE_TOO_LARGE"
 
     legs = getattr(order, "legs", None)
     if not legs:

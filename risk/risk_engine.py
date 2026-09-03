@@ -4,7 +4,8 @@ from risk.limits import (
     MAX_PORTFOLIO_EXPOSURE,
     MAX_CONSECUTIVE_LOSSES,
     MIN_OPPORTUNITY_SCORE,
-    MAX_SPREAD_PERCENT
+    MAX_SPREAD_PERCENT,
+    MAX_CONTRACT_QUANTITY,
 )
 
 
@@ -18,15 +19,30 @@ class RiskEngine:
         self.consecutive_losses = 0
         self.kill_switch = False
 
+    def check_order_size(self, quantity: int, max_contracts: int = None):
+        cap = max_contracts if max_contracts is not None else MAX_CONTRACT_QUANTITY
+        if quantity is None or quantity <= 0:
+            return False, "INVALID_ORDER_SIZE"
+        if quantity > cap:
+            return False, "ORDER_SIZE_TOO_LARGE"
+        return True, "ORDER_SIZE_APPROVED"
+
     def evaluate(
         self,
         max_loss,
         opportunity_score,
-        proposed_exposure
+        proposed_exposure,
+        quantity=None,
+        max_contracts=None,
     ):
 
         if self.kill_switch:
             return False, "KILL_SWITCH_ACTIVE"
+
+        if quantity is not None:
+            size_ok, size_reason = self.check_order_size(quantity, max_contracts)
+            if not size_ok:
+                return False, size_reason
 
         if opportunity_score < MIN_OPPORTUNITY_SCORE:
             return False, "OPPORTUNITY_SCORE_TOO_LOW"
@@ -84,7 +100,7 @@ class RiskEngine:
 
         self.kill_switch = False
 
-    def check_liquidity(self, spread_percent):
+    def check_liquidity(self, spread_percent, quantity=None, available_size=None, max_contracts=None):
 
         if spread_percent is None:
             return False, "NO_SPREAD_DATA"
@@ -92,15 +108,29 @@ class RiskEngine:
         if spread_percent > MAX_SPREAD_PERCENT:
             return False, "SPREAD_TOO_WIDE"
 
+        cap = max_contracts if max_contracts is not None else MAX_CONTRACT_QUANTITY
+        if quantity is not None and quantity > cap:
+            return False, "ORDER_SIZE_TOO_LARGE"
+
+        if available_size is not None and quantity is not None and quantity > available_size:
+            return False, "INSUFFICIENT_LIQUIDITY_FOR_SIZE"
+
         return True, "LIQUIDITY_APPROVED"
 
 
-def check_liquidity(spread_percent):
+def check_liquidity(spread_percent, quantity=None, available_size=None, max_contracts=None):
 
     if spread_percent is None:
         return False, "NO_SPREAD_DATA"
 
     if spread_percent > MAX_SPREAD_PERCENT:
         return False, "SPREAD_TOO_WIDE"
+
+    cap = max_contracts if max_contracts is not None else MAX_CONTRACT_QUANTITY
+    if quantity is not None and quantity > cap:
+        return False, "ORDER_SIZE_TOO_LARGE"
+
+    if available_size is not None and quantity is not None and quantity > available_size:
+        return False, "INSUFFICIENT_LIQUIDITY_FOR_SIZE"
 
     return True, "LIQUIDITY_APPROVED"

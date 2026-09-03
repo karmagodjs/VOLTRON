@@ -8,6 +8,7 @@ from alpaca.trading.enums import (
     TimeInForce,
     PositionIntent
 )
+from risk.limits import MAX_CONTRACT_QUANTITY
 
 
 def build_iron_condor(
@@ -27,6 +28,9 @@ def build_iron_condor(
 
     if quantity <= 0:
         raise ValueError("Invalid quantity")
+
+    if quantity > MAX_CONTRACT_QUANTITY:
+        raise ValueError(f"Quantity {quantity} exceeds maximum contract limit of {MAX_CONTRACT_QUANTITY}")
 
     if limit_price <= 0:
         raise ValueError("Limit price must be positive")
@@ -90,6 +94,9 @@ def build_vertical_spread(
     if quantity <= 0:
         raise ValueError("Invalid quantity")
 
+    if quantity > MAX_CONTRACT_QUANTITY:
+        raise ValueError(f"Quantity {quantity} exceeds maximum contract limit of {MAX_CONTRACT_QUANTITY}")
+
     if limit_price <= 0:
         raise ValueError("Limit price must be positive")
 
@@ -137,6 +144,9 @@ def build_long_straddle(
 
     if quantity <= 0:
         raise ValueError("Invalid quantity")
+
+    if quantity > MAX_CONTRACT_QUANTITY:
+        raise ValueError(f"Quantity {quantity} exceeds maximum contract limit of {MAX_CONTRACT_QUANTITY}")
 
     if limit_price <= 0:
         raise ValueError("Limit price must be positive")

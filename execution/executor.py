@@ -24,7 +24,13 @@ class PaperExecutor:
         spread_percent: Optional[float] = None,
         dry_run: bool = False,
         available_buying_power: Optional[float] = None,
+        available_liquidity_size: Optional[int] = None,
     ) -> Dict[str, Any]:
+
+        qty = getattr(order, "qty", None)
+        if qty is None and isinstance(order, dict):
+            qty = order.get("qty") or order.get("quantity")
+        qty = int(qty or 1)
 
         # 1. Defined-Risk Validation Gate (No naked shorts allowed)
         dr_approved, dr_reason = validate_defined_risk_order(order)
@@ -36,11 +42,22 @@ class PaperExecutor:
                 "gate": "DEFINED_RISK_GATE",
             }
 
-        # 2. Risk Engine Evaluation (7 Risk Engine Gates)
+        # 2. Hard Order Size Gate
+        size_ok, size_reason = self.risk_engine.check_order_size(qty)
+        if not size_ok:
+            return {
+                "submitted": False,
+                "execution_mode": "SAFETY_BLOCKED",
+                "reason": size_reason,
+                "gate": "ORDER_SIZE_GATE",
+            }
+
+        # 3. Risk Engine Evaluation (7 Risk Engine Gates + Quantity)
         approved, reason = self.risk_engine.evaluate(
             max_loss=max_loss,
             opportunity_score=opportunity_score,
-            proposed_exposure=proposed_exposure
+            proposed_exposure=proposed_exposure,
+            quantity=qty,
         )
         if not approved:
             return {
@@ -50,9 +67,11 @@ class PaperExecutor:
                 "gate": "RISK_ENGINE_GATE",
             }
 
-        # 3. Liquidity Gate
+        # 4. Liquidity & Market Depth Gate
         liquidity_ok, liquidity_reason = self.risk_engine.check_liquidity(
-            spread_percent
+            spread_percent=spread_percent,
+            quantity=qty,
+            available_size=available_liquidity_size,
         )
         if not liquidity_ok:
             return {
@@ -62,7 +81,7 @@ class PaperExecutor:
                 "gate": "LIQUIDITY_GATE",
             }
 
-        # 4. Buying Power Gate
+        # 5. Buying Power Gate
         if available_buying_power is not None and max_loss > available_buying_power:
             return {
                 "submitted": False,
@@ -71,7 +90,7 @@ class PaperExecutor:
                 "gate": "BUYING_POWER_GATE",
             }
 
-        # 5. DRY-RUN Execution Gate (Stops immediately before submission)
+        # 6. DRY-RUN Execution Gate (Stops immediately before submission)
         if dry_run:
             return {
                 "submitted": False,
@@ -81,6 +100,7 @@ class PaperExecutor:
                 "safety_gate": "ORDER_SUBMISSION_PREVENTED",
                 "details": {
                     "defined_risk": "APPROVED",
+                    "order_size": "APPROVED",
                     "risk_engine": "APPROVED",
                     "liquidity": "APPROVED",
                     "buying_power": "APPROVED",

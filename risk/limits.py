@@ -1,6 +1,11 @@
+import os
+
 MAX_TRADE_RISK = 0.01
 MAX_DAILY_LOSS = 0.02
 MAX_PORTFOLIO_EXPOSURE = 0.30
 MAX_CONSECUTIVE_LOSSES = 3
 MIN_OPPORTUNITY_SCORE = 70
 MAX_SPREAD_PERCENT = 10.0
+
+# Conservative hard cap for single order/strategy execution
+MAX_CONTRACT_QUANTITY = int(os.getenv("VOLTRON_MAX_CONTRACTS", "10"))

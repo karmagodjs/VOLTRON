@@ -41,6 +41,7 @@ from risk.limits import (
     MAX_CONSECUTIVE_LOSSES,
     MIN_OPPORTUNITY_SCORE,
     MAX_SPREAD_PERCENT,
+    MAX_CONTRACT_QUANTITY,
 )
 from agent.analyst import create_analysis
 from quant.trade_validator import validate_trade, validate_occ_symbol, validate_buying_power, validate_strategy_name
@@ -154,9 +155,12 @@ class VoltronService:
         equity = 100000.0
         cash = 100000.0
         buying_power = 200000.0
+        options_buying_power = 100000.0
+        regt_buying_power = 200000.0
         portfolio_value = 100000.0
         status = "ACTIVE"
         trading_blocked = False
+        buying_power_source = "DEFAULT_PAPER_BUDGET"
 
         if self.trading_client:
             try:
@@ -164,9 +168,12 @@ class VoltronService:
                 equity = float(acc.equity)
                 cash = float(acc.cash)
                 buying_power = float(acc.buying_power)
+                options_buying_power = float(getattr(acc, "options_buying_power", acc.cash) or cash)
+                regt_buying_power = float(getattr(acc, "regt_buying_power", acc.cash) or cash)
                 portfolio_value = float(getattr(acc, "portfolio_value", equity))
                 status = str(acc.status)
                 trading_blocked = bool(acc.trading_blocked)
+                buying_power_source = "ALPACA_PAPER_REAL_TIME"
             except Exception as e:
                 print(f"[VOLTRON] Error reading Alpaca account: {e}")
 
@@ -183,6 +190,9 @@ class VoltronService:
             "equity": equity,
             "cash": cash,
             "buying_power": buying_power,
+            "options_buying_power": options_buying_power,
+            "regt_buying_power": regt_buying_power,
+            "buying_power_source": buying_power_source,
             "portfolio_value": portfolio_value,
             "daily_pnl": 0.0,
             "daily_pnl_percent": 0.0,
@@ -1573,8 +1583,10 @@ class VoltronService:
         chain_rows = chain_res.get("chain", [])
         selected_contracts = []
         entry_price = 0.0
-        max_loss = 350.0
-        max_profit = 150.0
+        max_loss_per_contract = 350.0
+        max_profit_per_contract = 150.0
+        spread_width = 1.0
+        raw_legs = []
 
         if chain_rows:
             atm_idx = next((i for i, r in enumerate(chain_rows) if r.get("is_atm")), len(chain_rows) // 2)
@@ -1584,42 +1596,71 @@ class VoltronService:
                 sc_row = chain_rows[min(len(chain_rows) - 1, atm_idx + 1)]
                 lc_row = chain_rows[min(len(chain_rows) - 1, atm_idx + 2)]
 
-                selected_contracts = [
+                net_credit = (sp_row["put"]["mid"] - lp_row["put"]["mid"]) + (sc_row["call"]["mid"] - lc_row["call"]["mid"])
+                spread_width = abs(sp_row["strike"] - lp_row["strike"])
+                entry_price = max(0.20, round(net_credit, 2))
+                max_profit_per_contract = round(entry_price * 100.0, 2)
+                max_loss_per_contract = round((spread_width - entry_price) * 100.0, 2)
+
+                raw_legs = [
                     {"action": "SELL", "type": "PUT", "strike": sp_row["strike"], "symbol": sp_row["put"]["contract"], "bid": sp_row["put"]["bid"], "ask": sp_row["put"]["ask"], "iv": sp_row["put"]["iv"]},
                     {"action": "BUY", "type": "PUT", "strike": lp_row["strike"], "symbol": lp_row["put"]["contract"], "bid": lp_row["put"]["bid"], "ask": lp_row["put"]["ask"], "iv": lp_row["put"]["iv"]},
                     {"action": "SELL", "type": "CALL", "strike": sc_row["strike"], "symbol": sc_row["call"]["contract"], "bid": sc_row["call"]["bid"], "ask": sc_row["call"]["ask"], "iv": sc_row["call"]["iv"]},
                     {"action": "BUY", "type": "CALL", "strike": lc_row["strike"], "symbol": lc_row["call"]["contract"], "bid": lc_row["call"]["bid"], "ask": lc_row["call"]["ask"], "iv": lc_row["call"]["iv"]},
                 ]
-                net_credit = (sp_row["put"]["mid"] - lp_row["put"]["mid"]) + (sc_row["call"]["mid"] - lc_row["call"]["mid"])
-                spread_w = abs(sp_row["strike"] - lp_row["strike"])
-                entry_price = max(0.20, round(net_credit, 2))
-                max_profit = round(entry_price * 100.0, 2)
-                max_loss = round((spread_w - entry_price) * 100.0, 2)
             elif "SPREAD" in selected_strategy:
                 is_call = "CALL" in selected_strategy
                 opt_key = "call" if is_call else "put"
                 long_row = chain_rows[min(len(chain_rows) - 1, atm_idx + 1)]
                 short_row = chain_rows[min(len(chain_rows) - 1, atm_idx + 2)]
-                selected_contracts = [
+                spread_width = abs(short_row["strike"] - long_row["strike"])
+                net_debit = abs(long_row[opt_key]["mid"] - short_row[opt_key]["mid"])
+                entry_price = max(0.20, round(net_debit, 2))
+                max_loss_per_contract = round(entry_price * 100.0, 2)
+                max_profit_per_contract = round((spread_width - entry_price) * 100.0, 2)
+
+                raw_legs = [
                     {"action": "BUY", "type": opt_key.upper(), "strike": long_row["strike"], "symbol": long_row[opt_key]["contract"], "bid": long_row[opt_key]["bid"], "ask": long_row[opt_key]["ask"], "iv": long_row[opt_key]["iv"]},
                     {"action": "SELL", "type": opt_key.upper(), "strike": short_row["strike"], "symbol": short_row[opt_key]["contract"], "bid": short_row[opt_key]["bid"], "ask": short_row[opt_key]["ask"], "iv": short_row[opt_key]["iv"]},
                 ]
-                spread_w = abs(short_row["strike"] - long_row["strike"])
-                net_debit = abs(long_row[opt_key]["mid"] - short_row[opt_key]["mid"])
-                entry_price = max(0.20, round(net_debit, 2))
-                max_loss = round(entry_price * 100.0, 2)
-                max_profit = round((spread_w - entry_price) * 100.0, 2)
 
-        # Position Sizing
-        pos_size = int((equity * 0.01) / max(1.0, max_loss))
-        pos_size = max(1, pos_size)
-        total_max_loss = max_loss * pos_size
+        # Position Sizing with hard cap (MAX_CONTRACT_QUANTITY = 10)
+        pos_size = calculate_position_size(
+            account_equity=equity,
+            max_loss_per_contract=max_loss_per_contract,
+            risk_fraction=0.01,
+            max_contracts=MAX_CONTRACT_QUANTITY,
+            available_liquidity_size=10,
+        )
+        pos_size = max(1, min(pos_size, MAX_CONTRACT_QUANTITY))
 
-        # Risk Engine (7 Gates)
+        # Assign identical quantity N across all legs
+        for leg in raw_legs:
+            leg_copy = dict(leg)
+            leg_copy["quantity"] = pos_size
+            selected_contracts.append(leg_copy)
+
+        # Exact economics: contracts * 100 * spread economics
+        total_max_loss = round(pos_size * max_loss_per_contract, 2)
+        total_max_profit = round(pos_size * max_profit_per_contract, 2)
+        collateral_required = round(pos_size * spread_width * 100.0, 2)
+
+        # Order Size Gate
+        size_ok, size_reason = self.risk_engine.check_order_size(pos_size)
+
+        # Liquidity Gate with quantity and depth check
+        liq_ok, liq_reason = self.risk_engine.check_liquidity(
+            spread_percent=spread_pct,
+            quantity=pos_size,
+            available_size=10,
+        )
+
+        # Risk Engine (7 Gates + Order Size)
         risk_approved, risk_reason = self.risk_engine.evaluate(
             max_loss=total_max_loss,
             opportunity_score=opp_score,
-            proposed_exposure=total_max_loss,
+            proposed_exposure=collateral_required,
+            quantity=pos_size,
         )
 
         # Contract Validation
@@ -1629,9 +1670,9 @@ class VoltronService:
         defined_risk_valid = (buy_count >= sell_count)
 
         # Buying Power Validation
-        bp_valid, bp_reason = validate_buying_power(total_max_loss, buying_power)
+        bp_valid, bp_reason = validate_buying_power(collateral_required, buying_power)
 
-        all_passed = (risk_approved and liq_approved and contracts_valid and defined_risk_valid and bp_valid)
+        all_passed = (size_ok and risk_approved and liq_ok and contracts_valid and defined_risk_valid and bp_valid)
         execution_status = "DRY_RUN_PASSED" if all_passed else "DRY_RUN_BLOCKED"
 
         return {
@@ -1647,8 +1688,15 @@ class VoltronService:
             "selected_contracts": selected_contracts,
             "entry_price": round(entry_price, 2),
             "maximum_loss": round(total_max_loss, 2),
-            "maximum_profit": round(max_profit * pos_size, 2),
+            "maximum_profit": total_max_profit,
             "position_size": pos_size,
+            "collateral_required": collateral_required,
+            "order_size_approval": {
+                "approved": size_ok,
+                "quantity": pos_size,
+                "max_limit": MAX_CONTRACT_QUANTITY,
+                "reason": size_reason,
+            },
             "risk_approval": {
                 "approved": risk_approved,
                 "reason": risk_reason,
@@ -1656,8 +1704,9 @@ class VoltronService:
                 "account_equity": equity,
             },
             "liquidity_approval": {
-                "approved": liq_approved,
+                "approved": liq_ok,
                 "spread_percent": spread_pct,
+                "available_depth": 10,
                 "reason": liq_reason,
             },
             "contract_validation": {
@@ -1668,7 +1717,7 @@ class VoltronService:
             "buying_power_check": {
                 "approved": bp_valid,
                 "buying_power": buying_power,
-                "required_capital": total_max_loss,
+                "required_capital": collateral_required,
             },
             "final_safety_gate": "BLOCKED (VOLTRON_TRADING_ENABLED=false)",
             "execution_status": execution_status,
