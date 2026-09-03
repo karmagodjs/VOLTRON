@@ -163,6 +163,11 @@ def step_agent():
     voltron_service.cycle_count += 1
     return {"cycle": voltron_service.cycle_count, "status": "STEP_COMPLETE"}
 
+@app.post("/api/agent/dry-run")
+@app.get("/api/agent/dry-run")
+def dry_run_agent(symbol: str = Query("SPY")):
+    return voltron_service.run_dry_run(symbol=symbol.upper())
+
 @app.get("/api/strategy")
 def get_strategy(strategy: str = Query("IRON_CONDOR"), symbol: str = Query("SPY")):
     return voltron_service.get_strategy_details(strategy_type=strategy.upper(), symbol=symbol.upper())

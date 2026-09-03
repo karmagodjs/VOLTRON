@@ -80,16 +80,31 @@ class VoltronAgent:
     # EXECUTION
     # =========================
 
-    def execute(self, trade):
-        self.state.status = "EXECUTING"
+    def execute(self, trade, dry_run: bool = False):
+        self.state.status = "EXECUTING" if not dry_run else "DRY_RUN_EXECUTION"
 
         if self.executor is None:
             return {
                 "submitted": False,
+                "execution_mode": "PAPER_DRY_RUN" if dry_run else "ERROR",
                 "reason": "NO_EXECUTOR"
             }
 
-        return self.executor(trade)
+        if hasattr(self.executor, "submit_option_order"):
+            return self.executor.submit_option_order(
+                order=trade.get("order"),
+                max_loss=trade.get("max_loss", 0.0),
+                opportunity_score=trade.get("opportunity_score", 0.0),
+                proposed_exposure=trade.get("proposed_exposure", 0.0),
+                spread_percent=trade.get("spread_percent"),
+                dry_run=dry_run,
+                available_buying_power=trade.get("buying_power")
+            )
+
+        try:
+            return self.executor(trade, dry_run=dry_run)
+        except TypeError:
+            return self.executor(trade)
 
     # =========================
     # MONITOR POSITION
@@ -126,7 +141,7 @@ class VoltronAgent:
     # ONE AGENT CYCLE
     # =========================
 
-    def run_cycle(self):
+    def run_cycle(self, dry_run: bool = False):
 
         self.state.cycle += 1
 
@@ -139,7 +154,8 @@ class VoltronAgent:
 
             return {
                 "status": self.state.status,
-                "cycle": self.state.cycle
+                "cycle": self.state.cycle,
+                "execution_mode": "PAPER_DRY_RUN" if dry_run else "OBSERVATION"
             }
 
         opportunity = opportunities[0]
@@ -155,7 +171,8 @@ class VoltronAgent:
 
             return {
                 "status": self.state.status,
-                "cycle": self.state.cycle
+                "cycle": self.state.cycle,
+                "execution_mode": "PAPER_DRY_RUN" if dry_run else "OBSERVATION"
             }
 
         # Pass quantitative data to strategy selector
@@ -199,7 +216,8 @@ class VoltronAgent:
             return {
                 "status": self.state.status,
                 "reason": "NO_TRADE",
-                "cycle": self.state.cycle
+                "cycle": self.state.cycle,
+                "execution_mode": "PAPER_DRY_RUN" if dry_run else "OBSERVATION"
             }
 
         # 4. CREATE TRADE
@@ -222,30 +240,30 @@ class VoltronAgent:
             return {
                 "status": self.state.status,
                 "reason": reason,
-                "cycle": self.state.cycle
+                "cycle": self.state.cycle,
+                "execution_mode": "PAPER_DRY_RUN" if dry_run else "SAFETY_BLOCKED"
             }
 
         # 6. EXECUTE
-        result = self.execute(trade)
+        result = self.execute(trade, dry_run=dry_run)
 
         # 7. UPDATE STATE
         if result.get("submitted"):
-
             self.state.status = "ORDER_SUBMITTED"
-
-            self.state.active_order_id = result.get(
-                "order_id"
-            )
-
+            self.state.active_order_id = result.get("order_id")
+        elif result.get("execution_mode") == "PAPER_DRY_RUN":
+            self.state.status = "DRY_RUN_COMPLETE"
+            self.state.last_reason = "DRY_RUN_PASSED"
         else:
-
             self.state.status = "EXECUTION_BLOCKED"
+            self.state.last_reason = result.get("reason", "EXECUTION_BLOCKED")
 
         # 8. RETURN RESULT
         return {
             "status": self.state.status,
             "result": result,
-            "cycle": self.state.cycle
+            "cycle": self.state.cycle,
+            "execution_mode": result.get("execution_mode", "PAPER_DRY_RUN" if dry_run else "SAFETY_BLOCKED")
         }
 
     # =========================
@@ -264,7 +282,8 @@ class VoltronAgent:
     def run(
         self,
         cycles=1,
-        delay_seconds=5
+        delay_seconds=5,
+        dry_run=False
     ):
 
         self.running = True
@@ -276,7 +295,7 @@ class VoltronAgent:
             if not self.running:
                 break
 
-            result = self.run_cycle()
+            result = self.run_cycle(dry_run=dry_run)
 
             results.append(result)
 
