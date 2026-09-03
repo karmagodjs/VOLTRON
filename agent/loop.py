@@ -90,21 +90,35 @@ class VoltronAgent:
                 "reason": "NO_EXECUTOR"
             }
 
-        if hasattr(self.executor, "submit_option_order"):
-            return self.executor.submit_option_order(
-                order=trade.get("order"),
-                max_loss=trade.get("max_loss", 0.0),
-                opportunity_score=trade.get("opportunity_score", 0.0),
-                proposed_exposure=trade.get("proposed_exposure", 0.0),
-                spread_percent=trade.get("spread_percent"),
-                dry_run=dry_run,
-                available_buying_power=trade.get("buying_power")
-            )
-
         try:
+            if hasattr(self.executor, "submit_option_order"):
+                return self.executor.submit_option_order(
+                    order=trade.get("order"),
+                    max_loss=trade.get("max_loss", 0.0),
+                    opportunity_score=trade.get("opportunity_score", 0.0),
+                    proposed_exposure=trade.get("proposed_exposure", 0.0),
+                    spread_percent=trade.get("spread_percent"),
+                    dry_run=dry_run,
+                    available_buying_power=trade.get("buying_power")
+                )
             return self.executor(trade, dry_run=dry_run)
         except TypeError:
-            return self.executor(trade)
+            try:
+                return self.executor(trade)
+            except Exception as inner_e:
+                self.state.record_error(str(inner_e))
+                return {
+                    "submitted": False,
+                    "execution_mode": "ERROR",
+                    "reason": f"BROKER_ERROR: {str(inner_e)}"
+                }
+        except Exception as e:
+            self.state.record_error(str(e))
+            return {
+                "submitted": False,
+                "execution_mode": "ERROR",
+                "reason": f"BROKER_ERROR: {str(e)}"
+            }
 
     # =========================
     # MONITOR POSITION
