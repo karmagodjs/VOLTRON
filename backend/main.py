@@ -27,12 +27,14 @@ def validate_startup_config() -> dict:
     alpaca_key = (os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_KEY") or "").strip().strip("'").strip('"')
     alpaca_sec = (os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY") or os.getenv("ALPACA_SECRET") or "").strip().strip("'").strip('"')
     gemini_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_KEY") or "").strip().strip("'").strip('"')
+    openrouter_key = (os.getenv("OPENROUTER_API_KEY") or "").strip().strip("'").strip('"')
     trading_enabled = os.getenv("VOLTRON_TRADING_ENABLED", "false").lower() == "true"
 
     status = {
         "ALPACA_API_KEY": "PRESENT" if bool(alpaca_key) else "MISSING",
         "ALPACA_SECRET_KEY": "PRESENT" if bool(alpaca_sec) else "MISSING",
         "GEMINI_API_KEY": "PRESENT" if bool(gemini_key) else "MISSING",
+        "OPENROUTER_API_KEY": "PRESENT" if bool(openrouter_key) else "OPTIONAL_MISSING",
         "VOLTRON_TRADING_ENABLED": "true" if trading_enabled else "false",
     }
 
@@ -40,6 +42,7 @@ def validate_startup_config() -> dict:
     print(f"[VOLTRON CONFIG] ALPACA_API_KEY:         {status['ALPACA_API_KEY']}")
     print(f"[VOLTRON CONFIG] ALPACA_SECRET_KEY:      {status['ALPACA_SECRET_KEY']}")
     print(f"[VOLTRON CONFIG] GEMINI_API_KEY:         {status['GEMINI_API_KEY']}")
+    print(f"[VOLTRON CONFIG] OPENROUTER_API_KEY:     {status['OPENROUTER_API_KEY']}")
     print(f"[VOLTRON CONFIG] VOLTRON_TRADING_ENABLED: {status['VOLTRON_TRADING_ENABLED']}")
     print("[VOLTRON CONFIG] ========================================")
 

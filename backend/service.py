@@ -1243,8 +1243,8 @@ class VoltronService:
             self.current_analysis = prev
             return prev
 
-        from agent.analyst import is_rate_limited
-        if is_rate_limited():
+        from agent.analyst import is_rate_limited, get_openrouter_api_key
+        if is_rate_limited() and not get_openrouter_api_key():
             rate_limited_resp = {
                 "symbol": sym,
                 "decision": "NO_TRADE",
@@ -1260,6 +1260,7 @@ class VoltronService:
                 "opportunity_score": market.get("opportunity_score", 0),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "is_cached": False,
+                "ai_provider": "GEMINI",
             }
             self.current_analysis = rate_limited_resp
             return rate_limited_resp
@@ -1296,6 +1297,7 @@ class VoltronService:
                 "opportunity_score": market.get("opportunity_score", 0),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "is_cached": False,
+                "ai_provider": ai_resp.get("ai_provider", "GEMINI"),
             }
             self.current_analysis = rate_limited_resp
             return rate_limited_resp
@@ -1326,6 +1328,7 @@ class VoltronService:
             "symbol": market["symbol"],
             "status": "COMPLETE",
             "ai_status": ai_status,
+            "ai_provider": ai_resp.get("ai_provider", "GEMINI"),
             "decision": decision,
             "confidence": confidence,
             "direction": direction,
