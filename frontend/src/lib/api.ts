@@ -364,6 +364,10 @@ export async function runBacktest(params?: Record<string, any>): Promise<Backtes
       },
       equity_curve: [],
       trades: [],
+      pnl_distribution: [],
+      strategy_comparison: [],
+      regimes: [],
+      parameter_optimizer: [],
     };
   }
 }

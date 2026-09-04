@@ -250,15 +250,23 @@ export interface BacktestSummary {
 
 export interface BacktestTrade {
   id: string;
-  date: string;
+  entry_date?: string;
+  exit_date?: string;
+  date?: string;
   symbol: string;
   strategy: string;
   entry_price: number;
   exit_price: number;
   pnl: number;
   return_pct: number;
+  holding_days?: number;
   result: "WIN" | "LOSS";
-  reason: string;
+  reason_exit?: string;
+  reason_entry?: string;
+  reason?: string;
+  entry_iv?: number;
+  entry_rv?: number;
+  entry_iv_rv?: number;
 }
 
 export interface BacktestResult {
@@ -275,6 +283,46 @@ export interface BacktestResult {
   };
   equity_curve: { date: string; equity: number; drawdown: number }[];
   trades: BacktestTrade[];
+  pnl_distribution?: { bin: string; count: number; type: "win" | "loss" }[];
+  strategy_comparison?: {
+    strategy: string;
+    trades: number;
+    win_rate: number;
+    return_pct: number;
+    sharpe: number;
+    max_dd: number;
+    profit_factor: number;
+  }[];
+  regimes?: {
+    regime: string;
+    trades: number;
+    win_rate: number;
+    return_pct: number;
+    avg_pnl: number;
+    max_dd: number;
+  }[];
+  parameter_optimizer?: {
+    threshold: string;
+    return_pct: number;
+    sharpe: number;
+    drawdown: number;
+    win_rate: number;
+  }[];
+  research_summary?: string;
+  backtest_vs_paper?: {
+    backtest: {
+      return_pct: number;
+      sharpe: number;
+      win_rate: number;
+      max_dd: number;
+    };
+    paper: {
+      return_pct: number;
+      sharpe: number;
+      win_rate: number;
+      max_dd: number;
+    };
+  };
 }
 
 export interface ServiceHealth {
