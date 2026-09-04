@@ -28,7 +28,7 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
         setPortfolioValue(acc.portfolio_value);
         setKillSwitchActive(acc.kill_switch_active);
       } catch {
-        // Fallback states handled in components
+
       }
     };
 
@@ -47,13 +47,12 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-voltron-950 text-foreground overflow-x-hidden">
-      {/* Left Sidebar (Desktop permanent & Mobile drawer) */}
+
       <Sidebar
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
 
-      {/* Main Terminal Workspace */}
       <div className="flex-1 flex flex-col min-w-0 max-w-full">
         <TopNav
           currentSymbol={selectedSymbol}
@@ -69,7 +68,6 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
           isConnected={true}
         />
 
-        {/* Critical Emergency Banner if Kill Switch is active */}
         {killSwitchActive && (
           <div className="bg-voltron-rose text-white text-xs font-mono font-bold px-3 py-2 flex items-center justify-between animate-pulse flex-wrap gap-2">
             <span>⚠️ EMERGENCY KILL SWITCH ACTIVE — ALL TRADING & AUTONOMOUS SCANS HALTED</span>
@@ -87,14 +85,12 @@ export default function TerminalLayout({ children }: TerminalLayoutProps) {
         </main>
       </div>
 
-      {/* Global AI Copilot Slide-over */}
       <AICopilotDrawer
         isOpen={copilotOpen}
         onClose={() => setCopilotOpen(false)}
         currentSymbol={selectedSymbol}
       />
 
-      {/* Global Kill Switch Modal */}
       <KillSwitchModal
         isOpen={killSwitchModalOpen}
         onClose={() => setKillSwitchModalOpen(false)}

@@ -30,7 +30,6 @@ class TestAISafetyFailures(unittest.TestCase):
 
     @patch("agent.analyst.genai")
     def test_ai_api_timeout_exception(self, mock_genai):
-        # Mock Gemini client raising a TimeoutError
         mock_genai.Client.side_effect = TimeoutError("Gemini gRPC Timeout")
         result = create_analysis({"symbol": "SPY", "iv": 20.0, "rv": 12.0})
         self.assertEqual(result["decision"], "NO_TRADE")
@@ -38,7 +37,6 @@ class TestAISafetyFailures(unittest.TestCase):
 
     @patch("agent.analyst.genai")
     def test_ai_malformed_json_response(self, mock_genai):
-        # Mock Gemini returning invalid JSON
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.text = "This is not valid JSON {decision: INVALID}"
@@ -50,7 +48,6 @@ class TestAISafetyFailures(unittest.TestCase):
         self.assertEqual(result["confidence"], 0)
 
     def test_ai_incomplete_greeks_and_prices(self):
-        # Incomplete data must not produce hallucinations
         result = create_analysis({"symbol": "SPY", "iv": None, "rv": None})
         self.assertEqual(result["decision"], "NO_TRADE")
         self.assertEqual(result["confidence"], 0)
@@ -60,13 +57,11 @@ class TestAISafetyFailures(unittest.TestCase):
         from agent.analyst import reset_rate_limit, is_rate_limited
         reset_rate_limit()
 
-        # Mock Gemini raising a 429 RESOURCE_EXHAUSTED RateLimitError
         error_msg = "Error code: 429 - {'error': {'message': 'Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20\\nPlease retry in 45.0s.', 'code': 'too_many_requests', 'details': [{'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '45s'}]}}"
         mock_genai.Client.side_effect = Exception(error_msg)
 
         result = create_analysis({"symbol": "SPY", "iv": 20.0, "rv": 12.0})
 
-        # Verify exact Requirement 6 structure
         self.assertEqual(result["decision"], "NO_TRADE")
         self.assertEqual(result["confidence"], 0)
         self.assertEqual(result["status"], "RATE_LIMITED")
@@ -75,17 +70,14 @@ class TestAISafetyFailures(unittest.TestCase):
         self.assertEqual(result["key_reasons"], [])
         self.assertEqual(result["risks"], ["GEMINI_RATE_LIMITED"])
 
-        # Verify rate limit cooldown is active
         self.assertTrue(is_rate_limited())
 
-        # Test subsequent call during cooldown: Gemini API must NOT be called again
         mock_genai.Client.reset_mock()
         second_result = create_analysis({"symbol": "SPY", "iv": 20.0, "rv": 12.0})
         self.assertEqual(second_result["status"], "RATE_LIMITED")
         self.assertEqual(second_result["confidence"], 0)
         mock_genai.Client.assert_not_called()
 
-        # Clean up
         reset_rate_limit()
 
 
@@ -132,14 +124,12 @@ class TestVoltronServiceAICaching(unittest.TestCase):
             "ai_status": "LIVE",
         }
 
-        # First call: must invoke create_analysis
         res1 = self.service.get_ai_analysis("SPY")
         self.assertEqual(res1["decision"], "TRADE_CANDIDATE")
         self.assertEqual(res1["confidence"], 85)
         self.assertEqual(res1["ai_status"], "LIVE")
         self.assertEqual(mock_create_analysis.call_count, 1)
 
-        # Second call immediately after: must hit cache and NOT invoke create_analysis
         res2 = self.service.get_ai_analysis("SPY")
         self.assertEqual(res2["decision"], "TRADE_CANDIDATE")
         self.assertEqual(res2["confidence"], 85)
@@ -147,7 +137,6 @@ class TestVoltronServiceAICaching(unittest.TestCase):
         self.assertTrue(res2["is_cached"])
         self.assertEqual(mock_create_analysis.call_count, 1)
 
-        # Third call: sub-dollar price noise ($585.35 maps to same $585.00 bucket)
         mock_get_market_data.return_value["price"] = 585.35
         res3 = self.service.get_ai_analysis("SPY")
         self.assertEqual(res3["ai_status"], "CACHED")
@@ -187,7 +176,6 @@ class TestVoltronServiceAICaching(unittest.TestCase):
         self.assertEqual(res["key_reasons"], [])
         self.assertEqual(res["risks"], ["GEMINI_RATE_LIMITED"])
 
-        # Check get_agent_state pipeline reflects rate limiting
         with patch.object(self.service, "get_risk_status") as mock_risk, \
              patch.object(self.service, "get_account_summary") as mock_acc:
             mock_risk.return_value = {"overall_status": "APPROVED", "gates": []}

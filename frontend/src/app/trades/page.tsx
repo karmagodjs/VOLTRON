@@ -29,7 +29,7 @@ export default function TradesPage() {
       setTrades(json.trades || []);
       setExecMonitor(json.execution_monitor);
     } catch {
-      // Fallback handled
+
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export default function TradesPage() {
   return (
     <TerminalLayout>
       <div className="space-y-3.5 font-mono text-xs">
-        {/* 1. TOP HEADER: ORDER & EXECUTION OPERATIONS */}
+
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center">
             <div>
@@ -96,7 +96,6 @@ export default function TradesPage() {
           </div>
         </div>
 
-        {/* 2. EXECUTION MONITOR METRICS STRIP */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
           <div className="p-2 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Orders Submitted</span>
@@ -124,7 +123,6 @@ export default function TradesPage() {
           </div>
         </div>
 
-        {/* 3. MAIN WORKSPACE: ORDER OPERATIONS (TAB 1) VS AUDIT LEDGER (TAB 2) */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
           <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-2 gap-2">
             <div className="flex gap-2">
@@ -172,7 +170,6 @@ export default function TradesPage() {
             )}
           </div>
 
-          {/* TAB 1: ORDER OPERATIONS TABLE */}
           {activeTab === "orders" && (
             <div className="overflow-x-auto max-h-[380px]">
               <table className="w-full text-left font-mono text-xs">
@@ -255,7 +252,6 @@ export default function TradesPage() {
                           </td>
                         </tr>
 
-                        {/* Expandable MLeg Rows */}
                         {isExpanded && (
                           <tr className="bg-voltron-950/80">
                             <td colSpan={10} className="p-3 border-y border-voltron-800">
@@ -291,7 +287,6 @@ export default function TradesPage() {
             </div>
           )}
 
-          {/* TAB 2: TRADE LEDGER & P&L */}
           {activeTab === "ledger" && (
             <div className="overflow-x-auto max-h-[380px]">
               <table className="w-full text-left font-mono text-xs">
@@ -345,7 +340,6 @@ export default function TradesPage() {
         </div>
       </div>
 
-      {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono text-xs">
           <div className="w-full max-w-lg bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
@@ -379,7 +373,6 @@ export default function TradesPage() {
                 </div>
               </div>
 
-              {/* Legs */}
               <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 space-y-1">
                 <span className="text-[10px] uppercase text-voltron-cyan font-bold block">Individual Option Legs</span>
                 {selectedOrder.legs?.map((leg: any, i: number) => (
@@ -403,7 +396,6 @@ export default function TradesPage() {
         </div>
       )}
 
-      {/* Trade Detail Modal */}
       {selectedTrade && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono text-xs">
           <div className="w-full max-w-lg bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
@@ -435,7 +427,6 @@ export default function TradesPage() {
                 </div>
               </div>
 
-              {/* Legs */}
               <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 space-y-1">
                 <span className="text-[10px] uppercase text-voltron-cyan font-bold block">Legs Execution</span>
                 {selectedTrade.legs?.map((leg: string, idx: number) => (

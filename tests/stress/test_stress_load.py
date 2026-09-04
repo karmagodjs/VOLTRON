@@ -20,9 +20,8 @@ class TestStressLoad(unittest.TestCase):
         blocked_count = 0
 
         for i in range(1000):
-            # Vary opportunity score and loss
-            opp_score = 65 + (i % 35) # 65 to 99
-            max_loss = 200 + (i % 900) # $200 to $1100
+            opp_score = 65 + (i % 35)
+            max_loss = 200 + (i % 900)
 
             analysis = {
                 "decision": "TRADE_CANDIDATE",
@@ -32,7 +31,7 @@ class TestStressLoad(unittest.TestCase):
                 "direction": "NEUTRAL"
             }
             strat = select_strategy(analysis)
-            
+
             ok, reason = risk.evaluate(max_loss=max_loss, opportunity_score=opp_score, proposed_exposure=5000.0)
             if ok:
                 approved_count += 1
@@ -43,9 +42,7 @@ class TestStressLoad(unittest.TestCase):
         current_mem, peak_mem = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
-        # 1,000 cycles must run in under 1 second
         self.assertLess(elapsed, 1.0, f"Stress test took too long: {elapsed:.3f}s")
-        # Peak memory under 15 MB
         self.assertLess(peak_mem / (1024 * 1024), 15.0, f"Peak memory exceeded limit: {peak_mem / (1024 * 1024):.2f} MB")
         self.assertGreater(approved_count, 0)
         self.assertGreater(blocked_count, 0)

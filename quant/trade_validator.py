@@ -35,11 +35,6 @@ def validate_trade(
 
 
 def validate_occ_symbol(symbol: str) -> Tuple[bool, str]:
-    """
-    Validate standard OCC option symbol format.
-    Format: [1-6 letters underlying][YYMMDD][C or P][8 digits strike * 1000]
-    Example: SPY260903C00500000
-    """
     if not symbol or not isinstance(symbol, str):
         return False, "EMPTY_OR_INVALID_SYMBOL"
 
@@ -70,9 +65,6 @@ def validate_buying_power(
     required_capital: float,
     available_buying_power: float
 ) -> Tuple[bool, str]:
-    """
-    Ensure the account has sufficient available buying power.
-    """
     if required_capital <= 0:
         return False, "INVALID_REQUIRED_CAPITAL"
 
@@ -87,11 +79,6 @@ def validate_options_buying_power(
     options_buying_power: float,
     general_buying_power: Optional[float] = None
 ) -> Tuple[bool, str]:
-    """
-    Ensure the account has sufficient available OPTIONS buying power.
-    Options collateral MUST be covered strictly by options_buying_power.
-    General/day-trading buying power CANNOT be used to approve options orders.
-    """
     if required_capital <= 0:
         return False, "INVALID_REQUIRED_CAPITAL"
 
@@ -108,10 +95,6 @@ def validate_multileg_liquidity(
     legs: list,
     max_spread_percent: Optional[float] = None
 ) -> Tuple[bool, str, list]:
-    """
-    Independently verify liquidity across every leg of a multi-leg strategy.
-    All required legs must have valid bid/ask quotes and spread <= max_spread_percent.
-    """
     threshold = max_spread_percent if max_spread_percent is not None else MAX_SPREAD_PERCENT
     if not legs:
         return False, "EMPTY_LEGS_LIST", []
@@ -150,9 +133,6 @@ def validate_multileg_liquidity(
 
 
 def validate_strategy_name(strategy: str) -> Tuple[bool, str]:
-    """
-    Ensure the strategy is one of the 7 defined-risk strategies.
-    """
     if not strategy or strategy.upper() not in VALID_DEFINED_RISK_STRATEGIES:
         return False, f"INVALID_STRATEGY: '{strategy}' is not a defined-risk strategy"
 

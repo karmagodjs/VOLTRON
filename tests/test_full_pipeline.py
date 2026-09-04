@@ -7,7 +7,6 @@ print("\n========================================")
 print("       VOLTRON FULL PIPELINE TEST")
 print("========================================")
 
-# 1. SCAN
 print("\n[1] MARKET SCAN")
 
 opportunities = scan()
@@ -26,7 +25,6 @@ print("IV/RV:", opportunity.get("iv_rv_ratio"))
 print("Score:", opportunity.get("opportunity_score"))
 
 
-# 2. AI
 print("\n[2] GEMINI ANALYSIS")
 
 analysis = create_analysis(opportunity)
@@ -37,7 +35,6 @@ print("Confidence:", analysis.get("confidence"))
 print("Volatility:", analysis.get("volatility_view"))
 
 
-# 3. STRATEGY
 print("\n[3] STRATEGY")
 
 analysis["iv_rv_ratio"] = opportunity.get(

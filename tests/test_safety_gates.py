@@ -34,38 +34,27 @@ from agent.monitor import PositionMonitor
 from agent.trade_logger import TradeLogger
 
 
-# ==========================================
-# GATE 1: OPPORTUNITY SCORE THRESHOLD
-# ==========================================
 def test_gate1_opportunity_score_threshold():
     engine = RiskEngine(account_equity=100000.0)
 
-    # Below 70 must be rejected
     approved, reason = engine.evaluate(max_loss=500.0, opportunity_score=69, proposed_exposure=500.0)
     assert not approved
     assert reason == "OPPORTUNITY_SCORE_TOO_LOW"
 
-    # Exactly 70 or above must pass
     approved, reason = engine.evaluate(max_loss=500.0, opportunity_score=70, proposed_exposure=500.0)
     assert approved
     assert reason == "RISK_APPROVED"
 
 
-# ==========================================
-# GATE 2: CONFIDENCE THRESHOLD
-# ==========================================
 def test_gate2_confidence_threshold():
-    # Below 70 confidence rejected
     valid, reason = validate_ai_decision("TRADE_CANDIDATE", confidence=65, opportunity_score=85)
     assert not valid
     assert "confidence too low" in reason.lower()
 
-    # 70+ confidence approved
     valid, reason = validate_ai_decision("TRADE_CANDIDATE", confidence=75, opportunity_score=85)
     assert valid
     assert reason == "AI decision passed"
 
-    # Strategy selector requires confidence >= 70
     strat = select_strategy({
         "decision": "TRADE_CANDIDATE",
         "confidence": 69,
@@ -75,150 +64,107 @@ def test_gate2_confidence_threshold():
     assert strat == "NO_TRADE"
 
 
-# ==========================================
-# GATE 3: MAXIMUM TRADE RISK (1% EQUITY)
-# ==========================================
 def test_gate3_maximum_trade_risk():
     engine = RiskEngine(account_equity=100000.0)
 
-    # $1,001 risk must be rejected (1% of $100,000 is $1,000)
     approved, reason = engine.evaluate(max_loss=1001.0, opportunity_score=80, proposed_exposure=1001.0)
     assert not approved
     assert reason == "TRADE_RISK_TOO_HIGH"
 
-    # $999 risk must be approved
     approved, reason = engine.evaluate(max_loss=999.0, opportunity_score=80, proposed_exposure=999.0)
     assert approved
     assert reason == "RISK_APPROVED"
 
 
-# ==========================================
-# GATE 4: DAILY LOSS LIMIT (2% EQUITY)
-# ==========================================
 def test_gate4_daily_loss_limit():
     engine = RiskEngine(account_equity=100000.0)
-    # Simulate losses reaching 2% ($2,000)
     engine.record_trade_result(-2000.0)
 
-    # Must be rejected because daily loss limit reached and kill switch activated
     approved, reason = engine.evaluate(max_loss=500.0, opportunity_score=80, proposed_exposure=500.0)
     assert not approved
     assert engine.kill_switch is True
 
 
-# ==========================================
-# GATE 5: PORTFOLIO EXPOSURE LIMIT (30% EQUITY)
-# ==========================================
 def test_gate5_portfolio_exposure_limit():
     engine = RiskEngine(account_equity=100000.0)
-    engine.portfolio_exposure = 28000.0  # already at 28%
+    engine.portfolio_exposure = 28000.0
 
-    # Adding $3,000 would breach 30% ($30,000) -> rejected
     approved, reason = engine.evaluate(max_loss=500.0, opportunity_score=80, proposed_exposure=3000.0)
     assert not approved
     assert reason == "PORTFOLIO_EXPOSURE_TOO_HIGH"
 
-    # Adding $1,500 keeps exposure at $29,500 (< $30,000) -> approved
     approved, reason = engine.evaluate(max_loss=500.0, opportunity_score=80, proposed_exposure=1500.0)
     assert approved
 
 
-# ==========================================
-# GATE 6: CONSECUTIVE LOSS LIMIT (MAX 3)
-# ==========================================
 def test_gate6_consecutive_loss_limit():
     engine = RiskEngine(account_equity=100000.0)
     engine.record_trade_result(-100.0)
     engine.record_trade_result(-100.0)
-    engine.record_trade_result(-100.0)  # 3 consecutive losses
+    engine.record_trade_result(-100.0)
 
     approved, reason = engine.evaluate(max_loss=500.0, opportunity_score=80, proposed_exposure=500.0)
     assert not approved
     assert reason == "CONSECUTIVE_LOSS_LIMIT"
 
-    # Win resets consecutive losses
     engine.record_trade_result(200.0)
     approved, reason = engine.evaluate(max_loss=500.0, opportunity_score=80, proposed_exposure=500.0)
     assert approved
 
 
-# ==========================================
-# GATE 7: LIQUIDITY / SPREAD CHECK
-# ==========================================
 def test_gate7_liquidity_spread_check():
     engine = RiskEngine(account_equity=100000.0)
 
-    # Spread > 10% must be rejected
     ok, reason = engine.check_liquidity(12.5)
     assert not ok
     assert reason == "SPREAD_TOO_WIDE"
 
-    # None / missing spread data must be rejected
     ok, reason = engine.check_liquidity(None)
     assert not ok
     assert reason == "NO_SPREAD_DATA"
 
-    # Spread <= 10% (e.g. 4%) must be approved
     ok, reason = engine.check_liquidity(4.0)
     assert ok
     assert reason == "LIQUIDITY_APPROVED"
 
 
-# ==========================================
-# GATE 8: CONTRACT VALIDATION (OCC FORMAT)
-# ==========================================
 def test_gate8_contract_validation():
-    # Valid future contract
     ok, reason = validate_occ_symbol("SPY260918C00595000")
     assert ok
     assert reason == "VALID_OCC_SYMBOL"
 
-    # Malformed symbol
     ok, reason = validate_occ_symbol("SPY-INVALID-SYMBOL")
     assert not ok
     assert reason == "MALFORMED_OCC_SYMBOL"
 
-    # Expired contract (past date)
     ok, reason = validate_occ_symbol("SPY200101C00300000")
     assert not ok
     assert reason == "EXPIRED_CONTRACT"
 
-    # Zero strike
     ok, reason = validate_occ_symbol("SPY260918C00000000")
     assert not ok
     assert reason == "INVALID_STRIKE_PRICE"
 
 
-# ==========================================
-# GATE 9: BUYING POWER CHECK
-# ==========================================
 def test_gate9_buying_power_check():
-    # Sufficient buying power
     ok, reason = validate_buying_power(required_capital=945.0, available_buying_power=200000.0)
     assert ok
     assert reason == "BUYING_POWER_SUFFICIENT"
 
-    # Insufficient buying power
     ok, reason = validate_buying_power(required_capital=5000.0, available_buying_power=2500.0)
     assert not ok
     assert "INSUFFICIENT_BUYING_POWER" in reason
 
 
-# ==========================================
-# GATE 10: DEFINED-RISK VALIDATION (NO NAKED SHORTS)
-# ==========================================
 def test_gate10_no_naked_shorts():
-    # Single-leg buy is permitted (defined risk: max loss = premium)
     buy_order = build_option_buy_order("SPY260918C00595000", quantity=1, limit_price=2.50)
     ok, reason = validate_defined_risk_order(buy_order)
     assert ok
     assert reason == "DEFINED_RISK_APPROVED"
 
-    # Single-leg sell must be rejected immediately
     with pytest.raises(ValueError, match="Naked short option orders are strictly prohibited"):
         build_option_sell_order("SPY260918C00595000", quantity=1, limit_price=2.50)
 
-    # Vertical spread with 1 BUY and 1 SELL is defined risk
     vert_order = build_vertical_spread(
         long_leg="SPY260918C00600000",
         short_leg="SPY260918C00595000",
@@ -229,7 +175,6 @@ def test_gate10_no_naked_shorts():
     assert ok
     assert reason == "DEFINED_RISK_APPROVED"
 
-    # Iron Condor with 2 BUY and 2 SELL is defined risk
     ic_order = build_iron_condor(
         long_put="SPY260918P00580000",
         short_put="SPY260918P00585000",
@@ -243,16 +188,12 @@ def test_gate10_no_naked_shorts():
     assert reason == "DEFINED_RISK_APPROVED"
 
 
-# ==========================================
-# GATE 11: FINAL SAFETY GATE (VOLTRON_TRADING_ENABLED)
-# ==========================================
 def test_gate11_final_safety_gate():
     engine = RiskEngine(account_equity=100000.0)
     executor = PaperExecutor(engine)
 
     order = build_option_buy_order("SPY260918C00595000", quantity=1, limit_price=2.50)
 
-    # Ensure trading is disabled
     os.environ["VOLTRON_TRADING_ENABLED"] = "false"
 
     result = executor.submit_option_order(
@@ -269,9 +210,6 @@ def test_gate11_final_safety_gate():
     assert result["safety_gate"] == "VOLTRON_TRADING_ENABLED=false"
 
 
-# ==========================================
-# GATE 12: DRY-RUN EXECUTION SIMULATION
-# ==========================================
 def test_gate12_dry_run_execution():
     engine = RiskEngine(account_equity=100000.0)
     executor = PaperExecutor(engine)
@@ -302,9 +240,6 @@ def test_gate12_dry_run_execution():
     assert result["details"]["risk_engine"] == "APPROVED"
 
 
-# ==========================================
-# PHASE 3.1: SPECIFIC DATA CONSISTENCY TESTS
-# ==========================================
 def test_no_trade_cannot_select_executable_strategy():
     from unittest.mock import patch
     from backend.service import voltron_service
@@ -330,15 +265,12 @@ def test_no_trade_cannot_select_executable_strategy():
 def test_iv_rv_mathematical_consistency():
     from quant.alpha import calculate_iv_rv_ratio
 
-    # Exact case from user prompt: IV = 11.10, RV = 7.40
     ratio1 = calculate_iv_rv_ratio(11.10, 7.40)
     assert round(ratio1, 2) == 1.50
 
-    # Live SPY market data case: IV = 11.24, RV = 7.39
     ratio2 = calculate_iv_rv_ratio(11.24, 7.39)
     assert round(ratio2, 2) == 1.52
 
-    # Verification: must never be 1.00 when IV exceeds RV by ~50%
     assert round(ratio1, 2) != 1.00
 
 
@@ -347,7 +279,6 @@ def test_live_vs_fixture_data_detection():
 
     result = voltron_service.run_dry_run("SPY", simulate_candidate=False)
 
-    # 595.0 was the artificial fallback value; real price must not use hardcoded 595.0
     assert result["underlying_price"] != 595.0 or result["data_source"] == "ALPACA_IEX"
     assert "market_data_timestamp" in result
     assert "option_data_timestamp" in result
@@ -359,37 +290,29 @@ def test_live_vs_fixture_data_detection():
 def test_contract_underlying_consistency():
     from backend.service import voltron_service
 
-    # Candidate evaluation with real Alpaca options chain
     result = voltron_service.run_dry_run("SPY", simulate_candidate=True)
     contracts = result.get("selected_contracts", [])
     spot = result.get("underlying_price", 0.0)
 
     if contracts and spot > 0:
         for c in contracts:
-            # Valid OCC symbol
             valid, reason = validate_occ_symbol(c["symbol"])
             assert valid, f"Contract {c['symbol']} failed OCC validation: {reason}"
 
-            # Strike must be within 10% of underlying price
             assert abs(c["strike"] - spot) <= (spot * 0.10), (
                 f"Strike {c['strike']} is not appropriate for underlying price {spot}"
             )
 
 
-# ==========================================
-# PHASE 3.2: EXECUTION SAFETY HARDENING TESTS
-# ==========================================
 def test_250_contract_candidate_rejected():
     from risk.limits import MAX_CONTRACT_QUANTITY
     engine = RiskEngine(account_equity=100000.0)
     executor = PaperExecutor(engine)
 
-    # RiskEngine check_order_size must reject 250
     ok, reason = engine.check_order_size(250)
     assert not ok
     assert reason == "ORDER_SIZE_TOO_LARGE"
 
-    # Executor must block order submission for 250 contracts
     mock_order = {"qty": 250, "side": "buy"}
     result = executor.submit_option_order(
         order=mock_order,
@@ -408,12 +331,10 @@ def test_10_contract_candidate_accepted():
     from risk.limits import MAX_CONTRACT_QUANTITY
     engine = RiskEngine(account_equity=100000.0)
 
-    # 10 contracts must be approved
     ok, reason = engine.check_order_size(MAX_CONTRACT_QUANTITY)
     assert ok
     assert reason == "ORDER_SIZE_APPROVED"
 
-    # Full evaluate with quantity=10 must pass
     approved, reason = engine.evaluate(
         max_loss=500.0,
         opportunity_score=85,
@@ -428,16 +349,13 @@ def test_quantity_cap_cannot_be_bypassed():
     from risk.position_sizing import calculate_position_size
     from risk.limits import MAX_CONTRACT_QUANTITY
 
-    # Large equity / low max loss per contract ($4) must cap at 10, not 250
     qty = calculate_position_size(account_equity=100000.0, max_loss_per_contract=4.0)
     assert qty == MAX_CONTRACT_QUANTITY
     assert qty <= 10
 
-    # Huge equity ($1,000,000) must still cap at 10
     huge_qty = calculate_position_size(account_equity=1000000.0, max_loss_per_contract=1.0)
     assert huge_qty == MAX_CONTRACT_QUANTITY
 
-    # Order builder functions must reject attempts to construct > 10 contracts
     with pytest.raises(ValueError, match="exceeds maximum contract limit"):
         build_option_buy_order("SPY260918C00765000", quantity=250, limit_price=2.50)
 
@@ -470,12 +388,10 @@ def test_multileg_quantity_consistency():
 def test_liquidity_depth_failure():
     engine = RiskEngine(account_equity=100000.0)
 
-    # Quantity exceeds conservative depth cap of 10
     ok, reason = engine.check_liquidity(spread_percent=0.04, quantity=15, available_size=10)
     assert not ok
     assert reason == "ORDER_SIZE_TOO_LARGE"
 
-    # Quantity exceeds specified market depth
     ok, reason = engine.check_liquidity(spread_percent=0.04, quantity=8, available_size=5)
     assert not ok
     assert reason == "INSUFFICIENT_LIQUIDITY_FOR_SIZE"
@@ -487,19 +403,15 @@ def test_maximum_loss_remains_within_risk_budget():
     result = voltron_service.run_dry_run("SPY", simulate_candidate=True)
     max_loss = result.get("maximum_loss", 0.0)
     equity = result.get("risk_approval", {}).get("account_equity", 100000.0)
-    max_allowed = equity * 0.01  # $1,000
+    max_allowed = equity * 0.01
 
     assert max_loss <= max_allowed, f"Maximum loss {max_loss} exceeds allowed risk budget {max_allowed}"
     assert max_loss > 0.0
 
 
-# ==========================================
-# PHASE 3.3: FINAL PRE-EXECUTION AUDIT TESTS
-# ==========================================
 def test_options_buying_power_enforced_and_general_bp_cannot_bypass():
     from quant.trade_validator import validate_options_buying_power
 
-    # Options buying power: $100k, General buying power: $400k, Required: $150k
     valid, reason = validate_options_buying_power(
         required_capital=150000.0,
         options_buying_power=100000.0,
@@ -509,7 +421,6 @@ def test_options_buying_power_enforced_and_general_bp_cannot_bypass():
     assert "BUYING_POWER_INSUFFICIENT" in reason
     assert "cannot be used for options" in reason
 
-    # PaperExecutor must block at BUYING_POWER_GATE when options buying power is insufficient
     engine = RiskEngine(account_equity=100000.0)
     executor = PaperExecutor(engine)
     mock_order = {"qty": 5, "side": "buy"}
@@ -541,7 +452,6 @@ def test_liquidity_depth_source_truthful():
 def test_multileg_independent_liquidity_validation():
     from quant.trade_validator import validate_multileg_liquidity
 
-    # 1. Missing quote data on leg 2
     legs_missing = [
         {"symbol": "LEG_1", "bid": 7.0, "ask": 7.1},
         {"symbol": "LEG_2", "bid": None, "ask": 7.0},
@@ -550,17 +460,15 @@ def test_multileg_independent_liquidity_validation():
     assert not ok
     assert "LEG_MISSING_QUOTE_DATA" in reason
 
-    # 2. Spread too wide on leg 3 (> 10%)
     legs_wide = [
         {"symbol": "LEG_1", "bid": 7.0, "ask": 7.05},
         {"symbol": "LEG_2", "bid": 6.9, "ask": 7.0},
-        {"symbol": "LEG_3", "bid": 1.0, "ask": 1.5},  # 40% spread
+        {"symbol": "LEG_3", "bid": 1.0, "ask": 1.5},
     ]
     ok, reason, _ = validate_multileg_liquidity(legs_wide, max_spread_percent=10.0)
     assert not ok
     assert "LEG_SPREAD_TOO_WIDE" in reason
 
-    # 3. All legs within tight spread (<= 10%)
     legs_valid = [
         {"symbol": "LEG_1", "bid": 7.39, "ask": 7.42},
         {"symbol": "LEG_2", "bid": 6.92, "ask": 7.04},
@@ -586,7 +494,6 @@ def test_conservative_execution_pricing():
     assert "estimated_net_credit" in pricing
     assert pricing["pricing_assumption"] == "CONSERVATIVE_BID_ASK_CROSS"
 
-    # Conservative credit (bid minus ask) must be <= estimated midpoint credit
     assert pricing["conservative_executable_credit"] <= pricing["estimated_net_credit"]
     assert result["entry_price"] == pricing["conservative_executable_credit"]
 
@@ -607,7 +514,7 @@ def test_worst_case_spread_width_and_economics():
     expected_profit = round(pos * 100 * credit, 2)
     assert result["maximum_loss"] == expected_loss
     assert result["maximum_profit"] == expected_profit
-    assert result["maximum_loss"] <= 1000.0  # strictly within 1% risk budget
+    assert result["maximum_loss"] <= 1000.0
 
 
 def test_disabled_trading_strictly_prevents_submit_order_call(monkeypatch):
@@ -629,39 +536,31 @@ def test_disabled_trading_strictly_prevents_submit_order_call(monkeypatch):
         opportunity_score=85,
         proposed_exposure=500.0,
         spread_percent=0.04,
-        dry_run=False,  # dry_run is False, but trading is disabled!
+        dry_run=False,
     )
 
     assert res["submitted"] is False
     assert res["safety_gate"] == "VOLTRON_TRADING_ENABLED=false"
     assert res["reason"] == "TRADING_DISABLED"
 
-    # Crucial assertion: broker submit_order was NEVER invoked
     assert not mock_client.submit_order.called
 
 
-# ==========================================
-# PHASE 3.4: NORMAL AI PATH VERIFICATION TESTS
-# ==========================================
 def test_normal_dry_run_uses_genuine_ai_path_and_never_injects_candidate():
     from backend.service import voltron_service
 
     result = voltron_service.run_dry_run("SPY", simulate_candidate=False)
 
-    # 1. Must report valid Gemini status
     assert "gemini_cache_status" in result
     assert result["gemini_cache_status"] in ("LIVE", "CACHED", "RATE_LIMITED", "ERROR")
 
-    # 2. Must report factual input data sent to Gemini
     assert "gemini_input_data" in result
     input_data = result["gemini_input_data"]
     for k in ["symbol", "price", "rv", "iv", "iv_rv_ratio", "opportunity_score"]:
         assert k in input_data
 
-    # 3. simulate_candidate=False must NEVER inject SIMULATED_CANDIDATE
     assert result.get("ai_status") != "SIMULATED_CANDIDATE"
 
-    # 4. Zero Alpaca orders submitted
     assert result["alpaca_order_submitted"] is False
 
 
@@ -686,13 +585,9 @@ def test_zero_alpaca_orders_submitted_across_multiple_runs():
         assert "BLOCKED (VOLTRON_TRADING_ENABLED=false)" in res["final_safety_gate"]
 
 
-# ==========================================
-# PHASE 3.5: GEMINI PRODUCTION READINESS TESTS
-# ==========================================
 def test_rate_limited_is_distinct_from_live_no_trade(monkeypatch):
     from backend.service import voltron_service
 
-    # Case 1: Rate limited response
     monkeypatch.setattr(
         voltron_service,
         "get_ai_analysis",
@@ -710,7 +605,6 @@ def test_rate_limited_is_distinct_from_live_no_trade(monkeypatch):
     assert res_rate_limited["execution_status"] == "RATE_LIMITED_DEFERRED"
     assert res_rate_limited["risk_approval"]["reason"] == "GEMINI_RATE_LIMITED"
 
-    # Case 2: Genuine LIVE AI NO_TRADE response
     monkeypatch.setattr(
         voltron_service,
         "get_ai_analysis",
@@ -728,7 +622,6 @@ def test_rate_limited_is_distinct_from_live_no_trade(monkeypatch):
     assert res_live["execution_status"] == "NO_TRADE_DECISION"
     assert res_live["risk_approval"]["reason"] == "NO_TRADE_DECISION"
 
-    # Must be distinct
     assert res_rate_limited["ai_status"] != res_live["ai_status"]
     assert res_rate_limited["execution_status"] != res_live["execution_status"]
     assert res_rate_limited["risk_approval"]["reason"] != res_live["risk_approval"]["reason"]
@@ -757,11 +650,10 @@ def test_cached_successful_analysis_remains_usable():
     }
     voltron_service._ai_cache[cache_key] = {
         "analysis": dict(mock_cached),
-        "_cached_at": now - 30,  # 30s old (well within 180s TTL)
+        "_cached_at": now - 30,
         "iso_cached_at": "2026-09-03T12:00:00Z",
         "symbol": "SPY",
     }
-    # Mock cache key generator to match
     original_make_key = voltron_service._make_ai_cache_key
     voltron_service._make_ai_cache_key = lambda *args, **kwargs: cache_key
 
@@ -783,14 +675,13 @@ def test_cache_expiry_triggers_fresh_request(monkeypatch):
     cache_key = "SPY_EXPIRED_CACHE_KEY"
     voltron_service._ai_cache[cache_key] = {
         "analysis": {"decision": "NO_TRADE"},
-        "_cached_at": now - 300,  # 300s old (exceeds 180s TTL)
+        "_cached_at": now - 300,
         "iso_cached_at": "2026-09-03T11:00:00Z",
         "symbol": "SPY",
     }
     original_make_key = voltron_service._make_ai_cache_key
     voltron_service._make_ai_cache_key = lambda *args, **kwargs: cache_key
 
-    # Mock create_analysis to verify fresh invocation
     called = []
     def mock_create(data):
         called.append(True)
@@ -805,7 +696,6 @@ def test_cache_expiry_triggers_fresh_request(monkeypatch):
         }
 
     monkeypatch.setattr("backend.service.create_analysis", mock_create)
-    # Ensure rate limit cooldown is clear
     monkeypatch.setattr("agent.analyst.is_rate_limited", lambda: False)
     voltron_service._ai_last_call_time["SPY"] = 0.0
 
@@ -826,11 +716,9 @@ def test_rate_limit_cooldown_prevents_request_storms():
     reset_rate_limit()
     assert not is_rate_limited()
 
-    # Trigger cooldown by setting _rate_limit_until
     analyst_mod._rate_limit_until = time.time() + 60.0
     assert is_rate_limited()
 
-    # Multiple calls must return immediately without exception or API queries
     for _ in range(10):
         res = create_analysis({"symbol": "SPY", "iv": 12.0, "rv": 8.0})
         assert res["status"] == "RATE_LIMITED"

@@ -11,7 +11,6 @@ print("          VOLTRON RISK ENGINE TEST")
 print("=" * 60)
 
 
-# Test 1
 approved, reason = engine.evaluate(
     max_loss=500,
     opportunity_score=85,
@@ -24,7 +23,6 @@ print("Approved:", approved)
 print("Reason:", reason)
 
 
-# Test 2
 approved, reason = engine.evaluate(
     max_loss=1500,
     opportunity_score=90,
@@ -37,7 +35,6 @@ print("Approved:", approved)
 print("Reason:", reason)
 
 
-# Test 3
 approved, reason = engine.evaluate(
     max_loss=500,
     opportunity_score=50,
@@ -50,7 +47,6 @@ print("Approved:", approved)
 print("Reason:", reason)
 
 
-# Test 4
 engine.record_trade_result(-800)
 engine.record_trade_result(-800)
 engine.record_trade_result(-800)

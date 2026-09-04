@@ -79,12 +79,6 @@ def build_vertical_spread(
     limit_price,
     spread_type="BULL_CALL_SPREAD"
 ):
-    """
-    Build defined-risk 2-leg vertical spread:
-    - Bull Call Spread / Bear Put Spread (Debit)
-    - Bull Put Spread / Bear Call Spread (Credit)
-    Guarantees exactly 2 legs (1 BUY, 1 SELL) with equal ratio_qty=1.
-    """
     if not long_leg or not short_leg:
         raise ValueError("Both long and short leg symbols are required for a vertical spread")
 
@@ -131,11 +125,6 @@ def build_long_straddle(
     quantity,
     limit_price
 ):
-    """
-    Build defined-risk 2-leg long straddle:
-    - 1 Long Call (BUY) + 1 Long Put (BUY) at ATM strike.
-    Guarantees exactly 2 BUY legs with equal ratio_qty=1 (max loss = premium paid).
-    """
     if not call_leg or not put_leg:
         raise ValueError("Both call and put leg symbols are required for a straddle")
 

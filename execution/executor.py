@@ -34,7 +34,6 @@ class PaperExecutor:
             qty = order.get("qty") or order.get("quantity")
         qty = int(qty or 1)
 
-        # 1. Defined-Risk Validation Gate (No naked shorts allowed)
         dr_approved, dr_reason = validate_defined_risk_order(order)
         if not dr_approved:
             return {
@@ -44,7 +43,6 @@ class PaperExecutor:
                 "gate": "DEFINED_RISK_GATE",
             }
 
-        # 2. Hard Order Size Gate
         size_ok, size_reason = self.risk_engine.check_order_size(qty)
         if not size_ok:
             return {
@@ -54,7 +52,6 @@ class PaperExecutor:
                 "gate": "ORDER_SIZE_GATE",
             }
 
-        # 3. Risk Engine Evaluation (7 Risk Engine Gates + Quantity)
         approved, reason = self.risk_engine.evaluate(
             max_loss=max_loss,
             opportunity_score=opportunity_score,
@@ -69,7 +66,6 @@ class PaperExecutor:
                 "gate": "RISK_ENGINE_GATE",
             }
 
-        # 4. Liquidity & Market Depth Gate
         liquidity_ok, liquidity_reason = self.risk_engine.check_liquidity(
             spread_percent=spread_percent,
             quantity=qty,
@@ -83,7 +79,6 @@ class PaperExecutor:
                 "gate": "LIQUIDITY_GATE",
             }
 
-        # 5. Options Buying Power Gate (Strictly enforces options buying power)
         bp_to_check = options_buying_power if options_buying_power is not None else available_buying_power
         if bp_to_check is not None:
             bp_ok, bp_reason = validate_options_buying_power(
@@ -99,7 +94,6 @@ class PaperExecutor:
                     "gate": "BUYING_POWER_GATE",
                 }
 
-        # 6. DRY-RUN Execution Gate (Stops immediately before submission)
         if dry_run:
             return {
                 "submitted": False,
@@ -117,7 +111,6 @@ class PaperExecutor:
                 }
             }
 
-        # 6. Final Safety Gate (VOLTRON_TRADING_ENABLED=false)
         if not is_trading_enabled():
             return {
                 "submitted": False,
@@ -126,7 +119,6 @@ class PaperExecutor:
                 "safety_gate": "VOLTRON_TRADING_ENABLED=false",
             }
 
-        # 7. Alpaca Paper Execution (Only reachable if trading enabled and not dry run)
         client = get_trading_client() or trading_client
         if not client:
             return {

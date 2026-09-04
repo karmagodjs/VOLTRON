@@ -22,7 +22,6 @@ class TestAutonomousLifecycle(unittest.TestCase):
         self.assertEqual(self.agent.state.cycle, 0)
 
     def test_state_machine_transition_sequence(self):
-        # Verify safe state updates
         self.agent.state.status = "SCANNING"
         self.assertEqual(self.agent.state.status, "SCANNING")
 
@@ -39,11 +38,10 @@ class TestAutonomousLifecycle(unittest.TestCase):
         self.assertEqual(self.agent.state.status, "MONITORING")
 
     def test_state_consistency_on_risk_rejection(self):
-        # If risk engine rejects, execution must NOT occur
         self.agent.state.status = "RISK_CHECK"
         ok, reason = self.risk.evaluate(max_loss=5000.0, opportunity_score=50, proposed_exposure=5000.0)
         self.assertFalse(ok)
-        
+
         self.agent.state.status = "RISK_REJECTED"
         self.assertEqual(self.agent.state.status, "RISK_REJECTED")
 

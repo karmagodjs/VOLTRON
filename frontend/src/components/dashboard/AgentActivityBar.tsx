@@ -104,7 +104,7 @@ export default function AgentActivityBar({
 
   return (
     <div className="space-y-3 font-mono">
-      {/* 1. Horizontal Pipeline Workflow Bar */}
+
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-800">
         <div className="flex items-center justify-between border-b border-voltron-800 pb-2 mb-3">
           <div className="flex items-center">
@@ -132,7 +132,6 @@ export default function AgentActivityBar({
           </div>
         </div>
 
-        {/* 6 Pipeline Stage Steps */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
           {pipelineStages.map((stage) => {
             const isCompleted = stage.status === "PASSED";
@@ -186,9 +185,8 @@ export default function AgentActivityBar({
         </div>
       </div>
 
-      {/* 2. Agent State Telemetry & Controls Strip */}
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-        {/* Agent State Metrics */}
+
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800 flex items-center gap-2">
             <span className="text-voltron-400 text-[10px] uppercase">Cycle</span>
@@ -238,7 +236,6 @@ export default function AgentActivityBar({
           </div>
         </div>
 
-        {/* Execution Controls */}
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => handleControl("start")}
@@ -277,7 +274,6 @@ export default function AgentActivityBar({
         </div>
       </div>
 
-      {/* 3. System Health Strip */}
       <div className="p-2.5 rounded-lg bg-voltron-900/60 border border-voltron-800 flex flex-wrap items-center justify-between gap-2 text-[10px]">
         <div className="flex flex-wrap items-center gap-4">
           <span className="text-voltron-400 font-bold uppercase">SYSTEM HEALTH:</span>

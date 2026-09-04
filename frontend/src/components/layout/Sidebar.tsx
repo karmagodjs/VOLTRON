@@ -30,7 +30,6 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   const pathname = usePathname();
   const { getLinkWithSymbol } = useMarket();
 
-  // Close mobile drawer when pressing Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && mobileOpen && onMobileClose) {
@@ -44,7 +43,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   const navContent = (
     <div className="flex flex-col justify-between h-full">
       <div>
-        {/* Terminal Header */}
+
         <div className="h-14 px-4 flex items-center justify-between border-b border-voltron-800">
           <Link
             href={getLinkWithSymbol("/dashboard")}
@@ -56,7 +55,6 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             </span>
           </Link>
 
-          {/* Close button for mobile drawer */}
           {onMobileClose && (
             <button
               onClick={onMobileClose}
@@ -68,7 +66,6 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           )}
         </div>
 
-        {/* Navigation Menu */}
         <nav className="p-2 pt-3 space-y-1 overflow-y-auto max-h-[calc(100vh-130px)]">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href === "/dashboard" && pathname === "/");
@@ -92,7 +89,6 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
         </nav>
       </div>
 
-      {/* Bottom Status Panel */}
       <div className="p-3.5 border-t border-voltron-800 bg-voltron-950 font-mono text-[10px]">
         <div className="flex items-center justify-between text-voltron-400 mb-1.5">
           <span className="uppercase tracking-wider">Mode</span>
@@ -111,22 +107,20 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
   return (
     <>
-      {/* 1. Permanent Desktop Sidebar (>= lg) */}
+
       <aside className="hidden lg:flex w-52 flex-shrink-0 bg-voltron-950 border-r border-voltron-800 flex-col justify-between h-screen sticky top-0 select-none z-30">
         {navContent}
       </aside>
 
-      {/* 2. Mobile Responsive Slide-over Drawer (< lg) */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
-          {/* Backdrop Overlay */}
+
           <div
             className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
             onClick={onMobileClose}
             aria-hidden="true"
           />
 
-          {/* Drawer Panel */}
           <aside
             role="dialog"
             aria-label="Mobile Navigation"

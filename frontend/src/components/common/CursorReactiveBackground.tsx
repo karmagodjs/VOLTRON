@@ -8,7 +8,7 @@ export default function CursorReactiveBackground() {
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check if user prefers reduced motion or is on a touch device
+
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
 
@@ -18,17 +18,14 @@ export default function CursorReactiveBackground() {
 
     let animationFrameId: number;
 
-    // Target positions (from mouse event)
     let targetX = window.innerWidth / 2;
     let targetY = window.innerHeight / 2;
     let targetOpacity = 0;
 
-    // Current interpolated positions
     let currentX = targetX;
     let currentY = targetY;
     let currentOpacity = 0;
 
-    // Parallax targets
     let targetParallaxX = 0;
     let targetParallaxY = 0;
     let currentParallaxX = 0;
@@ -39,7 +36,6 @@ export default function CursorReactiveBackground() {
       targetY = e.clientY;
       targetOpacity = 1;
 
-      // Calculate subtle parallax offset (-4px to +4px)
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       targetParallaxX = ((e.clientX - centerX) / centerX) * -4;
@@ -56,7 +52,6 @@ export default function CursorReactiveBackground() {
       targetOpacity = 1;
     };
 
-    // Smooth 60 FPS animation loop with lerp (linear interpolation)
     const animate = () => {
       const lerpFactor = 0.08;
 
@@ -99,13 +94,12 @@ export default function CursorReactiveBackground() {
       aria-hidden="true"
       className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none"
     >
-      {/* 1. Subtle Interactive Parallax Grid */}
+
       <div
         ref={gridRef}
         className="absolute -inset-4 grid-bg opacity-70 will-change-transform"
       />
 
-      {/* 2. Soft Cursor-Reactive Volatility Glow (Follows Mouse with Physics Lerp) */}
       <div
         ref={glowRef}
         className="absolute top-0 left-0 -ml-[250px] -mt-[250px] w-[500px] h-[500px] rounded-full blur-[90px] opacity-0 pointer-events-none will-change-transform"
@@ -115,7 +109,6 @@ export default function CursorReactiveBackground() {
         }}
       />
 
-      {/* 3. Faint Quantitative Volatility Wave Traces (Slow Moving Field) */}
       <svg
         className="absolute inset-0 w-full h-full opacity-[0.04] dark:opacity-[0.05] pointer-events-none"
         preserveAspectRatio="none"

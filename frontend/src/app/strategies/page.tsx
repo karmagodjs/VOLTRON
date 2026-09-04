@@ -59,7 +59,7 @@ export default function StrategiesPage() {
   return (
     <TerminalLayout>
       <div className="space-y-4">
-        {/* Header */}
+
         <div className="p-4 rounded-xl bg-voltron-850 border border-voltron-750 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center">
             <div>
@@ -75,7 +75,6 @@ export default function StrategiesPage() {
             </div>
           </div>
 
-          {/* Strategy Dropdown / Quick Select */}
           <div className="flex items-center gap-1.5 overflow-x-auto bg-voltron-900 p-1 rounded-lg border border-voltron-750">
             {strategyList.map((st) => (
               <button
@@ -94,11 +93,10 @@ export default function StrategiesPage() {
           </div>
         </div>
 
-        {/* 2-Column Grid: Left Strategy Details & Legs / Right Payoff Graph */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Left: Strategy Legs & Key Quant Stats (6 cols) */}
+
           <div className="lg:col-span-6 space-y-4">
-            {/* 6 Key Strategy Metrics */}
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-xs">
               <div className="p-3 rounded-lg bg-voltron-850 border border-voltron-750">
                 <span className="text-[10px] text-voltron-400 uppercase block mb-1">Max Profit</span>
@@ -143,7 +141,6 @@ export default function StrategiesPage() {
               </div>
             </div>
 
-            {/* Configured Strategy Legs Table */}
             <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40">
               <div className="flex items-center justify-between border-b border-voltron-750/60 pb-2 mb-3 text-xs font-mono font-bold text-white uppercase">
                 <span>Multi-Leg Construction</span>
@@ -190,7 +187,6 @@ export default function StrategiesPage() {
             </div>
           </div>
 
-          {/* Right: Interactive Options Payoff Curve (6 cols) */}
           <div className="lg:col-span-6 space-y-4">
             <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col h-[400px]">
               <div className="flex items-center justify-between border-b border-voltron-750/60 pb-2 mb-3">

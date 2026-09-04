@@ -16,7 +16,6 @@ class TestRiskSafetyBoundaries(unittest.TestCase):
         self.risk = RiskEngine(account_equity=100000.0)
 
     def test_gate_01_opportunity_score_boundary(self):
-        # Boundary: 69 (Block), 70 (Pass), 71 (Pass)
         ok69, r69 = self.risk.evaluate(max_loss=500, opportunity_score=69, proposed_exposure=5000)
         self.assertFalse(ok69)
         self.assertEqual(r69, "OPPORTUNITY_SCORE_TOO_LOW")
@@ -30,7 +29,6 @@ class TestRiskSafetyBoundaries(unittest.TestCase):
         self.assertEqual(r71, "RISK_APPROVED")
 
     def test_gate_02_max_trade_risk_boundary(self):
-        # 1% of 100,000 = $1,000. Boundary: 999 (Pass), 1000 (Pass), 1001 (Block)
         ok999, r999 = self.risk.evaluate(max_loss=999.0, opportunity_score=85, proposed_exposure=5000)
         self.assertTrue(ok999)
 
@@ -42,7 +40,6 @@ class TestRiskSafetyBoundaries(unittest.TestCase):
         self.assertEqual(r1001, "TRADE_RISK_TOO_HIGH")
 
     def test_gate_03_max_daily_loss_boundary(self):
-        # 2% of 100,000 = $2,000 max daily loss.
         self.risk.daily_pnl = -1999.0
         ok1, _ = self.risk.evaluate(max_loss=500, opportunity_score=85, proposed_exposure=5000)
         self.assertTrue(ok1)
@@ -58,19 +55,15 @@ class TestRiskSafetyBoundaries(unittest.TestCase):
         self.assertEqual(r3, "DAILY_LOSS_LIMIT_REACHED")
 
     def test_gate_04_max_portfolio_exposure_boundary(self):
-        # 30% of 100,000 = $30,000 max exposure cap.
         self.risk.portfolio_exposure = 26000.0
-        # +4,000 = 30,000 (Pass)
         ok1, _ = self.risk.evaluate(max_loss=500, opportunity_score=85, proposed_exposure=4000.0)
         self.assertTrue(ok1)
 
-        # +4,001 = 30,001 (Block)
         ok2, r2 = self.risk.evaluate(max_loss=500, opportunity_score=85, proposed_exposure=4001.0)
         self.assertFalse(ok2)
         self.assertEqual(r2, "PORTFOLIO_EXPOSURE_TOO_HIGH")
 
     def test_gate_05_consecutive_losses_boundary(self):
-        # Limit is 3 consecutive losses
         self.risk.consecutive_losses = 2
         ok1, _ = self.risk.evaluate(max_loss=500, opportunity_score=85, proposed_exposure=5000)
         self.assertTrue(ok1)
@@ -81,14 +74,12 @@ class TestRiskSafetyBoundaries(unittest.TestCase):
         self.assertEqual(r2, "CONSECUTIVE_LOSS_LIMIT")
 
     def test_gate_06_kill_switch_fail_closed(self):
-        # Active kill switch must block 100% of evaluations
         self.risk.activate_kill_switch()
         ok, r = self.risk.evaluate(max_loss=10.0, opportunity_score=100.0, proposed_exposure=100.0)
         self.assertFalse(ok)
         self.assertEqual(r, "KILL_SWITCH_ACTIVE")
 
     def test_risk_fail_closed_zero_equity(self):
-        # Zero equity account must fail-closed immediately
         zero_risk = RiskEngine(account_equity=0.0)
         ok, r = zero_risk.evaluate(max_loss=100.0, opportunity_score=90.0, proposed_exposure=100.0)
         self.assertFalse(ok)

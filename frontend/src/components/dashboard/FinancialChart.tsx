@@ -77,9 +77,9 @@ export default function FinancialChart({ history, symbol }: FinancialChartProps)
 
   return (
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col h-[380px]">
-      {/* Chart Top Header & Controls */}
+
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-voltron-750/60 pb-3 mb-3">
-        {/* Left: Metric Tabs */}
+
         <div className="flex items-center gap-1 bg-voltron-900 p-1 rounded-lg border border-voltron-750">
           {tabs.map((tab) => (
             <button
@@ -97,7 +97,6 @@ export default function FinancialChart({ history, symbol }: FinancialChartProps)
           ))}
         </div>
 
-        {/* Right: Timeframe Selectors */}
         <div className="flex items-center gap-1">
           {timeframes.map((tf) => (
             <button
@@ -116,7 +115,6 @@ export default function FinancialChart({ history, symbol }: FinancialChartProps)
         </div>
       </div>
 
-      {/* Chart Canvas */}
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           {activeTab === "VOLUME" ? (
@@ -186,7 +184,6 @@ export default function FinancialChart({ history, symbol }: FinancialChartProps)
         </ResponsiveContainer>
       </div>
 
-      {/* Footer Sub-Bar */}
       <div className="flex items-center justify-between text-[10px] font-mono text-voltron-400 border-t border-voltron-750/40 pt-2 mt-1">
         <span>DataSource: SIP Consolidated Historical Bars</span>
         <span className="text-voltron-cyan flex items-center gap-1">

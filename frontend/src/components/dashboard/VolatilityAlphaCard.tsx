@@ -13,7 +13,7 @@ export default function VolatilityAlphaCard({ market }: VolatilityAlphaCardProps
 
   return (
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col justify-between">
-      {/* Header */}
+
       <div className="flex items-center justify-between border-b border-voltron-750/60 pb-3 mb-3">
         <div className="flex items-center">
           <span className="text-xs font-mono font-bold text-white tracking-wider uppercase">
@@ -35,12 +35,11 @@ export default function VolatilityAlphaCard({ market }: VolatilityAlphaCardProps
         </span>
       </div>
 
-      {/* Main Stats Grid & Visual Gauge */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-        {/* Left: Score Gauge */}
+
         <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-voltron-900 border border-voltron-800 relative">
           <div className="relative w-28 h-28 flex items-center justify-center">
-            {/* SVG Arc Gauge */}
+
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"
@@ -80,7 +79,6 @@ export default function VolatilityAlphaCard({ market }: VolatilityAlphaCardProps
           </div>
         </div>
 
-        {/* Right: Detailed Quantitative Breakdown */}
         <div className="space-y-2.5 font-mono text-xs">
           <div className="flex justify-between items-center p-2 rounded bg-voltron-900/60 border border-voltron-800">
             <span className="text-voltron-400">Implied Vol (IV)</span>

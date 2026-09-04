@@ -3,7 +3,6 @@ import sys
 import unittest
 import numpy as np
 
-# Ensure root directory in path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from quant.strategy_selector import select_strategy
@@ -34,13 +33,9 @@ class TestVoltronFullQA(unittest.TestCase):
         self.risk_engine = RiskEngine(account_equity=100000.0)
         self.monitor = PositionMonitor()
 
-    # ==========================================
-    # 1. AI ANALYST & FAILURE SAFETY TESTS
-    # ==========================================
     def test_ai_analyst_empty_market_data(self):
         res = create_analysis({})
         self.assertIn("decision", res)
-        # Must return valid structure and NEVER place orders
         self.assertEqual(res["decision"], "NO_TRADE")
 
     def test_ai_analyst_invalid_api_key(self):
@@ -54,13 +49,10 @@ class TestVoltronFullQA(unittest.TestCase):
             if old_key:
                 os.environ["GEMINI_API_KEY"] = old_key
 
-    # ==========================================
-    # 2. STRATEGY ENGINE BOUNDARY TESTS
-    # ==========================================
     def test_strategy_boundary_confidence_69(self):
         analysis = {
             "decision": "TRADE_CANDIDATE",
-            "confidence": 69, # Below threshold of 70
+            "confidence": 69,
             "opportunity_score": 90,
             "iv_rv_ratio": 1.62,
             "direction": "NEUTRAL"
@@ -70,7 +62,7 @@ class TestVoltronFullQA(unittest.TestCase):
     def test_strategy_boundary_confidence_70(self):
         analysis = {
             "decision": "TRADE_CANDIDATE",
-            "confidence": 70, # At threshold
+            "confidence": 70,
             "opportunity_score": 70,
             "iv_rv_ratio": 1.62,
             "direction": "NEUTRAL"
@@ -81,7 +73,7 @@ class TestVoltronFullQA(unittest.TestCase):
         analysis = {
             "decision": "TRADE_CANDIDATE",
             "confidence": 85,
-            "opportunity_score": 69, # Below threshold of 70
+            "opportunity_score": 69,
             "iv_rv_ratio": 1.62,
             "direction": "NEUTRAL"
         }
@@ -137,37 +129,29 @@ class TestVoltronFullQA(unittest.TestCase):
         }
         self.assertEqual(select_strategy(analysis), "BEAR_PUT_SPREAD")
 
-    # ==========================================
-    # 3. RISK ENGINE 7-GATE COMPREHENSIVE TESTS
-    # ==========================================
     def test_risk_gate_opportunity_score_too_low(self):
-        # Min score is 70
         ok, reason = self.risk_engine.evaluate(max_loss=300, opportunity_score=65, proposed_exposure=5000)
         self.assertFalse(ok)
         self.assertEqual(reason, "OPPORTUNITY_SCORE_TOO_LOW")
 
     def test_risk_gate_trade_risk_too_high(self):
-        # 1% of 100,000 = $1,000 max trade loss
         ok, reason = self.risk_engine.evaluate(max_loss=1200, opportunity_score=85, proposed_exposure=5000)
         self.assertFalse(ok)
         self.assertEqual(reason, "TRADE_RISK_TOO_HIGH")
 
     def test_risk_gate_daily_loss_limit(self):
-        # 2% of 100,000 = $2,000 max daily loss
         self.risk_engine.daily_pnl = -2100.0
         ok, reason = self.risk_engine.evaluate(max_loss=300, opportunity_score=85, proposed_exposure=5000)
         self.assertFalse(ok)
         self.assertEqual(reason, "DAILY_LOSS_LIMIT_REACHED")
 
     def test_risk_gate_portfolio_exposure_too_high(self):
-        # 30% of 100,000 = $30,000 max exposure
         self.risk_engine.portfolio_exposure = 28000.0
         ok, reason = self.risk_engine.evaluate(max_loss=300, opportunity_score=85, proposed_exposure=4000.0)
         self.assertFalse(ok)
         self.assertEqual(reason, "PORTFOLIO_EXPOSURE_TOO_HIGH")
 
     def test_risk_gate_consecutive_losses_limit(self):
-        # 3 consecutive losses
         self.risk_engine.consecutive_losses = 3
         ok, reason = self.risk_engine.evaluate(max_loss=300, opportunity_score=85, proposed_exposure=2000.0)
         self.assertFalse(ok)
@@ -178,69 +162,50 @@ class TestVoltronFullQA(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(reason, "RISK_APPROVED")
 
-    # ==========================================
-    # 4. EMERGENCY KILL SWITCH TESTS
-    # ==========================================
     def test_kill_switch_blocks_all_execution(self):
         self.risk_engine.activate_kill_switch()
         self.assertTrue(self.risk_engine.kill_switch)
-        
-        # Even with perfect parameters, trade MUST be blocked
+
         ok, reason = self.risk_engine.evaluate(max_loss=100.0, opportunity_score=100.0, proposed_exposure=100.0)
         self.assertFalse(ok)
         self.assertEqual(reason, "KILL_SWITCH_ACTIVE")
 
-        # Reset kill switch
         self.risk_engine.reset_kill_switch()
         self.assertFalse(self.risk_engine.kill_switch)
         ok, reason = self.risk_engine.evaluate(max_loss=100.0, opportunity_score=100.0, proposed_exposure=100.0)
         self.assertTrue(ok)
         self.assertEqual(reason, "RISK_APPROVED")
 
-    # ==========================================
-    # 5. POSITION MONITOR & DYNAMIC EXIT TESTS
-    # ==========================================
     def test_position_monitor_take_profit_and_stop_loss(self):
-        # Open position
         self.monitor.register_position(
             symbol="SPY",
             strategy="IRON_CONDOR",
             entry_price=5.00,
-            take_profit=7.50, # +50%
-            stop_loss=2.50    # -50%
+            take_profit=7.50,
+            stop_loss=2.50
         )
 
-        # 1. Normal hold price
         should_exit, reason = self.monitor.check_exit("SPY", current_price=6.00)
         self.assertFalse(should_exit)
         self.assertEqual(reason, "HOLD")
 
-        # 2. Take profit hit
         should_exit, reason = self.monitor.check_exit("SPY", current_price=7.60)
         self.assertTrue(should_exit)
         self.assertEqual(reason, "TAKE_PROFIT")
 
-        # 3. Stop loss hit
         should_exit, reason = self.monitor.check_exit("SPY", current_price=2.40)
         self.assertTrue(should_exit)
         self.assertEqual(reason, "STOP_LOSS")
 
-    # ==========================================
-    # 6. BACKTEST ENGINE & METRICS TESTS
-    # ==========================================
     def test_backtest_metrics_calculations(self):
         pnls = [185.0, 185.0, -315.0, 185.0, 185.0]
-        # Win rate: 4/5 = 80%
         self.assertAlmostEqual(win_rate(pnls), 0.80)
-        
-        # Total return
+
         self.assertAlmostEqual(total_return(100000, 100425), 0.00425)
 
-        # Max drawdown
         curve = [100000, 100185, 100370, 100055, 100240, 100425]
         self.assertAlmostEqual(max_drawdown(curve), (100370 - 100055) / 100370, places=4)
 
-        # Sharpe ratio
         returns = [0.01, 0.02, -0.01, 0.015, 0.02]
         sr = sharpe_ratio(returns)
         self.assertGreater(sr, 0)

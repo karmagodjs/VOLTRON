@@ -11,7 +11,7 @@ interface AgentTimelineCardProps {
 export default function AgentTimelineCard({ events, cycle }: AgentTimelineCardProps) {
   return (
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col justify-between">
-      {/* Header */}
+
       <div className="flex items-center justify-between border-b border-voltron-750/60 pb-3 mb-3">
         <div className="flex items-center">
           <span className="text-xs font-mono font-bold text-white tracking-wider uppercase">
@@ -29,7 +29,6 @@ export default function AgentTimelineCard({ events, cycle }: AgentTimelineCardPr
         </div>
       </div>
 
-      {/* Timeline Steps Stream */}
       <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1">
         {events.map((evt, idx) => {
           const isLatest = idx === events.length - 1;
@@ -44,7 +43,7 @@ export default function AgentTimelineCard({ events, cycle }: AgentTimelineCardPr
                   : "bg-voltron-900/60 border-voltron-800 hover:border-voltron-700"
               )}
             >
-              {/* Top Row: Timestamp, Stage, Status */}
+
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="font-bold text-white tracking-wide">
                   {evt.stage}
@@ -69,12 +68,10 @@ export default function AgentTimelineCard({ events, cycle }: AgentTimelineCardPr
                 </div>
               </div>
 
-              {/* Summary */}
               <div className="text-[11px] font-semibold text-voltron-200">
                 {evt.summary}
               </div>
 
-              {/* Details Subtitle */}
               <div className="text-[10px] text-voltron-400 mt-0.5">
                 {evt.details}
               </div>
@@ -83,7 +80,6 @@ export default function AgentTimelineCard({ events, cycle }: AgentTimelineCardPr
         })}
       </div>
 
-      {/* Footer Pipeline Summary */}
       <div className="mt-3 pt-2 border-t border-voltron-750/60 flex items-center justify-between text-[10px] font-mono text-voltron-400">
         <span className="text-voltron-cyan">Pipeline: SCAN → ANALYZE → RISK → EXECUTE → MONITOR</span>
         <span className="text-voltron-emerald">● Optimal State</span>

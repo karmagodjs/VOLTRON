@@ -38,7 +38,6 @@ function AgentCommandCenterContent() {
   const [killModalOpen, setKillModalOpen] = useState(false);
   const [secondsToNext, setSecondsToNext] = useState(24);
 
-  // Sync if query param or context changes externally
   useEffect(() => {
     if (querySymbol && querySymbol !== symbol && symbols.includes(querySymbol)) {
       setSymbol(querySymbol);
@@ -75,7 +74,7 @@ function AgentCommandCenterContent() {
     setSymbol(newSymbol);
     setSelectedSymbol(newSymbol, true);
     setSymbolDropdown(false);
-    setData(null); // CRITICAL DATA ISOLATION: Clear previous symbol data during loading
+    setData(null);
     setLoading(true);
     router.replace(`/agent?symbol=${newSymbol}`);
     loadData(newSymbol);
@@ -131,7 +130,7 @@ function AgentCommandCenterContent() {
   return (
     <TerminalLayout>
       <div className="space-y-3.5 font-mono text-xs">
-        {/* 1. TOP HEADER: VOLTRON INTELLIGENCE — AUTONOMOUS OPTIONS AGENT */}
+
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center">
             <div>
@@ -150,7 +149,7 @@ function AgentCommandCenterContent() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 text-xs">
-            {/* Symbol Selector */}
+
             <div className="relative">
               <button
                 onClick={() => setSymbolDropdown(!symbolDropdown)}
@@ -180,7 +179,6 @@ function AgentCommandCenterContent() {
               )}
             </div>
 
-            {/* Current Cycle */}
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-950 border border-voltron-750">
               <span className="text-voltron-400 text-[10px] uppercase">Cycle:</span>
               <span className="font-bold text-white font-tabular">
@@ -188,13 +186,11 @@ function AgentCommandCenterContent() {
               </span>
             </div>
 
-            {/* Trading Mode */}
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 text-voltron-cyan font-bold">
               <span className="text-voltron-400 text-[10px] uppercase">Mode:</span>
               <span>PAPER</span>
             </div>
 
-            {/* Agent Status */}
             <div
               className={clsx(
                 "flex items-center gap-1.5 px-2.5 py-1 rounded font-bold uppercase",
@@ -220,7 +216,6 @@ function AgentCommandCenterContent() {
           </div>
         </div>
 
-        {/* Loading / Error Banner */}
         {loading && !data && (
           <div className="p-4 rounded-lg bg-voltron-900 border border-voltron-cyan/40 text-voltron-cyan text-xs font-mono flex items-center justify-center gap-2">
             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -234,7 +229,6 @@ function AgentCommandCenterContent() {
           </div>
         )}
 
-        {/* 2. AGENT CONTROL CENTER */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-voltron-800 pb-2">
             <div className="flex items-center">
@@ -243,7 +237,6 @@ function AgentCommandCenterContent() {
               </span>
             </div>
 
-            {/* Control Buttons */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleControl("start")}
@@ -278,7 +271,6 @@ function AgentCommandCenterContent() {
             </div>
           </div>
 
-          {/* Telemetry Row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Status</span>
@@ -307,7 +299,6 @@ function AgentCommandCenterContent() {
           </div>
         </div>
 
-        {/* 3. AUTONOMOUS PIPELINE: SCAN → ANALYZE → STRATEGY → RISK → EXECUTE → MONITOR → EXIT → LOG */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
           <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
             <span>AUTONOMOUS EXECUTION PIPELINE</span>
@@ -365,7 +356,6 @@ function AgentCommandCenterContent() {
           </div>
         </div>
 
-        {/* 4. VISUAL CENTERPIECE: VOLTRON DECISION CARD */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-800">
           <div className="flex items-center justify-between border-b border-voltron-800 pb-2 mb-2.5">
             <div className="flex items-center">
@@ -418,9 +408,8 @@ function AgentCommandCenterContent() {
           </div>
         </div>
 
-        {/* 5. 2-COLUMN OPERATIONS WORKSPACE: ROW 1 (MARKET OBSERVATION + AI ANALYST) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Market Observation (5 cols) */}
+
           <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>MARKET OBSERVATION ({symbol})</span>
@@ -476,7 +465,6 @@ function AgentCommandCenterContent() {
             </div>
           </div>
 
-          {/* AI Analyst & Decision Factors (7 cols) */}
           <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>VOLTRON AI ANALYST & THESIS ({symbol})</span>
@@ -497,7 +485,6 @@ function AgentCommandCenterContent() {
               </div>
             </div>
 
-            {/* Core Thesis Box */}
             <div className="p-3 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-cyan font-bold block mb-1">
                 Quantitative Thesis
@@ -507,7 +494,6 @@ function AgentCommandCenterContent() {
               </p>
             </div>
 
-            {/* Structured Decision Factors */}
             <div className="space-y-1">
               <span className="text-[10px] uppercase text-voltron-emerald font-bold block">
                 DECISION FACTORS
@@ -529,9 +515,8 @@ function AgentCommandCenterContent() {
           </div>
         </div>
 
-        {/* 6. 2-COLUMN OPERATIONS WORKSPACE: ROW 2 (STRATEGY ENGINE + RISK GATES) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Strategy Engine (6 cols) */}
+
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>STRATEGY ENGINE</span>
@@ -559,7 +544,6 @@ function AgentCommandCenterContent() {
               </div>
             </div>
 
-            {/* Legs breakdown */}
             <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 space-y-1.5">
               <span className="text-[10px] text-voltron-400 uppercase font-bold block">Selected Option Legs ({symbol})</span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[11px]">
@@ -579,7 +563,6 @@ function AgentCommandCenterContent() {
             </p>
           </div>
 
-          {/* Risk Gate Engine (6 cols) */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>RISK GATE EVALUATION</span>
@@ -595,7 +578,6 @@ function AgentCommandCenterContent() {
               </span>
             </div>
 
-            {/* 7 Gates Grid */}
             <div className="space-y-1.5 max-h-[190px] overflow-y-auto">
               {riskDec?.gates?.map((gate: any, idx: number) => (
                 <div
@@ -625,9 +607,8 @@ function AgentCommandCenterContent() {
           </div>
         </div>
 
-        {/* 7. 2-COLUMN OPERATIONS WORKSPACE: ROW 3 (EXECUTION STATE + POSITION MONITOR) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Execution State (6 cols) */}
+
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>EXECUTION STATE</span>
@@ -697,7 +678,6 @@ function AgentCommandCenterContent() {
             </div>
           </div>
 
-          {/* Position Monitor (6 cols) */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>POSITION MONITOR & DYNAMIC EXITS</span>
@@ -754,9 +734,8 @@ function AgentCommandCenterContent() {
           </div>
         </div>
 
-        {/* 8. ROW 4: AGENT METRICS & CHRONOLOGICAL ACTIVITY LOG */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Agent Performance Metrics (5 cols) */}
+
           <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>AGENT OPERATING METRICS</span>
@@ -791,7 +770,6 @@ function AgentCommandCenterContent() {
             </div>
           </div>
 
-          {/* Chronological Activity Timeline (7 cols) */}
           <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>AGENT ACTIVITY STREAM</span>
@@ -821,7 +799,6 @@ function AgentCommandCenterContent() {
         </div>
       </div>
 
-      {/* Emergency Stop Confirmation Modal */}
       {killModalOpen && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono">
           <div className="w-full max-w-md bg-voltron-900 border-2 border-voltron-rose rounded-xl shadow-2xl p-6 relative">

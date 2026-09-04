@@ -33,7 +33,7 @@ export default function AnalyticsPage() {
       const json = await res.json();
       setData(json);
     } catch {
-      // Fallback
+
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
   return (
     <TerminalLayout>
       <div className="space-y-3.5 font-mono text-xs">
-        {/* 1. TOP HEADER & CONTROLS */}
+
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center">
             <div>
@@ -110,7 +110,7 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            {/* Period Selector */}
+
             <div className="flex gap-1 bg-voltron-950 p-0.5 rounded border border-voltron-800 text-[10px]">
               {(["1D", "1W", "1M", "3M", "1Y", "ALL"] as const).map((p) => (
                 <button
@@ -137,7 +137,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* 2. EXECUTIVE PERFORMANCE SUMMARY (10 METRICS GRID) */}
         <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2 text-xs">
           <div className="p-2 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Total Return</span>
@@ -181,9 +180,8 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* 3. MULTI-TAB WORKSPACE */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
-          {/* Tab Navigation */}
+
           <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-2 gap-2">
             <div className="flex flex-wrap gap-1.5">
               {[
@@ -210,11 +208,10 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          {/* TAB 1: EQUITY & DRAWDOWN PROFILE */}
           {activeTab === "equity" && (
             <div className="space-y-3">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-                {/* Equity Curve (7 cols) */}
+
                 <div className="lg:col-span-7 p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                   <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
                     <span className="text-white font-bold text-xs uppercase">
@@ -250,7 +247,6 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
 
-                {/* Underwater Drawdown Curve (5 cols) */}
                 <div className="lg:col-span-5 p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                   <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
                     <span className="text-white font-bold text-xs uppercase">
@@ -287,7 +283,6 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Drawdown Summary Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px]">
                 <div className="p-2 rounded bg-voltron-950 border border-voltron-800 flex justify-between">
                   <span className="text-voltron-400">Current DD:</span>
@@ -313,10 +308,9 @@ export default function AnalyticsPage() {
             </div>
           )}
 
-          {/* TAB 2: STRATEGY PERFORMANCE & COMPARISON */}
           {activeTab === "strategies" && (
             <div className="space-y-3">
-              {/* Strategy Breakdown Table */}
+
               <div className="overflow-x-auto max-h-[260px]">
                 <table className="w-full text-left font-mono text-xs">
                   <thead className="bg-voltron-950 text-[10px] text-voltron-400 uppercase sticky top-0 border-b border-voltron-800">
@@ -352,7 +346,6 @@ export default function AnalyticsPage() {
                 </table>
               </div>
 
-              {/* Strategy A vs Strategy B Head-to-Head Comparison */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex flex-wrap items-center justify-between border-b border-voltron-850 pb-1.5 gap-2">
                   <span className="text-white font-bold text-xs uppercase">
@@ -411,10 +404,9 @@ export default function AnalyticsPage() {
             </div>
           )}
 
-          {/* TAB 3: AI INTELLIGENCE & OPPORTUNITY SCORE BUCKETS */}
           {activeTab === "ai" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-              {/* Confidence Buckets */}
+
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
                   <span className="text-white font-bold text-xs uppercase">
@@ -444,7 +436,6 @@ export default function AnalyticsPage() {
                 </table>
               </div>
 
-              {/* Opportunity Score Buckets */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
                   <span className="text-white font-bold text-xs uppercase">
@@ -476,10 +467,9 @@ export default function AnalyticsPage() {
             </div>
           )}
 
-          {/* TAB 4: RISK & EXECUTION QUALITY */}
           {activeTab === "risk" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-              {/* Risk Engine Stats */}
+
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
                   <span className="text-white font-bold text-xs uppercase">
@@ -514,7 +504,6 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Execution Quality */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
                   <span className="text-white font-bold text-xs uppercase">
@@ -544,10 +533,9 @@ export default function AnalyticsPage() {
             </div>
           )}
 
-          {/* TAB 5: OPTIONS TELEMETRY, DTE & HOLDING DURATION */}
           {activeTab === "options" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-              {/* DTE Performance */}
+
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
                   <span className="text-white font-bold text-xs uppercase">
@@ -577,7 +565,6 @@ export default function AnalyticsPage() {
                 </table>
               </div>
 
-              {/* Holding Duration */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
                   <span className="text-white font-bold text-xs uppercase">
@@ -609,10 +596,9 @@ export default function AnalyticsPage() {
             </div>
           )}
 
-          {/* TAB 6: BACKTEST VS PAPER & SPY BENCHMARK */}
           {activeTab === "benchmark" && (
             <div className="space-y-3">
-              {/* Backtest vs Paper Alignment */}
+
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5">
                   <span className="text-white font-bold text-xs uppercase">
@@ -648,7 +634,6 @@ export default function AnalyticsPage() {
                 </table>
               </div>
 
-              {/* Benchmark vs SPY Buy & Hold */}
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5 text-white font-bold text-xs uppercase">
                   <span>VOLTRON Volatility Alpha vs SPY Buy &amp; Hold Benchmark</span>
@@ -677,9 +662,8 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        {/* 4. ROW 3: INSIGHTS & ATTRIBUTION (6 cols) + TOP/WORST TRADES (6 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Performance Insights Engine (6 cols) */}
+
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
               <span className="text-white font-bold text-xs uppercase">
@@ -697,7 +681,6 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          {/* Best & Worst Trades Ledger (6 cols) */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
               <span className="text-white font-bold text-xs uppercase">
@@ -707,7 +690,7 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="space-y-2">
-              {/* Best Trades */}
+
               <div>
                 <span className="text-[10px] uppercase text-voltron-emerald font-bold block mb-1">Top 3 Outlier Winners</span>
                 <div className="grid grid-cols-3 gap-1.5 text-[10px]">
@@ -721,7 +704,6 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Worst Trades */}
               <div>
                 <span className="text-[10px] uppercase text-voltron-rose font-bold block mb-1">Top 3 Outlier Losers</span>
                 <div className="grid grid-cols-3 gap-1.5 text-[10px]">
@@ -738,7 +720,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* 5. DATA QUALITY & INTEGRITY FOOTER */}
         <div className="p-2.5 rounded-lg bg-voltron-950 border border-voltron-800 flex flex-wrap items-center justify-between gap-3 text-[10px] text-voltron-400">
           <div className="flex items-center gap-3">
             <span><strong>Trades Available:</strong> {dataQuality.trades_available || 68} ({dataQuality.closed_trades || 66} Closed / {dataQuality.open_trades || 2} Open)</span>

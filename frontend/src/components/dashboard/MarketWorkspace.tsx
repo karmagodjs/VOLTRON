@@ -96,7 +96,7 @@ export default function MarketWorkspace({
 
   return (
     <div className="space-y-3 font-mono">
-      {/* 1. Market Header Strip */}
+
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center">
           <div>
@@ -136,9 +136,8 @@ export default function MarketWorkspace({
           </div>
         </div>
 
-        {/* Timeframe & Metric Selectors */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Timeframe Buttons */}
+
           <div className="flex items-center gap-0.5 bg-voltron-950 p-0.5 rounded border border-voltron-800">
             {timeframes.map((tf) => (
               <button
@@ -158,7 +157,6 @@ export default function MarketWorkspace({
             ))}
           </div>
 
-          {/* Metric Tabs */}
           <div className="flex items-center gap-0.5 bg-voltron-950 p-0.5 rounded border border-voltron-800">
             {tabs.map((tab) => (
               <button
@@ -178,7 +176,6 @@ export default function MarketWorkspace({
         </div>
       </div>
 
-      {/* 2. Large Central Market Chart */}
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-800 h-[340px] flex flex-col justify-between">
         <div className="flex items-center justify-between text-[11px] text-voltron-400 border-b border-voltron-800 pb-1.5 mb-2">
           <span className="text-white font-bold text-xs uppercase tracking-wider">
@@ -190,7 +187,7 @@ export default function MarketWorkspace({
         </div>
 
         <div className="flex-1 w-full min-h-0 relative">
-          {/* Timeframe Loading Overlay */}
+
           {isTimeframeBusy && (
             <div className="absolute inset-0 bg-voltron-900/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-voltron-cyan">
               <RefreshCw className="w-5 h-5 animate-spin mb-2 text-voltron-cyan" />
@@ -257,7 +254,6 @@ export default function MarketWorkspace({
         </div>
       </div>
 
-      {/* 3. Volatility Alpha Panel */}
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80">
         <div className="flex items-center justify-between border-b border-voltron-800 pb-2 mb-2.5">
           <div className="flex items-center">
@@ -334,9 +330,8 @@ export default function MarketWorkspace({
         </div>
       </div>
 
-      {/* 4. Portfolio Summary & Risk Status Summary Strip */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-        {/* Portfolio Summary */}
+
         <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-800 space-y-2">
           <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
             <span>PORTFOLIO SUMMARY</span>
@@ -393,7 +388,6 @@ export default function MarketWorkspace({
           </div>
         </div>
 
-        {/* Risk Status Summary */}
         <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-800 space-y-2">
           <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
             <span>RISK ENGINE</span>

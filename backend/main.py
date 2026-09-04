@@ -6,7 +6,6 @@ from fastapi import FastAPI, Query, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Load .env for local development (safe no-op in production if file is absent)
 load_dotenv()
 load_dotenv("/etc/secrets/.env")
 if os.path.isdir("/etc/secrets"):
@@ -22,7 +21,6 @@ if os.path.isdir("/etc/secrets"):
             except Exception:
                 pass
 
-# Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 def validate_startup_config() -> dict:
@@ -47,18 +45,12 @@ def validate_startup_config() -> dict:
 
     return status
 
-# Run startup validation (never logs secrets, only PRESENT/MISSING)
 validate_startup_config()
 
 from backend.service import voltron_service
 
-app = FastAPI(
-    title="VOLTRON Volatility Alpha Trading Engine API",
-    description="Institutional AI Options Terminal Backend",
-    version="2.0.0"
-)
+app = FastAPI()
 
-# Enable CORS for Next.js frontend
 allowed_origins = [
     "https://voltron-cyan.vercel.app",
     "http://localhost:3000",
@@ -76,9 +68,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==========================================
-# MODELS
-# ==========================================
 class KillSwitchRequest(BaseModel):
     active: bool
 
@@ -96,9 +85,6 @@ class BacktestRequest(BaseModel):
     risk_per_trade_pct: float = 1.0
     max_exposure_pct: float = 30.0
 
-# ==========================================
-# ENDPOINTS
-# ==========================================
 
 @app.get("/")
 @app.get("/api/health")
@@ -138,10 +124,6 @@ def get_market(
 
 @app.get("/api/market/clock")
 def get_market_clock():
-    """
-    Get live US market session clock directly from Alpaca (/v2/clock).
-    Accurately accounts for weekends, US market holidays, and early close sessions.
-    """
     return voltron_service.get_market_clock()
 
 @app.get("/api/options")

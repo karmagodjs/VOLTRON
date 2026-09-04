@@ -24,9 +24,6 @@ class VoltronAgent:
         self.monitor = PositionMonitor()
         self.running = False
 
-    # =========================
-    # SCAN
-    # =========================
 
     def scan(self):
         self.state.status = "SCANNING"
@@ -36,9 +33,6 @@ class VoltronAgent:
 
         return self.scanner()
 
-    # =========================
-    # ANALYZE
-    # =========================
 
     def analyze(self, opportunity):
         self.state.status = "ANALYZING"
@@ -48,9 +42,6 @@ class VoltronAgent:
 
         return self.analyst(opportunity)
 
-    # =========================
-    # STRATEGY
-    # =========================
 
     def select_strategy(self, analysis):
         self.state.status = "SELECTING_STRATEGY"
@@ -60,9 +51,6 @@ class VoltronAgent:
 
         return self.strategy_selector(analysis)
 
-    # =========================
-    # RISK
-    # =========================
 
     def evaluate_risk(self, trade):
         self.state.status = "RISK_CHECK"
@@ -76,9 +64,6 @@ class VoltronAgent:
             proposed_exposure=trade["proposed_exposure"]
         )
 
-    # =========================
-    # EXECUTION
-    # =========================
 
     def execute(self, trade, dry_run: bool = False):
         self.state.status = "EXECUTING" if not dry_run else "DRY_RUN_EXECUTION"
@@ -120,9 +105,6 @@ class VoltronAgent:
                 "reason": f"BROKER_ERROR: {str(e)}"
             }
 
-    # =========================
-    # MONITOR POSITION
-    # =========================
 
     def monitor_position(self, symbol, current_price):
 
@@ -151,15 +133,11 @@ class VoltronAgent:
             "reason": "HOLD"
         }
 
-    # =========================
-    # ONE AGENT CYCLE
-    # =========================
 
     def run_cycle(self, dry_run: bool = False):
 
         self.state.cycle += 1
 
-        # 1. SCAN
         opportunities = self.scan()
 
         if not opportunities:
@@ -176,7 +154,6 @@ class VoltronAgent:
 
         self.state.symbol = opportunity.get("symbol")
 
-        # 2. AI ANALYSIS
         analysis = self.analyze(opportunity)
 
         if not analysis:
@@ -189,7 +166,6 @@ class VoltronAgent:
                 "execution_mode": "PAPER_DRY_RUN" if dry_run else "OBSERVATION"
             }
 
-        # Pass quantitative data to strategy selector
         analysis["iv_rv_ratio"] = opportunity.get(
             "iv_rv_ratio",
             0
@@ -200,7 +176,6 @@ class VoltronAgent:
             0
         )
 
-        # Save AI state
         self.state.decision = analysis.get(
             "decision"
         )
@@ -215,7 +190,6 @@ class VoltronAgent:
             0
         )
 
-        # 3. STRATEGY
         strategy = self.select_strategy(
             analysis
         )
@@ -234,13 +208,11 @@ class VoltronAgent:
                 "execution_mode": "PAPER_DRY_RUN" if dry_run else "OBSERVATION"
             }
 
-        # 4. CREATE TRADE
         trade = {
             **opportunity,
             "strategy": strategy
         }
 
-        # 5. RISK
         approved, reason = self.evaluate_risk(
             trade
         )
@@ -258,10 +230,8 @@ class VoltronAgent:
                 "execution_mode": "PAPER_DRY_RUN" if dry_run else "SAFETY_BLOCKED"
             }
 
-        # 6. EXECUTE
         result = self.execute(trade, dry_run=dry_run)
 
-        # 7. UPDATE STATE
         if result.get("submitted"):
             self.state.status = "ORDER_SUBMITTED"
             self.state.active_order_id = result.get("order_id")
@@ -272,7 +242,6 @@ class VoltronAgent:
             self.state.status = "EXECUTION_BLOCKED"
             self.state.last_reason = result.get("reason", "EXECUTION_BLOCKED")
 
-        # 8. RETURN RESULT
         return {
             "status": self.state.status,
             "result": result,
@@ -280,18 +249,12 @@ class VoltronAgent:
             "execution_mode": result.get("execution_mode", "PAPER_DRY_RUN" if dry_run else "SAFETY_BLOCKED")
         }
 
-    # =========================
-    # STOP AGENT
-    # =========================
 
     def stop(self):
 
         self.running = False
         self.state.status = "STOPPED"
 
-    # =========================
-    # AUTONOMOUS LOOP
-    # =========================
 
     def run(
         self,

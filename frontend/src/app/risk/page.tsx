@@ -24,7 +24,7 @@ export default function RiskCommandPage() {
       const json = await res.json();
       setRisk(json);
     } catch {
-      // Fallback
+
     } finally {
       setLoading(false);
     }
@@ -60,7 +60,7 @@ export default function RiskCommandPage() {
   return (
     <TerminalLayout>
       <div className="space-y-3.5 font-mono text-xs">
-        {/* 1. TOP HEADER & SAFETY CONTROLS */}
+
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center">
             <div>
@@ -103,9 +103,8 @@ export default function RiskCommandPage() {
           </div>
         </div>
 
-        {/* 2. 6 CORE RISK LIMIT GAUGES */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
-          {/* Equity */}
+
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Portfolio Equity</span>
             <span className="text-sm font-bold text-white font-tabular">
@@ -113,7 +112,6 @@ export default function RiskCommandPage() {
             </span>
           </div>
 
-          {/* Daily Drawdown Circuit */}
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80">
             <div className="flex justify-between items-center mb-0.5">
               <span className="text-[9px] uppercase text-voltron-400">Daily Loss Max</span>
@@ -124,7 +122,6 @@ export default function RiskCommandPage() {
             </div>
           </div>
 
-          {/* Portfolio Exposure */}
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80 space-y-1">
             <div className="flex justify-between items-center">
               <span className="text-[9px] uppercase text-voltron-400">Exposure</span>
@@ -138,7 +135,6 @@ export default function RiskCommandPage() {
             </div>
           </div>
 
-          {/* Trade Risk */}
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Trade Risk Limit</span>
             <span className="text-sm font-bold text-voltron-emerald font-tabular">
@@ -146,7 +142,6 @@ export default function RiskCommandPage() {
             </span>
           </div>
 
-          {/* Consecutive Losses */}
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Consecutive Losses</span>
             <span className="text-sm font-bold text-white font-tabular">
@@ -154,7 +149,6 @@ export default function RiskCommandPage() {
             </span>
           </div>
 
-          {/* Market Liquidity */}
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Options Spread</span>
             <span className="text-sm font-bold text-voltron-cyan font-tabular">
@@ -166,9 +160,8 @@ export default function RiskCommandPage() {
           </div>
         </div>
 
-        {/* 3. ROW 2: 7 INSTITUTIONAL RISK GATES (8 cols) + CANDIDATE DECISION (4 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* 7 Safety Gates Matrix (8 cols) */}
+
           <div className="lg:col-span-8 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-2">
               <span className="text-xs font-bold text-white uppercase">
@@ -224,9 +217,8 @@ export default function RiskCommandPage() {
             </div>
           </div>
 
-          {/* Current Risk Decision Card & Sizing (4 cols) */}
           <div className="lg:col-span-4 space-y-3">
-            {/* Candidate Trade Evaluation */}
+
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
               <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
                 <span className="text-white font-bold text-xs uppercase">
@@ -265,7 +257,6 @@ export default function RiskCommandPage() {
               </div>
             </div>
 
-            {/* Position Sizing Budget */}
             <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-1 text-xs">
               <span className="text-[10px] uppercase text-voltron-400 font-bold block">
                 Automated Sizing Budget (risk/position_sizing.py)
@@ -278,9 +269,8 @@ export default function RiskCommandPage() {
           </div>
         </div>
 
-        {/* 4. ROW 3: RISK ALERTS STREAM (5 cols) + AUDIT TRAIL HISTORY (7 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Alerts Stream (5 cols) */}
+
           <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
               <span className="text-white font-bold text-xs uppercase">
@@ -311,7 +301,6 @@ export default function RiskCommandPage() {
             </div>
           </div>
 
-          {/* Risk Audit History (7 cols) */}
           <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-1.5 gap-2">
               <span className="text-white font-bold text-xs uppercase">
@@ -379,7 +368,6 @@ export default function RiskCommandPage() {
         </div>
       </div>
 
-      {/* Gate Detail Modal */}
       {selectedGate && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono text-xs">
           <div className="w-full max-w-md bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
@@ -425,7 +413,6 @@ export default function RiskCommandPage() {
         </div>
       )}
 
-      {/* Kill Switch Modal */}
       <KillSwitchModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

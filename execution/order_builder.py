@@ -38,21 +38,10 @@ def build_option_buy_order(
 
 
 def build_option_sell_order(symbol, quantity, limit_price):
-    """
-    Explicitly block single-leg naked short option orders.
-    VOLTRON requires all options trading to be strictly defined-risk.
-    """
     raise ValueError("Naked short option orders are strictly prohibited by VOLTRON risk rules")
 
 
 def validate_defined_risk_order(order) -> Tuple[bool, str]:
-    """
-    Verify that an order has strictly defined risk:
-    - Order quantity must not exceed MAX_CONTRACT_QUANTITY.
-    - Single-leg orders MUST be BUY orders (long option).
-    - Multi-leg orders MUST have every short leg covered by an equal-quantity long leg.
-    - No naked or uncovered short options are allowed.
-    """
     if not order:
         return False, "EMPTY_ORDER"
 

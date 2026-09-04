@@ -50,7 +50,7 @@ export default function AutonomousControlCard({
   return (
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col justify-between">
       <div>
-        {/* Header */}
+
         <div className="flex items-center justify-between border-b border-voltron-750/60 pb-3 mb-3">
           <div className="flex items-center">
             <span className="text-xs font-mono font-bold text-white tracking-wider uppercase">
@@ -82,7 +82,6 @@ export default function AutonomousControlCard({
           </div>
         </div>
 
-        {/* Cycle & Scan Timers */}
         <div className="grid grid-cols-3 gap-2 mb-3 text-center">
           <div className="p-2 rounded bg-voltron-900/70 border border-voltron-800">
             <span className="text-[9px] font-mono uppercase text-voltron-400 block">
@@ -112,7 +111,6 @@ export default function AutonomousControlCard({
           </div>
         </div>
 
-        {/* Action Controls */}
         <div className="grid grid-cols-4 gap-2 mb-3">
           <button
             onClick={() => handleControl("start")}
@@ -150,7 +148,6 @@ export default function AutonomousControlCard({
           </button>
         </div>
 
-        {/* Safety Notice */}
         <div className="p-2.5 rounded bg-voltron-900/60 border border-voltron-800 text-[10px] font-mono text-voltron-400">
           <span>Alpaca Paper execution guardrails active. Live execution disabled.</span>
         </div>

@@ -7,10 +7,6 @@ from quant.alpha import (
 )
 
 
-# -------------------------
-# 1. Realized volatility
-# -------------------------
-
 df = get_daily_bars("SPY", 60)
 
 prices = df["close"]
@@ -21,16 +17,8 @@ rv = calculate_realized_volatility(
 )
 
 
-# -------------------------
-# 2. Option chain
-# -------------------------
-
 chain = get_option_chain("SPY")
 
-
-# -------------------------
-# 3. Find first valid IV
-# -------------------------
 
 option_iv = None
 option_symbol = None

@@ -2,24 +2,12 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional, Tuple, List
 
 
-# Production Exit Policy Configuration
-DEFAULT_PROFIT_TARGET_PCT = 0.50     # 50% profit target
-DEFAULT_MAX_LOSS_PCT = 1.00          # 100% maximum loss
-DEFAULT_EXPIRY_DTE_THRESHOLD = 21    # 21 DTE roll / exit rule
+DEFAULT_PROFIT_TARGET_PCT = 0.50
+DEFAULT_MAX_LOSS_PCT = 1.00
+DEFAULT_EXPIRY_DTE_THRESHOLD = 21
 
 
 class PositionMonitor:
-    """
-    VOLTRON Production Position Monitor.
-    Tracks single-leg and multi-leg defined-risk options positions.
-    Enforces production exit policy:
-      1. Take Profit at +50%
-      2. Stop Loss at 100% maximum loss
-      3. Expiry roll/exit at <= 21 DTE
-      4. Duplicate exit prevention (EXIT_PENDING state lock)
-      5. Fail-closed on missing market price data
-      6. Broker state reconciliation (prevents ghost positions)
-    """
 
     def __init__(
         self,
@@ -47,28 +35,18 @@ class PositionMonitor:
         max_profit: Optional[float] = None,
         is_credit: bool = False,
     ):
-        """
-        Register an option position for real-time monitoring.
-        Preserves 100% backward compatibility with legacy 5-argument calls
-        while supporting rich multi-leg metadata and auto-calculated exits.
-        """
         ep = float(entry_price)
 
-        # Automatic exit targets based on production policy if not explicitly provided
         if take_profit is None:
             if is_credit:
-                # Credit strategy: profit target reached when price to close drops by 50%
                 take_profit = round(ep * (1.0 - self.profit_target_pct), 2)
             else:
-                # Debit / long strategy: profit target reached when price rises by +50%
                 take_profit = round(ep * (1.0 + self.profit_target_pct), 2)
 
         if stop_loss is None:
             if is_credit:
-                # Credit strategy: stop loss triggered when cost to close doubles (100% loss)
                 stop_loss = round(ep * (1.0 + self.max_loss_pct), 2)
             else:
-                # Debit strategy: stop loss triggered if price drops by max loss pct
                 stop_loss = round(ep * max(0.0, (1.0 - self.max_loss_pct)), 2)
 
         self.positions[symbol] = {
@@ -85,7 +63,7 @@ class PositionMonitor:
             "max_profit": float(max_profit) if max_profit is not None else round(ep * 100.0 * quantity, 2),
             "is_credit": is_credit,
             "opened_at": datetime.now(timezone.utc).isoformat(),
-            "status": "OPEN",  # OPEN -> MONITORING -> EXIT_PENDING -> CLOSED
+            "status": "OPEN",
             "lifecycle": "MONITORING",
             "exit_reason": None,
             "unrealized_pnl": 0.0,
@@ -102,22 +80,11 @@ class PositionMonitor:
         leg_prices: Optional[Dict[str, float]] = None,
         mark_pending: bool = False,
     ) -> Tuple[bool, str]:
-        """
-        Evaluate if a position should trigger an exit according to policy:
-          1. POSITION_NOT_FOUND (if unknown)
-          2. ALREADY_EXITING / ALREADY_CLOSED (duplicate exit protection)
-          3. EXPIRY (if DTE <= 21)
-          4. MISSING_PRICE (fail-closed if market data unavailable)
-          5. TAKE_PROFIT / PROFIT_TARGET (if price reaches target)
-          6. STOP_LOSS (if price reaches stop loss)
-          7. HOLD (normal holding state)
-        """
         position = self.positions.get(symbol)
         if not position:
             return False, "POSITION_NOT_FOUND"
 
         status = position.get("status", "OPEN")
-        # Duplicate exit protection: Do not generate duplicate exits if already triggered or closed
         if status == "EXIT_PENDING":
             return False, "ALREADY_EXITING"
         if status == "CLOSED":
@@ -125,7 +92,6 @@ class PositionMonitor:
         if status not in ("OPEN", "MONITORING"):
             return False, "POSITION_NOT_OPEN"
 
-        # 1. EXPIRY HANDLING (21 DTE roll/exit rule)
         active_dte = dte if dte is not None else position.get("dte")
         if active_dte is not None and active_dte <= self.expiry_dte_threshold:
             if mark_pending:
@@ -133,7 +99,6 @@ class PositionMonitor:
             position["exit_reason"] = "EXPIRY"
             return True, "EXPIRY"
 
-        # 2. FAIL-CLOSED ON MISSING PRICE
         if current_price is None:
             return False, "MISSING_PRICE"
 
@@ -141,23 +106,19 @@ class PositionMonitor:
         tp = position.get("take_profit")
         sl = position.get("stop_loss")
 
-        # 3. TAKE PROFIT / STOP LOSS CHECKS
         if is_credit:
-            # Credit strategy: buy back cheap to realize profit
             if tp is not None and current_price <= tp:
                 if mark_pending:
                     position["status"] = "EXIT_PENDING"
                 position["exit_reason"] = "PROFIT_TARGET"
                 return True, "PROFIT_TARGET"
 
-            # Credit strategy: stop loss when price expands
             if sl is not None and current_price >= sl:
                 if mark_pending:
                     position["status"] = "EXIT_PENDING"
                 position["exit_reason"] = "STOP_LOSS"
                 return True, "STOP_LOSS"
         else:
-            # Debit / standard comparison (compatible with existing QA suite assertions)
             if tp is not None and current_price >= tp:
                 if mark_pending:
                     position["status"] = "EXIT_PENDING"
@@ -178,10 +139,6 @@ class PositionMonitor:
         reason: str = "MANUAL_EXIT",
         exit_price: Optional[float] = None,
     ) -> Optional[Dict[str, Any]]:
-        """
-        Record final position exit, calculate realized P&L, and transition to CLOSED.
-        Supports both close_position(symbol) and close_position(symbol, reason).
-        """
         position = self.positions.get(symbol)
         if not position:
             return None
@@ -205,9 +162,6 @@ class PositionMonitor:
         current_price: Optional[float] = None,
         leg_prices: Optional[Dict[str, float]] = None,
     ) -> Dict[str, Any]:
-        """
-        Calculate complete strategy-level P&L for single or multi-leg positions.
-        """
         position = self.positions.get(symbol)
         if not position:
             return {"error": "POSITION_NOT_FOUND"}
@@ -217,7 +171,6 @@ class PositionMonitor:
         is_credit = bool(position.get("is_credit", False))
         legs = position.get("legs") or []
 
-        # Multi-leg P&L across all legs
         if legs and leg_prices:
             total_pnl = 0.0
             updated_legs = []
@@ -288,9 +241,6 @@ class PositionMonitor:
         }
 
     def validate_multileg_integrity(self, symbol: str) -> Tuple[bool, str]:
-        """
-        Verify that all expected legs exist, quantities are consistent, and no partial leg exists.
-        """
         position = self.positions.get(symbol)
         if not position:
             return False, "POSITION_NOT_FOUND"
@@ -319,11 +269,6 @@ class PositionMonitor:
         return True, "MULTILEG_INTEGRITY_APPROVED"
 
     def reconcile_broker_positions(self, broker_positions: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Reconcile local tracked positions against broker positions.
-        If a position is marked OPEN locally but no longer exists at broker,
-        reconcile to CLOSED to prevent ghost positions.
-        """
         broker_symbols = set()
         for bp in (broker_positions or []):
             sym = bp.get("symbol") if isinstance(bp, dict) else getattr(bp, "symbol", "")
@@ -356,4 +301,4 @@ class PositionMonitor:
             symbol: position
             for symbol, position in self.positions.items()
             if position.get("status") in ("OPEN", "MONITORING", "EXIT_PENDING")
-        }
+        }

@@ -22,7 +22,7 @@ export default function SettingsPage() {
   return (
     <TerminalLayout>
       <div className="space-y-4 max-w-5xl font-mono text-xs">
-        {/* Header */}
+
         <div className="p-4 rounded-xl bg-voltron-850 border border-voltron-750 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center">
             <div>
@@ -46,7 +46,7 @@ export default function SettingsPage() {
         </div>
 
         <form onSubmit={handleSave} className="space-y-4 font-mono text-xs">
-          {/* Section 1: Alpaca Paper Trading Credentials */}
+
           <div className="terminal-card p-5 border border-voltron-750/80 bg-voltron-850/40 space-y-4">
             <div className="border-b border-voltron-750 pb-2 text-white font-bold uppercase">
               <span>ALPACAPAPER TRADING ENVIRONMENT</span>
@@ -86,7 +86,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Section 2: Gemini AI Model Settings */}
           <div className="terminal-card p-5 border border-voltron-750/80 bg-voltron-850/40 space-y-4">
             <div className="border-b border-voltron-750 pb-2 text-white font-bold uppercase">
               <span>GEMINI AI VOLATILITY ANALYST CONFIGURATION</span>
@@ -121,7 +120,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Section 3: Risk Engine Gate Thresholds */}
           <div className="terminal-card p-5 border border-voltron-750/80 bg-voltron-850/40 space-y-4">
             <div className="border-b border-voltron-750 pb-2 text-white font-bold uppercase">
               <span>RISK ENGINE SAFETY THRESHOLDS</span>
@@ -166,7 +164,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Save Button */}
           <div className="flex justify-end pt-2">
             <button
               type="submit"

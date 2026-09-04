@@ -13,7 +13,7 @@ export default function MarketHeroCard({ market }: MarketHeroCardProps) {
   return (
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/50 backdrop-blur">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        {/* Left: Symbol & Price */}
+
         <div className="flex items-center">
           <div>
             <div className="flex items-center gap-2">
@@ -48,7 +48,6 @@ export default function MarketHeroCard({ market }: MarketHeroCardProps) {
           </div>
         </div>
 
-        {/* Center: Key Volatility Metrics Quick Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 max-w-2xl">
           <div className="p-2.5 rounded-lg bg-voltron-900/80 border border-voltron-750">
             <span className="text-[10px] font-mono uppercase text-voltron-400 block">

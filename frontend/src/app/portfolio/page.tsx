@@ -27,7 +27,7 @@ export default function PortfolioPage() {
       const json = await res.json();
       setData(json);
     } catch {
-      // Fallback
+
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export default function PortfolioPage() {
   return (
     <TerminalLayout>
       <div className="space-y-3.5 font-mono text-xs">
-        {/* 1. TOP BANNER: PORTFOLIO OPERATIONS CENTER */}
+
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center">
             <div>
@@ -91,7 +91,6 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {/* 2. 7 ACCOUNT METRICS CARDS */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
           <div className="p-2 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Portfolio Value</span>
@@ -137,9 +136,8 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {/* 3. ROW 2: ACTIVE MULTI-LEG POSITIONS (7 cols) + P&L CHART (5 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Active Multi-Leg Positions (7 cols) */}
+
           <div className="lg:col-span-7 space-y-3">
             <div className="flex items-center justify-between text-xs font-bold text-white uppercase px-1">
               <span>OPEN MULTI-LEG POSITIONS ({positions.length})</span>
@@ -154,7 +152,7 @@ export default function PortfolioPage() {
                 onClick={() => setSelectedPosition(pos)}
                 className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/90 hover:border-voltron-cyan/60 transition-all cursor-pointer space-y-3"
               >
-                {/* Header Strip */}
+
                 <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-2 gap-2">
                   <div>
                     <div className="flex items-center gap-2">
@@ -175,7 +173,6 @@ export default function PortfolioPage() {
                   </div>
                 </div>
 
-                {/* Individual Legs Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-left font-mono text-[11px]">
                     <thead className="bg-voltron-950 text-[9px] text-voltron-400 uppercase">
@@ -205,7 +202,6 @@ export default function PortfolioPage() {
                   </table>
                 </div>
 
-                {/* Exit & Greeks Strip */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 border-t border-voltron-800 text-[10px]">
                   <div className="p-1.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between">
                     <span className="text-voltron-400">Position Theta:</span>
@@ -228,9 +224,8 @@ export default function PortfolioPage() {
             ))}
           </div>
 
-          {/* Right Column: P&L Chart & Reconciliation (5 cols) */}
           <div className="lg:col-span-5 space-y-3">
-            {/* P&L Equity Chart */}
+
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
               <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5">
                 <span className="text-white font-bold text-xs uppercase">
@@ -282,7 +277,6 @@ export default function PortfolioPage() {
               </div>
             </div>
 
-            {/* Alpaca State Reconciliation Card */}
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
               <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
                 <span>PAPER STATE RECONCILIATION</span>
@@ -306,7 +300,6 @@ export default function PortfolioPage() {
         </div>
       </div>
 
-      {/* Position Detail Modal */}
       {selectedPosition && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono text-xs">
           <div className="w-full max-w-lg bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">

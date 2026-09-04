@@ -209,7 +209,7 @@ export function AIAuditModal({
         <div className="max-h-[360px] overflow-y-auto space-y-3 text-xs">
           {modalTab === "reasoning" && (
             <div className="space-y-3">
-              {/* Decision Snapshot Metrics Bar */}
+
               <div className="grid grid-cols-3 gap-2 p-2.5 rounded bg-voltron-950 border border-voltron-800 text-center">
                 <div>
                   <span className="text-[9px] uppercase text-voltron-400 block">Opportunity Score</span>
@@ -382,9 +382,9 @@ export default function AIIntelligencePanel({
 
   return (
     <div className="space-y-3 font-mono">
-      {/* 1. Main VOLTRON Intelligence Panel */}
+
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
-        {/* Header */}
+
         <div className="flex items-center justify-between border-b border-voltron-800 pb-2">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
@@ -445,7 +445,6 @@ export default function AIIntelligencePanel({
           </div>
         </div>
 
-        {/* Intelligence Status 4-Metrics Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">
@@ -487,7 +486,6 @@ export default function AIIntelligencePanel({
           </div>
         </div>
 
-        {/* AI Thesis Box */}
         <div className={clsx(
           "p-3 rounded border",
           isRateLimited
@@ -508,7 +506,6 @@ export default function AIIntelligencePanel({
           </p>
         </div>
 
-        {/* Numbered Key Reasons (01, 02, 03) */}
         <div className="space-y-1.5">
           <div className="text-[10px] uppercase text-voltron-emerald font-bold tracking-wider">
             KEY REASONS
@@ -532,7 +529,6 @@ export default function AIIntelligencePanel({
           </div>
         </div>
 
-        {/* Numbered Risk Factors (01, 02) */}
         <div className="space-y-1.5">
           <div className="text-[10px] uppercase text-voltron-rose font-bold tracking-wider">
             RISKS
@@ -556,7 +552,6 @@ export default function AIIntelligencePanel({
           </div>
         </div>
 
-        {/* Audit Button */}
         <button
           onClick={() => setModalOpen(true)}
           className="w-full py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-voltron-cyan font-bold border border-voltron-700/80 transition-colors flex items-center justify-center"
@@ -565,7 +560,6 @@ export default function AIIntelligencePanel({
         </button>
       </div>
 
-      {/* 2. Decision Summary / Current Assessment Box */}
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
         <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
           <span>CURRENT ASSESSMENT</span>
@@ -613,7 +607,6 @@ export default function AIIntelligencePanel({
           </div>
         </div>
 
-        {/* Action Button Strip */}
         <div className={clsx(
           "p-2 rounded flex items-center justify-between",
           isRateLimited || actionLabel === "NO TRADE"
@@ -630,7 +623,6 @@ export default function AIIntelligencePanel({
         </div>
       </div>
 
-      {/* Neural Reasoning Inspection Modal */}
       <AIAuditModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

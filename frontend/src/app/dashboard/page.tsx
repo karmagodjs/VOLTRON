@@ -104,9 +104,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadAll(selectedSymbol, selectedTimeframe);
-    // Market data refreshes every 15s (frequent refresh)
+
     const marketInterval = setInterval(() => loadMarketData(selectedSymbol, selectedTimeframe), 15000);
-    // AI Analysis refreshes every 45s (cached on backend with 180s TTL)
+
     const aiInterval = setInterval(() => loadAIData(selectedSymbol), 45000);
 
     return () => {
@@ -140,9 +140,9 @@ export default function DashboardPage() {
   return (
     <TerminalLayout>
       <div className="space-y-3.5 font-mono">
-        {/* 1. Visual Flow Banner: MARKET → VOLATILITY → AI DECISION → STRATEGY → RISK → ACTION */}
+
         <div className="p-2.5 rounded-lg bg-voltron-900 border border-voltron-800 flex flex-wrap items-center justify-between gap-2 text-xs overflow-x-auto">
-          {/* Step 1: Market */}
+
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">1. MARKET</span>
             <span className="px-1.5 py-0.5 rounded bg-voltron-950 border border-voltron-800 text-white font-bold text-[11px]">
@@ -152,7 +152,6 @@ export default function DashboardPage() {
 
           <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
 
-          {/* Step 2: Volatility */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">2. VOLATILITY</span>
             <span className="px-1.5 py-0.5 rounded bg-voltron-950 border border-voltron-800 text-voltron-emerald font-bold text-[11px]">
@@ -162,7 +161,6 @@ export default function DashboardPage() {
 
           <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
 
-          {/* Step 3: AI Intelligence */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">3. AI DECISION</span>
             <span
@@ -183,7 +181,6 @@ export default function DashboardPage() {
 
           <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
 
-          {/* Step 4: Strategy */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">4. STRATEGY</span>
             <span className="px-1.5 py-0.5 rounded bg-voltron-950 border border-voltron-800 text-white font-bold text-[11px]">
@@ -193,7 +190,6 @@ export default function DashboardPage() {
 
           <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
 
-          {/* Step 5: Risk */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">5. RISK</span>
             <span
@@ -210,7 +206,6 @@ export default function DashboardPage() {
 
           <ArrowRight className="w-3.5 h-3.5 text-voltron-600 flex-shrink-0" />
 
-          {/* Step 6: Action */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-voltron-400 uppercase font-bold">6. ACTION</span>
             <span
@@ -226,9 +221,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 2. Top 2-Column Institutional Workstation Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Main Market Workspace (8 cols on desktop) */}
+
           <div className="lg:col-span-7 xl:col-span-8">
             <MarketWorkspace
               market={market}
@@ -241,7 +235,6 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Right AI Intelligence & Assessment Panel (4 cols on desktop) */}
           <div className="lg:col-span-5 xl:col-span-4">
             <AIIntelligencePanel
               analysis={analysis}
@@ -252,7 +245,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 3. Bottom Horizontal Agent Pipeline & Telemetry Bar */}
         <AgentActivityBar
           agentState={agentState}
           activeOrder="VLT-8941"

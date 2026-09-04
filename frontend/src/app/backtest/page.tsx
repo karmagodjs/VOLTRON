@@ -70,7 +70,6 @@ export default function QuantBacktestLabPage() {
     setErrorMessage(null);
     setLoading(true);
 
-    // Progress Simulation Stages
     setProgressStage("INITIALIZING...");
     setTimeout(() => setProgressStage("LOADING DATA..."), 300);
     setTimeout(() => setProgressStage("GENERATING SIGNALS..."), 700);
@@ -118,7 +117,7 @@ export default function QuantBacktestLabPage() {
   return (
     <TerminalLayout>
       <div className="space-y-3.5 font-mono text-xs">
-        {/* 1. TOP HEADER: VOLTRON QUANT RESEARCH LAB */}
+
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center">
             <div>
@@ -159,9 +158,8 @@ export default function QuantBacktestLabPage() {
           </div>
         </div>
 
-        {/* 2. MAIN 2-COLUMN WORKSPACE: CONFIGURATION (4 cols) & RESEARCH RESULTS (8 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Left Parameter Panel (4 cols) */}
+
           <div className="lg:col-span-4 space-y-3">
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
               <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
@@ -169,7 +167,6 @@ export default function QuantBacktestLabPage() {
                 <span className="text-[10px] text-voltron-cyan">{symbol}</span>
               </div>
 
-              {/* Strategy Selector */}
               <div>
                 <label className="text-[10px] text-voltron-400 uppercase block mb-1 font-bold">Strategy</label>
                 <select
@@ -186,7 +183,6 @@ export default function QuantBacktestLabPage() {
                 </select>
               </div>
 
-              {/* Symbol & Starting Capital */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-voltron-400 uppercase block mb-1 font-bold">Symbol</label>
@@ -214,7 +210,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               </div>
 
-              {/* Date Range */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-voltron-400 uppercase block mb-1 font-bold">Start Date</label>
@@ -236,7 +231,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               </div>
 
-              {/* Volatility Threshold Sliders */}
               <div className="space-y-2 pt-1 border-t border-voltron-800">
                 <div>
                   <div className="flex justify-between text-[10px] text-voltron-400 uppercase mb-1">
@@ -271,7 +265,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               </div>
 
-              {/* Backtest Risk Parameters */}
               <div className="space-y-1.5 pt-1 border-t border-voltron-800">
                 <span className="text-[10px] uppercase text-voltron-rose font-bold block">
                   BACKTEST RISK PARAMETERS
@@ -299,7 +292,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               </div>
 
-              {/* Data Quality Check Box */}
               <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 space-y-1 text-xs">
                 <div className="flex items-center justify-between text-[10px] text-voltron-400 uppercase">
                   <span>Data Quality</span>
@@ -318,7 +310,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               )}
 
-              {/* Run Button */}
               <button
                 onClick={executeBacktest}
                 disabled={loading}
@@ -330,9 +321,8 @@ export default function QuantBacktestLabPage() {
             </div>
           </div>
 
-          {/* Right Results Workspace (8 cols) */}
           <div className="lg:col-span-8 space-y-3">
-            {/* 12 Institutional Metrics Grid */}
+
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 text-xs">
               <div className="p-2 rounded bg-voltron-900 border border-voltron-750/80">
                 <span className="text-[9px] uppercase text-voltron-400 block">Total Return</span>
@@ -406,7 +396,6 @@ export default function QuantBacktestLabPage() {
               </div>
             </div>
 
-            {/* Multi-Tab Research Workspace */}
             <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
               <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-2 gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -440,7 +429,6 @@ export default function QuantBacktestLabPage() {
                 </span>
               </div>
 
-              {/* Tab 1: Equity Curve */}
               {activeTab === "equity" && (
                 <div className="h-[260px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -470,7 +458,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               )}
 
-              {/* Tab 2: Drawdown Profile */}
               {activeTab === "drawdown" && (
                 <div className="h-[260px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -500,7 +487,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               )}
 
-              {/* Tab 3: P&L Distribution */}
               {activeTab === "distribution" && (
                 <div className="h-[260px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -527,7 +513,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               )}
 
-              {/* Tab 4: Strategy Comparison */}
               {activeTab === "strategies" && (
                 <div className="overflow-x-auto max-h-[260px]">
                   <table className="w-full text-left font-mono text-xs">
@@ -559,7 +544,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               )}
 
-              {/* Tab 5: Volatility Regime Analysis */}
               {activeTab === "regimes" && (
                 <div className="overflow-x-auto max-h-[260px]">
                   <table className="w-full text-left font-mono text-xs">
@@ -589,7 +573,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               )}
 
-              {/* Tab 6: Parameter Optimizer Grid */}
               {activeTab === "optimizer" && (
                 <div className="overflow-x-auto max-h-[260px]">
                   <table className="w-full text-left font-mono text-xs">
@@ -620,9 +603,8 @@ export default function QuantBacktestLabPage() {
           </div>
         </div>
 
-        {/* 3. ROW 3: AI RESEARCH SUMMARY (Left 6 cols) & BACKTEST VS PAPER (Right 6 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* AI Research Summary */}
+
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>VOLTRON RESEARCH SUMMARY</span>
@@ -634,7 +616,6 @@ export default function QuantBacktestLabPage() {
             </p>
           </div>
 
-          {/* Backtest vs Paper */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>BACKTEST VS LIVE PAPER COMPARISON</span>
@@ -666,7 +647,6 @@ export default function QuantBacktestLabPage() {
           </div>
         </div>
 
-        {/* 4. BACKTEST TRADE LOG & TRADE DETAIL DRAWER */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
           <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-2 gap-2">
             <div className="flex items-center">
@@ -676,7 +656,7 @@ export default function QuantBacktestLabPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Filter Buttons */}
+
               <div className="flex items-center gap-0.5 bg-voltron-950 p-0.5 rounded border border-voltron-800 text-[10px]">
                 {(["ALL", "WINS", "LOSSES"] as const).map((mode) => (
                   <button
@@ -694,7 +674,6 @@ export default function QuantBacktestLabPage() {
                 ))}
               </div>
 
-              {/* Search */}
               <div className="relative">
                 <Search className="w-3 h-3 absolute left-2 top-2 text-voltron-400" />
                 <input
@@ -757,7 +736,6 @@ export default function QuantBacktestLabPage() {
         </div>
       </div>
 
-      {/* Trade Detail Modal Drawer */}
       {selectedTrade && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono text-xs">
           <div className="w-full max-w-lg bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
@@ -797,7 +775,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               </div>
 
-              {/* Options Specific Metrics */}
               <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 space-y-1 text-xs">
                 <span className="text-[10px] uppercase text-voltron-cyan font-bold block">Options Entry Telemetry</span>
                 <div className="grid grid-cols-3 gap-1 text-[11px] text-voltron-300">
@@ -807,7 +784,6 @@ export default function QuantBacktestLabPage() {
                 </div>
               </div>
 
-              {/* Rationale */}
               <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 space-y-1 text-xs">
                 <div>
                   <span className="text-[9px] text-voltron-400 uppercase font-bold block">Entry Reason:</span>

@@ -129,7 +129,6 @@
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  /* Custom institutional scrollbars */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -168,12 +167,10 @@
   }
 }
 
-/* Light mode text-white normalization on neutral surfaces */
 .light .text-white:not([class*="bg-voltron-cyan"]):not([class*="bg-voltron-rose"]):not([class*="bg-voltron-emerald"]):not([class*="bg-voltron-amber"]):not([class*="bg-voltron-violet"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="badge-solid"]) {
   color: #0F172A;
 }
 
-/* Terminal & Quant Utility Classes */
 .terminal-card {
   background-color: rgb(var(--voltron-850-rgb));
   border: 1px solid rgb(var(--voltron-800-rgb));
@@ -198,15 +195,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Institutional Clean Background Grid */
 .grid-bg {
   background-size: 32px 32px;
-  background-image: 
+  background-image:
     linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
 }
 
-/* Subtle Institutional Scanline */
 .scanline-overlay {
   position: absolute;
   inset: 0;
@@ -221,7 +216,6 @@
   opacity: 0.6;
 }
 
-/* Reduced Motion Accessibility Overrides */
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,

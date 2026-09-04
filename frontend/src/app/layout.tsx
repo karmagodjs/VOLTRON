@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { MarketProvider } from "@/context/MarketContext";
@@ -15,12 +14,6 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains",
   display: "swap",
 });
-
-export const metadata: Metadata = {
-  title: "VOLTRON — Volatility Alpha | Autonomous AI Options Trading",
-  description: "Institutional autonomous AI options trading terminal analyzing volatility, selecting defined-risk strategies, and executing paper orders through Alpaca.",
-  keywords: ["VOLTRON", "Options Trading", "Volatility Alpha", "AI Quant", "Implied Volatility", "Alpaca Trading", "Iron Condor"],
-};
 
 export default function RootLayout({
   children,

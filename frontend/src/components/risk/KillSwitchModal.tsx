@@ -20,7 +20,6 @@ export default function KillSwitchModal({
   const [loading, setLoading] = useState(false);
   const [confirmText, setConfirmText] = useState("");
 
-  // Handle Escape key to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {

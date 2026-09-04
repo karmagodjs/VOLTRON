@@ -23,7 +23,7 @@ export default function AIAnalystCard({ analysis, onOpenRisk, risk }: AIAnalystC
   return (
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col justify-between">
       <div>
-        {/* Header */}
+
         <div className="flex items-center justify-between border-b border-voltron-750/60 pb-3 mb-3">
           <div className="flex flex-col">
             <span className="text-xs font-mono font-bold text-white tracking-wider uppercase">
@@ -55,7 +55,6 @@ export default function AIAnalystCard({ analysis, onOpenRisk, risk }: AIAnalystC
           </div>
         </div>
 
-        {/* Top Intelligence Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
           <div className="p-2 rounded bg-voltron-900/70 border border-voltron-800">
             <span className="text-[9px] font-mono uppercase text-voltron-400 block">
@@ -97,7 +96,6 @@ export default function AIAnalystCard({ analysis, onOpenRisk, risk }: AIAnalystC
           </div>
         </div>
 
-        {/* AI Thesis Box */}
         <div className="p-3 rounded-lg bg-voltron-900/90 border border-voltron-750/90 mb-3">
           <div className="text-[10px] font-mono uppercase text-voltron-cyan font-bold mb-1 tracking-wider">
             Quantitative Thesis
@@ -107,9 +105,8 @@ export default function AIAnalystCard({ analysis, onOpenRisk, risk }: AIAnalystC
           </p>
         </div>
 
-        {/* Reasons & Risks 2-column list */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3 text-xs font-mono">
-          {/* Key Reasons */}
+
           <div className="p-2.5 rounded bg-voltron-900/40 border border-voltron-800 space-y-1.5">
             <span className="text-[10px] font-mono uppercase text-voltron-emerald font-bold tracking-wider">
               Key Drivers
@@ -122,7 +119,6 @@ export default function AIAnalystCard({ analysis, onOpenRisk, risk }: AIAnalystC
             ))}
           </div>
 
-          {/* Key Risks */}
           <div className="p-2.5 rounded bg-voltron-900/40 border border-voltron-800 space-y-1.5">
             <span className="text-[10px] font-mono uppercase text-voltron-rose font-bold tracking-wider">
               Risk Factors
@@ -137,7 +133,6 @@ export default function AIAnalystCard({ analysis, onOpenRisk, risk }: AIAnalystC
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex items-center gap-2 pt-2 border-t border-voltron-750/60">
         <button
           onClick={() => {
@@ -173,7 +168,6 @@ export default function AIAnalystCard({ analysis, onOpenRisk, risk }: AIAnalystC
         </button>
       </div>
 
-      {/* AI Intelligence Audit Modal */}
       <AIAuditModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

@@ -40,9 +40,6 @@ class AgentState:
     state_history: list = field(default_factory=list)
 
     def transition_to(self, new_status: str, reason: Optional[str] = None) -> bool:
-        """
-        Record and validate state transitions.
-        """
         old_status = self.status
         self.status = new_status
         if reason:

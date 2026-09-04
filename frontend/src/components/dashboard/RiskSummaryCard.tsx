@@ -15,7 +15,7 @@ export default function RiskSummaryCard({ risk, onOpenKillSwitch }: RiskSummaryC
   return (
     <div className="terminal-card p-4 border border-voltron-750/80 bg-voltron-850/40 flex flex-col justify-between">
       <div>
-        {/* Header */}
+
         <div className="flex items-center justify-between border-b border-voltron-750/60 pb-3 mb-3">
           <div className="flex items-center">
             <span className="text-xs font-mono font-bold text-white tracking-wider uppercase">
@@ -35,7 +35,6 @@ export default function RiskSummaryCard({ risk, onOpenKillSwitch }: RiskSummaryC
           </span>
         </div>
 
-        {/* 4 Core Risk Metrics */}
         <div className="grid grid-cols-2 gap-2 mb-3">
           <div className="p-2.5 rounded-lg bg-voltron-900/80 border border-voltron-800">
             <div className="flex justify-between items-center text-[10px] font-mono text-voltron-400 uppercase mb-1">
@@ -50,7 +49,7 @@ export default function RiskSummaryCard({ risk, onOpenKillSwitch }: RiskSummaryC
                 SAFE
               </span>
             </div>
-            {/* Progress bar */}
+
             <div className="w-full bg-voltron-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
               <div
                 className="bg-voltron-cyan h-full rounded-full transition-all"
@@ -101,7 +100,6 @@ export default function RiskSummaryCard({ risk, onOpenKillSwitch }: RiskSummaryC
           </div>
         </div>
 
-        {/* Gate Status Checklist */}
         <div className="space-y-1.5 mb-3 text-xs font-mono">
           <div className="flex items-center justify-between text-[10px] text-voltron-400 uppercase pb-1">
             <span>Safety Gate Verification</span>
@@ -126,7 +124,6 @@ export default function RiskSummaryCard({ risk, onOpenKillSwitch }: RiskSummaryC
         </div>
       </div>
 
-      {/* Kill Switch Banner Control */}
       <div className="pt-2 border-t border-voltron-750/60 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-mono">
           <span

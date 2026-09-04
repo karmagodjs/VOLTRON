@@ -55,9 +55,9 @@ export default function TopNav({
 
   return (
     <header className="h-14 bg-voltron-950/95 backdrop-blur border-b border-voltron-750/70 px-2.5 sm:px-4 flex items-center justify-between sticky top-0 z-20 font-mono text-xs max-w-full overflow-hidden">
-      {/* Left: Mobile Navigation, Brand, Asset Selector & Live Status */}
+
       <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-shrink overflow-x-auto no-scrollbar py-0.5">
-        {/* Mobile Hamburger Menu Trigger */}
+
         {onOpenMobileMenu && (
           <button
             onClick={onOpenMobileMenu}
@@ -68,7 +68,6 @@ export default function TopNav({
           </button>
         )}
 
-        {/* Brand Logo (Visible on mobile/tablet when sidebar is hidden) */}
         <Link
           href={`/dashboard?symbol=${currentSymbol}`}
           className="lg:hidden flex items-center gap-1.5 font-mono font-bold tracking-wider text-xs sm:text-sm text-white hover:text-voltron-cyan transition-colors flex-shrink-0 mr-1"
@@ -77,7 +76,6 @@ export default function TopNav({
           <span>VOLTRON</span>
         </Link>
 
-        {/* Asset Selector Dropdown */}
         <div className="relative flex-shrink-0">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -118,7 +116,6 @@ export default function TopNav({
           )}
         </div>
 
-        {/* Real Price Display */}
         <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
           <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Price:</span>
           <span className="font-bold text-white font-tabular text-xs">
@@ -126,7 +123,6 @@ export default function TopNav({
           </span>
         </div>
 
-        {/* Market Status (OPEN / CLOSED / LOADING) */}
         <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
           <span
             className={clsx(
@@ -156,7 +152,6 @@ export default function TopNav({
           </span>
         </div>
 
-        {/* Agent Status (ACTIVE / PAUSED / IDLE) */}
         <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
           <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Agent:</span>
           <span
@@ -183,16 +178,14 @@ export default function TopNav({
           </span>
         </div>
 
-        {/* Trading Mode (PAPER DISABLED) */}
         <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex-shrink-0">
           <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Trading:</span>
           <span className="text-voltron-cyan font-bold text-[10.5px]">PAPER (DISABLED)</span>
         </div>
       </div>
 
-      {/* Right: Portfolio Metric, Copilot, Kill Switch, Alerts & Theme */}
       <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0 ml-2">
-        {/* Real Portfolio Value */}
+
         <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-voltron-900 border border-voltron-750/70 rounded flex-shrink-0">
           <span className="text-[10px] uppercase text-voltron-400 tracking-wider">
             Portfolio:
@@ -204,7 +197,6 @@ export default function TopNav({
           </span>
         </div>
 
-        {/* AI Copilot Button */}
         <button
           onClick={onOpenCopilot}
           className="px-2.5 py-1 sm:py-1.5 rounded bg-voltron-900 hover:bg-voltron-850 border border-voltron-750 hover:border-voltron-cyan/60 text-[11px] sm:text-xs font-mono font-bold text-voltron-cyan transition-colors flex-shrink-0"
@@ -212,7 +204,6 @@ export default function TopNav({
           COPILOT
         </button>
 
-        {/* Emergency Kill Switch Button */}
         <button
           onClick={onOpenKillSwitch}
           title="Emergency Circuit Breaker / Kill Switch"
@@ -227,7 +218,6 @@ export default function TopNav({
           <span className="whitespace-nowrap">{killSwitchActive ? "KILL SWITCH: ACTIVE" : "KILL SWITCH"}</span>
         </button>
 
-        {/* System Notifications */}
         <div className="relative flex-shrink-0">
           <button
             onClick={() => setNotificationOpen(!notificationOpen)}
@@ -257,12 +247,10 @@ export default function TopNav({
           )}
         </div>
 
-        {/* Theme Toggle */}
         <div className="flex-shrink-0">
           <ThemeToggle variant="icon" />
         </div>
 
-        {/* Settings Link */}
         <Link
           href={currentSymbol ? `/settings?symbol=${currentSymbol}` : "/settings"}
           className="p-1 sm:p-1.5 rounded text-voltron-400 hover:text-white hover:bg-voltron-800 transition-colors flex-shrink-0"

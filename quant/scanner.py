@@ -20,7 +20,6 @@ from quant.alpha import (
 from quant.options_scanner import get_option_chain
 
 
-# Load .env for local development (safe no-op in production if file is absent)
 load_dotenv()
 
 def _get_scanner_alpaca_credentials():
@@ -67,12 +66,6 @@ def _get_value(obj, key, default=None):
 
 
 def get_stock_prices(symbol="SPY", days=90):
-    """
-    Get daily stock prices.
-
-    Uses a 20-minute-old end time so we don't request
-    recent SIP data on the free Alpaca plan.
-    """
 
     end = datetime.now(timezone.utc) - timedelta(minutes=20)
     start = end - timedelta(days=days)
@@ -104,17 +97,6 @@ def get_stock_prices(symbol="SPY", days=90):
 
 
 def parse_option_symbol(option_symbol):
-    """
-    Parse OCC option symbol.
-
-    Example:
-    SPY260903C00727000
-
-    Returns:
-        strike
-        option_type
-        expiration
-    """
 
     try:
         strike = int(option_symbol[-8:]) / 1000.0
@@ -146,9 +128,6 @@ def black_scholes_price(
     volatility,
     option_type
 ):
-    """
-    Black-Scholes theoretical option price.
-    """
 
     if time_to_expiry <= 0:
         if option_type == "C":
@@ -200,11 +179,6 @@ def calculate_implied_volatility(
     option_type,
     risk_free_rate=0.04
 ):
-    """
-    Calculate IV from the option market price.
-
-    Returns annualized implied volatility.
-    """
 
     if option_price <= 0:
         return None
@@ -254,12 +228,6 @@ def _find_atm_option(
     chain,
     stock_price
 ):
-    """
-    Find a liquid option close to ATM.
-
-    Since free indicative data may not provide IV,
-    IV is calculated from bid/ask midpoint.
-    """
 
     candidates = []
 
@@ -278,15 +246,12 @@ def _find_atm_option(
 
         strike, option_type, expiration = parsed
 
-        # Ignore expired contracts.
         if expiration <= today:
             continue
 
-        # Prefer calls for the initial volatility scan.
         if option_type != "C":
             continue
 
-        # Filter contracts near ATM (within 8% of spot) to avoid unnecessary computation
         distance = abs(strike - stock_price)
         if distance > stock_price * 0.08:
             continue
@@ -326,7 +291,6 @@ def _find_atm_option(
 
         mid_price = (bid + ask) / 2.0
 
-        # Avoid extremely wide spreads.
         spread_percent = (
             (ask - bid) / mid_price
         )
@@ -345,7 +309,6 @@ def _find_atm_option(
             days_to_expiry / 365.0
         )
 
-        # Check if Alpaca provides implied_volatility directly
         iv = _get_value(snapshot, "implied_volatility")
         try:
             iv = float(iv) if iv is not None and float(iv) > 0 else None
@@ -364,7 +327,6 @@ def _find_atm_option(
         if iv is None:
             continue
 
-        # Ignore unrealistic IV values.
         if iv <= 0.01 or iv > 5.0:
             continue
 
@@ -390,7 +352,6 @@ def _find_atm_option(
     if not candidates:
         return None
 
-    # First prefer closest-to-ATM contract.
     candidates.sort(
         key=lambda x: (
             x["distance"],
@@ -405,10 +366,6 @@ def calculate_opportunity_score(
     iv_rv_ratio,
     iv_premium
 ):
-    """
-    Convert volatility dislocation into
-    a 0-100 opportunity score.
-    """
 
     if (
         iv_rv_ratio is None
@@ -449,9 +406,6 @@ def calculate_opportunity_score(
 
 
 def scan_symbol(symbol="SPY"):
-    """
-    Scan one underlying.
-    """
 
     prices = get_stock_prices(symbol)
 
@@ -562,8 +516,6 @@ def scan_symbol(symbol="SPY"):
             volatility_signal
         ),
 
-        # Conservative values for
-        # the current risk-engine stage.
         "max_loss": 300.0,
         "proposed_exposure": 1000.0,
 
@@ -572,9 +524,6 @@ def scan_symbol(symbol="SPY"):
 
 
 def scan():
-    """
-    Scan the configured universe.
-    """
 
     symbols = [
         "SPY"

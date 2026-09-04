@@ -30,7 +30,7 @@ export async function proxyToBackend(
           init.body = bodyText;
         }
       } catch {
-        // no body
+
       }
     }
 

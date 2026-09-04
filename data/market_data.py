@@ -44,8 +44,6 @@ def get_daily_bars(symbol="SPY", days=60):
 
     now = datetime.now(timezone.utc)
 
-    # Free Basic plan:
-    # Keep the SIP historical query older than 15 minutes.
     end = now - timedelta(minutes=20)
 
     start = end - timedelta(days=days)

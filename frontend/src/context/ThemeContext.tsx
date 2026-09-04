@@ -26,13 +26,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         document.documentElement.classList.add(stored);
         document.documentElement.setAttribute("data-theme", stored);
       } else {
-        // Default to dark
+
         document.documentElement.classList.remove("light");
         document.documentElement.classList.add("dark");
         document.documentElement.setAttribute("data-theme", "dark");
       }
     } catch {
-      // Fallback
+
     }
   }, []);
 
@@ -44,7 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.add(newTheme);
       document.documentElement.setAttribute("data-theme", newTheme);
     } catch {
-      // Ignore storage errors
+
     }
   }, []);
 
@@ -57,7 +57,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         document.documentElement.classList.add(nextTheme);
         document.documentElement.setAttribute("data-theme", nextTheme);
       } catch {
-        // Ignore storage errors
+
       }
       return nextTheme;
     });

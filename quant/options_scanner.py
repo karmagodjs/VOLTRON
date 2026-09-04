@@ -7,7 +7,6 @@ from alpaca.data.historical.option import OptionHistoricalDataClient
 from alpaca.data.requests import OptionChainRequest
 from alpaca.data.enums import OptionsFeed
 
-# Load .env for local development (safe no-op in production if file is absent)
 load_dotenv()
 
 def _get_alpaca_credentials():

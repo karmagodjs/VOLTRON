@@ -4,13 +4,6 @@ from backend.service import VoltronService
 
 
 class TestMarketClock(unittest.TestCase):
-    """
-    Validates dynamic Alpaca market clock integration:
-      - MARKET OPEN during active US session
-      - MARKET CLOSED outside session / weekends / holidays
-      - UNKNOWN / FAIL-CLOSED when clock is unreachable (never falsely OPEN)
-      - Integration with get_market_data()
-    """
 
     def setUp(self):
         self.service = VoltronService()

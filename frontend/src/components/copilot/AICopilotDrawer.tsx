@@ -61,7 +61,6 @@ export default function AICopilotDrawer({
     }
   }, [isOpen]);
 
-  // Handle Escape key to close copilot
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -122,21 +121,20 @@ export default function AICopilotDrawer({
 
   return (
     <>
-      {/* Backdrop for mobile & tablet focus */}
+
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Slide-over Drawer */}
       <div
         role="dialog"
         aria-label="VOLTRON AI Copilot"
         aria-modal="true"
         className="fixed inset-y-0 right-0 w-full sm:w-[480px] max-w-full bg-voltron-950 border-l border-voltron-750/80 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200 font-mono"
       >
-        {/* Header */}
+
         <div className="p-3.5 sm:p-4 border-b border-voltron-750/80 flex items-center justify-between bg-voltron-900/60 backdrop-blur">
           <div className="flex items-center">
             <div>
@@ -162,7 +160,6 @@ export default function AICopilotDrawer({
           </button>
         </div>
 
-        {/* Suggested Quick Prompts */}
         <div className="p-2.5 sm:p-3 border-b border-voltron-750/40 bg-voltron-900/30 overflow-x-auto whitespace-nowrap">
           <div className="text-[9.5px] font-mono uppercase text-voltron-400 mb-1.5">
             Quick Inquiries
@@ -180,7 +177,6 @@ export default function AICopilotDrawer({
           </div>
         </div>
 
-        {/* Messages Stream */}
         <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3.5 text-xs font-mono">
           {messages.map((m) => (
             <div
@@ -324,7 +320,6 @@ export default function AICopilotDrawer({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Box */}
         <div className="p-3 border-t border-voltron-750/80 bg-voltron-900/80 backdrop-blur">
           <form
             onSubmit={(e) => {

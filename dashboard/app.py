@@ -6,20 +6,12 @@ from dashboard.data import (
 )
 
 
-# ==========================================
-# PAGE CONFIG
-# ==========================================
-
 st.set_page_config(
     page_title="VOLTRON — Volatility Alpha",
     page_icon="⚡",
     layout="wide",
 )
 
-
-# ==========================================
-# HEADER
-# ==========================================
 
 st.title("⚡ VOLTRON")
 
@@ -30,23 +22,11 @@ st.caption(
 st.divider()
 
 
-# ==========================================
-# AGENT
-# ==========================================
-
-# Safe default.
-# Later this will be replaced with the
-# real running VoltronAgent instance.
-
 agent = None
 
 data = get_dashboard_state()
 agent_data = get_agent_data(agent)
 
-
-# ==========================================
-# TOP MARKET METRICS
-# ==========================================
 
 st.subheader("Market Intelligence")
 
@@ -81,10 +61,6 @@ with col4:
     )
 
 
-# ==========================================
-# VOLATILITY ANALYSIS
-# ==========================================
-
 st.subheader("Volatility Alpha")
 
 col1, col2, col3 = st.columns(3)
@@ -110,10 +86,6 @@ with col3:
         data["market_regime"],
     )
 
-
-# ==========================================
-# AI ANALYSIS
-# ==========================================
 
 st.subheader("AI Analyst")
 
@@ -146,10 +118,6 @@ with col2:
         data["ai_thesis"]
     )
 
-
-# ==========================================
-# VOLTRON AGENT
-# ==========================================
 
 st.divider()
 
@@ -191,10 +159,6 @@ with col4:
     )
 
 
-# ==========================================
-# AGENT DETAILS
-# ==========================================
-
 col1, col2 = st.columns(2)
 
 
@@ -228,10 +192,6 @@ with col2:
         agent_data["last_reason"],
     )
 
-
-# ==========================================
-# PORTFOLIO
-# ==========================================
 
 st.divider()
 
@@ -273,10 +233,6 @@ with col4:
     )
 
 
-# ==========================================
-# SYSTEM STATUS
-# ==========================================
-
 st.divider()
 
 st.subheader("System Status")
@@ -313,10 +269,6 @@ with status_col2:
         "🛑 **Live Trading:** Disabled"
     )
 
-
-# ==========================================
-# FOOTER
-# ==========================================
 
 st.divider()
 

@@ -25,7 +25,6 @@ def generate_signal(
 
     iv_rv = iv / realized_vol
 
-    # Require a sufficiently strong opportunity.
     if opportunity_score < 70:
         return TradeSignal(
             action="NO_TRADE",
@@ -33,7 +32,6 @@ def generate_signal(
             confidence=0.0
         )
 
-    # Cheap volatility.
     if iv_rv <= 0.80:
 
         return TradeSignal(
@@ -42,7 +40,6 @@ def generate_signal(
             confidence=min(1.0, opportunity_score / 100)
         )
 
-    # Expensive volatility.
     if iv_rv >= 1.40:
 
         return TradeSignal(

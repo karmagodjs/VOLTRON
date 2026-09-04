@@ -44,7 +44,6 @@ export default function MarketsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // AI Intelligence Audit modal state
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditAnalysis, setAuditAnalysis] = useState<AIAnalysis | null>(null);
   const [auditRisk, setAuditRisk] = useState<RiskStatus | null>(null);
@@ -82,7 +81,6 @@ export default function MarketsPage() {
     }
   };
 
-  // Sync with URL query parameter ?symbol=...
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -117,7 +115,7 @@ export default function MarketsPage() {
   return (
     <TerminalLayout>
       <div className="space-y-3 sm:space-y-4 max-w-full">
-        {/* Page Header */}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-xl bg-voltron-850 border border-voltron-750">
           <div>
             <h1 className="text-sm sm:text-base font-mono font-bold text-white uppercase tracking-wider">
@@ -129,7 +127,7 @@ export default function MarketsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Search Input */}
+
             <div className="relative flex-1 sm:flex-initial">
               <Search className="w-3.5 h-3.5 text-voltron-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -141,7 +139,6 @@ export default function MarketsPage() {
               />
             </div>
 
-            {/* Volatility Regime Filters */}
             <div className="flex gap-1 bg-voltron-900 p-1 rounded-lg border border-voltron-750 text-xs font-mono overflow-x-auto">
               {["ALL", "EXPENSIVE", "CHEAP", "FAIR"].map((sig) => (
                 <button
@@ -180,7 +177,6 @@ export default function MarketsPage() {
           </div>
         </div>
 
-        {/* Error State */}
         {error && (
           <div className="p-3 rounded-lg bg-voltron-rose/15 border border-voltron-rose/30 text-voltron-rose text-xs font-mono flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
@@ -188,7 +184,6 @@ export default function MarketsPage() {
           </div>
         )}
 
-        {/* 1. Mobile Card Layout (< md) */}
         <div className="md:hidden space-y-2.5">
           {filtered.length === 0 ? (
             <div className="p-8 text-center text-voltron-400 font-mono text-xs terminal-card">
@@ -210,7 +205,7 @@ export default function MarketsPage() {
                       : "bg-voltron-850/60 border-voltron-750/80 hover:border-voltron-700"
                   )}
                 >
-                  {/* Top Bar: Symbol, Name, Price, Change */}
+
                   <div className="flex items-start justify-between border-b border-voltron-800/80 pb-2 mb-2.5">
                     <div>
                       <div className="flex items-center gap-1.5">
@@ -243,7 +238,6 @@ export default function MarketsPage() {
                     </div>
                   </div>
 
-                  {/* Metrics Grid */}
                   <div className="grid grid-cols-3 gap-2 text-[11px] mb-3 bg-voltron-950/60 p-2 rounded-lg border border-voltron-800">
                     <div>
                       <span className="text-[9px] text-voltron-400 uppercase block">ATM IV</span>
@@ -259,7 +253,6 @@ export default function MarketsPage() {
                     </div>
                   </div>
 
-                  {/* Badges & Actions */}
                   <div className="flex items-center justify-between gap-2 pt-1">
                     <div className="flex items-center gap-1.5">
                       <span
@@ -308,7 +301,6 @@ export default function MarketsPage() {
           )}
         </div>
 
-        {/* 2. Desktop Institutional Scanner Table (>= md) */}
         <div className="hidden md:block terminal-card overflow-hidden border border-voltron-750/80 bg-voltron-850/40">
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs">
@@ -476,7 +468,6 @@ export default function MarketsPage() {
           </div>
         </div>
 
-        {/* AI Intelligence Audit Modal */}
         <AIAuditModal
           isOpen={auditOpen}
           onClose={() => setAuditOpen(false)}

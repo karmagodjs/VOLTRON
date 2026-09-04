@@ -28,7 +28,7 @@ export default function SystemHealthPage() {
       const json = await res.json();
       setHealth(json);
     } catch {
-      // Fallback
+
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export default function SystemHealthPage() {
   return (
     <TerminalLayout>
       <div className="space-y-3.5 font-mono text-xs">
-        {/* 1. TOP OBSERVABILITY HEADER */}
+
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center">
             <div>
@@ -135,7 +135,6 @@ export default function SystemHealthPage() {
           </div>
         </div>
 
-        {/* 2. 6 CORE TELEMETRY DIAGNOSTICS CARDS */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Global System Health</span>
@@ -180,9 +179,8 @@ export default function SystemHealthPage() {
           </div>
         </div>
 
-        {/* 3. MULTI-VIEW OBSERVABILITY WORKSPACE */}
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-3">
-          {/* Navigation Bar */}
+
           <div className="flex flex-wrap items-center justify-between border-b border-voltron-800 pb-2 gap-2">
             <div className="flex flex-wrap gap-1.5">
               {[
@@ -223,7 +221,6 @@ export default function SystemHealthPage() {
             )}
           </div>
 
-          {/* TAB 1: 11-COMPONENT SERVICE HEALTH */}
           {activeTab === "health" && (
             <div className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
@@ -248,7 +245,6 @@ export default function SystemHealthPage() {
                 ))}
               </div>
 
-              {/* Agent State Machine Telemetry */}
               <div className="p-3.5 rounded-lg bg-voltron-950 border border-voltron-800 space-y-2">
                 <div className="flex items-center justify-between border-b border-voltron-850 pb-1.5 text-white font-bold text-xs uppercase">
                   <span>Autonomous Agent State Flow (Cycle #{telemetry.cycle || 148})</span>
@@ -285,7 +281,6 @@ export default function SystemHealthPage() {
             </div>
           )}
 
-          {/* TAB 2: SYSTEM EVENT STREAM */}
           {activeTab === "events" && (
             <div className="overflow-x-auto max-h-[380px]">
               <table className="w-full text-left font-mono text-xs">
@@ -338,7 +333,6 @@ export default function SystemHealthPage() {
             </div>
           )}
 
-          {/* TAB 3: TRADE RECONSTRUCTION & TRACE */}
           {activeTab === "trace" && (
             <div className="space-y-3">
               <div className="p-3 rounded-lg bg-voltron-950 border border-voltron-800 flex flex-wrap items-center justify-between gap-3">
@@ -352,7 +346,6 @@ export default function SystemHealthPage() {
                 </div>
               </div>
 
-              {/* Stage Stepper */}
               <div className="space-y-2">
                 {trace.stages?.map((stg: any, idx: number) => (
                   <div
@@ -375,7 +368,6 @@ export default function SystemHealthPage() {
             </div>
           )}
 
-          {/* TAB 4: IMMUTABLE AUDIT TRAIL */}
           {activeTab === "audit" && (
             <div className="overflow-x-auto max-h-[380px]">
               <table className="w-full text-left font-mono text-xs">
@@ -415,7 +407,6 @@ export default function SystemHealthPage() {
             </div>
           )}
 
-          {/* TAB 5: CONNECTION MONITOR */}
           {activeTab === "connections" && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {connections.map((cn: any, idx: number) => (
@@ -436,7 +427,6 @@ export default function SystemHealthPage() {
         </div>
       </div>
 
-      {/* Component Detail Modal */}
       {selectedComponent && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono text-xs">
           <div className="w-full max-w-md bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
@@ -485,7 +475,6 @@ export default function SystemHealthPage() {
         </div>
       )}
 
-      {/* Event Detail Modal */}
       {selectedEvent && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono text-xs">
           <div className="w-full max-w-lg bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">

@@ -52,12 +52,11 @@ function OptionsTerminalContent() {
       setAnalysisData(ai);
       setRiskData(rk);
     } catch {
-      // Handled fail-closed
+
     }
     setRiskModalOpen(true);
   };
 
-  // Sync if query param or context changes externally
   useEffect(() => {
     if (querySymbol && querySymbol !== symbol && SUPPORTED_ASSETS[querySymbol]) {
       setSymbol(querySymbol);
@@ -91,7 +90,7 @@ function OptionsTerminalContent() {
         setSelectedContract(atmRow.call);
       }
     } catch {
-      // Fallback handled gracefully
+
     } finally {
       setLoading(false);
     }
@@ -126,7 +125,7 @@ function OptionsTerminalContent() {
   return (
     <TerminalLayout>
       <div className="space-y-3.5 font-mono text-xs">
-        {/* 1. TOP MARKET & VOLATILITY TELEMETRY HEADER */}
+
         <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center">
             <div>
@@ -161,7 +160,6 @@ function OptionsTerminalContent() {
             </div>
           </div>
 
-          {/* Real Volatility Metrics Strip */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <div className="p-1.5 px-2.5 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block">Implied Vol (IV)</span>
@@ -186,7 +184,6 @@ function OptionsTerminalContent() {
           </div>
         </div>
 
-        {/* Loading Indicator when switching symbols */}
         {loading && !data && (
           <div className="p-6 rounded-lg bg-voltron-900 border border-voltron-cyan/40 text-voltron-cyan text-xs font-mono flex items-center justify-center gap-2">
             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -194,9 +191,8 @@ function OptionsTerminalContent() {
           </div>
         )}
 
-        {/* 2. EXPIRATION & FILTER TOOLBAR */}
         <div className="p-3 rounded-lg bg-voltron-900 border border-voltron-750/80 flex flex-wrap items-center justify-between gap-3">
-          {/* Expiration Buttons */}
+
           <div className="flex items-center gap-1.5 overflow-x-auto">
             <span className="text-[10px] uppercase text-voltron-400 font-bold mr-1">
               EXPIRATION:
@@ -220,7 +216,6 @@ function OptionsTerminalContent() {
             ))}
           </div>
 
-          {/* Moneyness Filters & Search */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-0.5 bg-voltron-950 p-0.5 rounded border border-voltron-800 text-[10px]">
               {(["ALL", "ATM", "ITM", "OTM"] as const).map((mode) => (
@@ -239,7 +234,6 @@ function OptionsTerminalContent() {
               ))}
             </div>
 
-            {/* Strike Search */}
             <div className="relative">
               <Search className="w-3 h-3 absolute left-2 top-2 text-voltron-400" />
               <input
@@ -261,7 +255,6 @@ function OptionsTerminalContent() {
           </div>
         </div>
 
-        {/* 3. MAIN OPTIONS CHAIN TABLE (CENTERPIECE) */}
         <div className="rounded-lg border border-voltron-750/80 bg-voltron-900 overflow-hidden">
           <div className="overflow-x-auto max-h-[380px]">
             <table className="w-full text-center font-mono text-[11px] border-collapse">
@@ -322,7 +315,7 @@ function OptionsTerminalContent() {
                           : "hover:bg-voltron-850/60"
                       )}
                     >
-                      {/* CALL DATA */}
+
                       <td className="p-1.5 text-voltron-400 font-tabular">{row.call.open_interest}</td>
                       <td className="p-1.5 text-voltron-400 font-tabular">{row.call.volume}</td>
                       <td className="p-1.5 text-voltron-400 font-tabular">{row.call.vega != null ? row.call.vega.toFixed(3) : "N/A"}</td>
@@ -352,7 +345,6 @@ function OptionsTerminalContent() {
                         ${row.call.last.toFixed(2)}
                       </td>
 
-                      {/* STRIKE CENTER */}
                       <td
                         className={clsx(
                           "p-1.5 font-bold font-tabular text-xs border-x border-voltron-800",
@@ -369,7 +361,6 @@ function OptionsTerminalContent() {
                         )}
                       </td>
 
-                      {/* PUT DATA */}
                       <td
                         onClick={() => setSelectedContract(row.put)}
                         className={clsx(
@@ -406,9 +397,8 @@ function OptionsTerminalContent() {
           </div>
         </div>
 
-        {/* 4. ROW 2: SELECTED CONTRACT & LIQUIDITY (Left) + VOLATILITY TERM STRUCTURE (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Selected Contract & Liquidity Panel (5 cols) */}
+
           <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>SELECTED CONTRACT & LIQUIDITY</span>
@@ -441,7 +431,6 @@ function OptionsTerminalContent() {
                   </div>
                 </div>
 
-                {/* Greeks Grid */}
                 <div className="grid grid-cols-5 gap-1.5 text-center text-xs">
                   <div className="p-1.5 rounded bg-voltron-950 border border-voltron-800">
                     <span className="text-[9px] text-voltron-400 block">&Delta; Delta</span>
@@ -470,7 +459,6 @@ function OptionsTerminalContent() {
             )}
           </div>
 
-          {/* IV Term Structure Curve (7 cols) */}
           <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-800 h-[210px] flex flex-col justify-between">
             <div className="flex items-center justify-between text-[11px] text-voltron-400 border-b border-voltron-800 pb-1 mb-1">
               <span className="text-white font-bold text-xs uppercase tracking-wider">
@@ -502,9 +490,8 @@ function OptionsTerminalContent() {
           </div>
         </div>
 
-        {/* 5. ROW 3: STRATEGY ENGINE + PAYOFF CHART */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Strategy Engine & Multi-Leg Breakdown (5 cols) */}
+
           <div className="lg:col-span-5 p-3.5 rounded-lg bg-voltron-900 border border-voltron-800 space-y-2.5">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>VOLTRON STRATEGY ENGINE</span>
@@ -528,7 +515,6 @@ function OptionsTerminalContent() {
               </div>
             </div>
 
-            {/* 4 Legs Multi-Leg Package */}
             <div className="space-y-1">
               <span className="text-[10px] uppercase text-voltron-400 font-bold block">Combined Multi-Leg Package (MLeg)</span>
               <div className="space-y-1 text-[11px]">
@@ -545,7 +531,6 @@ function OptionsTerminalContent() {
               </div>
             </div>
 
-            {/* Strategy Metrics Grid */}
             <div className="grid grid-cols-3 gap-2 text-xs pt-1">
               <div>
                 <span className="text-[9px] text-voltron-400 uppercase block">Max Profit</span>
@@ -562,7 +547,6 @@ function OptionsTerminalContent() {
             </div>
           </div>
 
-          {/* Payoff Preview Chart (7 cols) */}
           <div className="lg:col-span-7 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 h-[260px] flex flex-col justify-between">
             <div className="flex items-center justify-between text-[11px] text-voltron-400 border-b border-voltron-800 pb-1.5 mb-1">
               <span className="text-white font-bold text-xs uppercase">
@@ -604,9 +588,8 @@ function OptionsTerminalContent() {
           </div>
         </div>
 
-        {/* 6. ROW 4: AI CONTEXT & ORDER PREVIEW & RISK GATES */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* AI Context Panel (6 cols) */}
+
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>VOLTRON AI CONTEXT ({symbol})</span>
@@ -625,7 +608,6 @@ function OptionsTerminalContent() {
             </div>
           </div>
 
-          {/* Order Preview & Risk Verification (6 cols) */}
           <div className="lg:col-span-6 p-3.5 rounded-lg bg-voltron-900 border border-voltron-750/80 space-y-2">
             <div className="flex items-center justify-between border-b border-voltron-800 pb-1.5 text-white font-bold text-xs uppercase">
               <span>ORDER PREVIEW & RISK SAFETY GATE</span>
@@ -656,7 +638,6 @@ function OptionsTerminalContent() {
         </div>
       </div>
 
-      {/* Unified AI Intelligence & Risk Audit Modal */}
       <AIAuditModal
         isOpen={riskModalOpen}
         onClose={() => setRiskModalOpen(false)}

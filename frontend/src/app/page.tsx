@@ -39,7 +39,6 @@ const pillarCards = [
 export default function LandingPage() {
   const shouldReduceMotion = useReducedMotion();
 
-  // Polished institutional entrance choreography respecting prefers-reduced-motion
   const heroVariants = {
     hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 10 },
     visible: (customDelay: number = 0) => ({
@@ -78,17 +77,15 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen lg:h-screen lg:max-h-screen bg-voltron-900 text-foreground flex flex-col justify-center selection:bg-voltron-cyan/20 selection:text-voltron-cyan relative font-mono overflow-x-hidden">
-      {/* Interactive Cursor-Reactive Background Field */}
+
       <CursorReactiveBackground />
 
-      {/* Subtle Institutional Scanline Overlay */}
       <div className="scanline-overlay pointer-events-none" />
 
-      {/* Main Responsive Body Container */}
       <main className="flex-1 flex flex-col justify-between lg:justify-evenly px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full py-6 sm:py-8 lg:py-5 relative z-10 space-y-6 lg:space-y-0">
-        {/* 1. Hero Section */}
+
         <section className="text-center flex flex-col items-center justify-center py-2 sm:py-4 lg:py-1">
-          {/* Top Tag Badge */}
+
           <motion.div
             initial="hidden"
             animate="visible"
@@ -100,7 +97,6 @@ export default function LandingPage() {
             <span>AUTONOMOUS OPTIONS QUANT TRADING TERMINAL</span>
           </motion.div>
 
-          {/* Main Headline */}
           <motion.h1
             initial="hidden"
             animate="visible"
@@ -111,7 +107,6 @@ export default function LandingPage() {
             VOLTRON
           </motion.h1>
 
-          {/* Description */}
           <motion.p
             initial="hidden"
             animate="visible"
@@ -122,7 +117,6 @@ export default function LandingPage() {
             An autonomous intelligence layer that analyzes volatility spreads, selects defined-risk options strategies, enforces institutional risk controls, and executes paper trades through Alpaca.
           </motion.p>
 
-          {/* Action Buttons */}
           <motion.div
             initial="hidden"
             animate="visible"
@@ -154,7 +148,6 @@ export default function LandingPage() {
           </motion.div>
         </section>
 
-        {/* 2. Autonomous Execution Pipeline */}
         <motion.section
           initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -177,7 +170,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Sequential Animated Pipeline Nodes */}
             <motion.div
               variants={containerStagger}
               initial="hidden"
@@ -212,7 +204,6 @@ export default function LandingPage() {
           </div>
         </motion.section>
 
-        {/* 3. Three Information Cards */}
         <section className="w-full py-1">
           <motion.div
             initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 10 }}

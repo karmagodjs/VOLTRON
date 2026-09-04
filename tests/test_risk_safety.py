@@ -9,7 +9,6 @@ print("========================================")
 risk = RiskEngine(account_equity=100000)
 
 
-# Test 1 — Safe trade
 approved, reason = risk.evaluate(
     max_loss=300,
     opportunity_score=95,
@@ -23,7 +22,6 @@ print("Reason:", reason)
 assert approved is True
 
 
-# Test 2 — Opportunity too low
 approved, reason = risk.evaluate(
     max_loss=300,
     opportunity_score=40,
@@ -37,7 +35,6 @@ print("Reason:", reason)
 assert approved is False
 
 
-# Test 3 — Excessive loss
 approved, reason = risk.evaluate(
     max_loss=10000,
     opportunity_score=95,
@@ -51,7 +48,6 @@ print("Reason:", reason)
 assert approved is False
 
 
-# Test 4 — Kill switch
 risk.activate_kill_switch()
 
 approved, reason = risk.evaluate(

@@ -65,7 +65,6 @@ function MarketProviderInner({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync state if URL query param changes externally (e.g. browser back/forward or direct link)
   useEffect(() => {
     if (querySymbol && SUPPORTED_SYMBOLS.includes(querySymbol as any) && querySymbol !== selectedSymbol) {
       setSelectedSymbolState(querySymbol);
@@ -106,8 +105,7 @@ function MarketProviderInner({ children }: { children: React.ReactNode }) {
     if (!SUPPORTED_SYMBOLS.includes(upper as any)) {
       return;
     }
-    
-    // Clear old data immediately to prevent stale state bleed
+
     setMarketData(null);
     setIsLoading(true);
     setSelectedSymbolState(upper);
