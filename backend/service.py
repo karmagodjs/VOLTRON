@@ -1,3 +1,4 @@
+import gc
 import math
 import os
 import time
@@ -155,6 +156,14 @@ class VoltronService:
         self._ai_last_call_time: Dict[str, float] = {}
         self.ai_cache_ttl: float = 180.0  # Configurable 60-300s TTL (3 minutes)
 
+        # 512 MB Render Memory-Safety Bounded Cache Limits
+        self._start_time = time.time()
+        self.MAX_MARKET_CACHE = 24
+        self.MAX_CHAIN_CACHE = 8
+        self.MAX_AI_CACHE = 16
+        self.MAX_SUCCESSFUL_AI = 8
+        self.MAX_TIMELINE_EVENTS = 100
+
         self._ensure_clients()
 
         self.risk_engine = RiskEngine(account_equity=100000.0)
@@ -180,6 +189,69 @@ class VoltronService:
                     self.option_data_client = OptionHistoricalDataClient(key, sec)
                 except Exception as e:
                     print(f"[VOLTRON] OptionHistoricalDataClient warning: {e}")
+
+    def _prune_memory_caches(self) -> None:
+        """
+        Prune expired entries and enforce bounded limits on all in-memory caches.
+        Designed for 512 MB Render deployment: fail-safe, never throws.
+        """
+        try:
+            now = time.time()
+
+            # 1. Prune _market_cache (TTL 15s, bounded to MAX_MARKET_CACHE)
+            if hasattr(self, "_market_cache") and self._market_cache:
+                expired_m = [k for k, v in self._market_cache.items() if (now - v.get("_cached_at", 0)) > 30.0]
+                for k in expired_m:
+                    self._market_cache.pop(k, None)
+                if len(self._market_cache) > self.MAX_MARKET_CACHE:
+                    sorted_m = sorted(self._market_cache.keys(), key=lambda k: self._market_cache[k].get("_cached_at", 0))
+                    for k in sorted_m[:len(self._market_cache) - self.MAX_MARKET_CACHE]:
+                        self._market_cache.pop(k, None)
+
+            # 2. Prune _chain_cache (TTL 30s, bounded to MAX_CHAIN_CACHE)
+            if hasattr(self, "_chain_cache") and self._chain_cache:
+                expired_c = [k for k, v in self._chain_cache.items() if (now - v.get("_cached_at", 0)) > 60.0]
+                for k in expired_c:
+                    self._chain_cache.pop(k, None)
+                if len(self._chain_cache) > self.MAX_CHAIN_CACHE:
+                    sorted_c = sorted(self._chain_cache.keys(), key=lambda k: self._chain_cache[k].get("_cached_at", 0))
+                    for k in sorted_c[:len(self._chain_cache) - self.MAX_CHAIN_CACHE]:
+                        self._chain_cache.pop(k, None)
+
+            # 3. Prune _clock_cache (TTL 15s)
+            if hasattr(self, "_clock_cache") and self._clock_cache:
+                if (now - self._clock_cache.get("_cached_at", 0)) > 30.0:
+                    self._clock_cache.clear()
+
+            # 4. Prune _ai_cache (TTL ai_cache_ttl, bounded to MAX_AI_CACHE)
+            if hasattr(self, "_ai_cache") and self._ai_cache:
+                expired_ai = [k for k, v in self._ai_cache.items() if (now - v.get("_cached_at", 0)) > self.ai_cache_ttl]
+                for k in expired_ai:
+                    self._ai_cache.pop(k, None)
+                if len(self._ai_cache) > self.MAX_AI_CACHE:
+                    sorted_ai = sorted(self._ai_cache.keys(), key=lambda k: self._ai_cache[k].get("_cached_at", 0))
+                    for k in sorted_ai[:len(self._ai_cache) - self.MAX_AI_CACHE]:
+                        self._ai_cache.pop(k, None)
+
+            # 5. Prune _last_successful_ai (bounded to MAX_SUCCESSFUL_AI)
+            if hasattr(self, "_last_successful_ai") and self._last_successful_ai:
+                if len(self._last_successful_ai) > self.MAX_SUCCESSFUL_AI:
+                    sorted_succ = sorted(self._last_successful_ai.keys(), key=lambda k: self._last_successful_ai[k].get("_created_time", 0))
+                    for k in sorted_succ[:len(self._last_successful_ai) - self.MAX_SUCCESSFUL_AI]:
+                        self._last_successful_ai.pop(k, None)
+
+            # 6. Trim timeline_events to latest MAX_TIMELINE_EVENTS
+            if hasattr(self, "timeline_events") and len(self.timeline_events) > self.MAX_TIMELINE_EVENTS:
+                self.timeline_events = self.timeline_events[-self.MAX_TIMELINE_EVENTS:]
+
+            # Telemetry logging (non-sensitive)
+            print(
+                f"[VOLTRON][MEMORY] cache sizes: market={len(self._market_cache)} "
+                f"chain={len(self._chain_cache)} ai={len(self._ai_cache)} "
+                f"timeline={len(self.timeline_events)}"
+            )
+        except Exception:
+            pass
 
 
     # ==========================================
@@ -362,6 +434,9 @@ class VoltronService:
             res.pop("_cached_at", None)
             return res
 
+        # Periodic cache pruning to enforce 512 MB memory boundary
+        self._prune_memory_caches()
+
         price = 0.0
         change = 0.0
         change_pct = 0.0
@@ -447,6 +522,7 @@ class VoltronService:
                         high = float(day_bars["high"].max())
                         low = float(day_bars["low"].min())
                         volume = int(day_bars["volume"].sum())
+                    del df, day_bars
 
             elif tf == "5D":
                 # Intraday 15-minute bars covering latest 5 trading days
@@ -479,6 +555,7 @@ class VoltronService:
                         high = float(bars_5d["high"].max())
                         low = float(bars_5d["low"].min())
                         volume = int(bars_5d["volume"].sum())
+                    del df, bars_5d
 
             else:
                 # Daily bars: 1M (~22 trading days), 3M (~65), 6M (~130), 1Y (~252)
@@ -536,6 +613,7 @@ class VoltronService:
                             "iv_rv": None,
                             "volume": v_val,
                         })
+                    del df, sliced
 
             # If daily RV is still 0 (e.g. 1D/5D first request without daily cache), compute from daily
             if rv == 0.0 and self.stock_data_client:
@@ -553,6 +631,7 @@ class VoltronService:
                         for pt in history:
                             if pt.get("rv") == 0.0 or pt.get("rv") is None:
                                 pt["rv"] = round(rv, 2)
+                    del d_resp
                 except Exception:
                     pass
 
@@ -583,6 +662,7 @@ class VoltronService:
                 opt_req = OptionChainRequest(underlying_symbol=sym, feed=OptionsFeed.INDICATIVE)
                 chain = self.option_data_client.get_option_chain(opt_req)
                 atm_opt = self._extract_atm_option(chain, price)
+                del chain  # Immediately release full options chain payload from memory
 
                 if atm_opt:
                     iv = round(atm_opt["iv"] * 100.0, 2)
@@ -648,6 +728,11 @@ class VoltronService:
             "history": history,
         }
 
+        # Bound _market_cache size (oldest-entry eviction)
+        if len(self._market_cache) >= self.MAX_MARKET_CACHE:
+            oldest_key = min(self._market_cache.keys(), key=lambda k: self._market_cache[k].get("_cached_at", 0))
+            self._market_cache.pop(oldest_key, None)
+
         # Store in cache with timeframe-specific key
         cached_entry = dict(result)
         cached_entry["_cached_at"] = time.time()
@@ -657,7 +742,8 @@ class VoltronService:
 
     def _extract_atm_option(self, chain: Dict[str, Any], stock_price: float) -> Optional[Dict[str, Any]]:
         today = datetime.now(timezone.utc).date()
-        candidates = []
+        best_candidate: Optional[Dict[str, Any]] = None
+        best_rank = (float("inf"), float("inf"))
 
         for opt_sym, snapshot in chain.items():
             parsed = parse_option_symbol(opt_sym)
@@ -717,24 +803,23 @@ class VoltronService:
             if opt_iv is None or opt_iv <= 0.01 or opt_iv > 5.0:
                 continue
 
-            candidates.append({
-                "symbol": opt_sym,
-                "strike": strike,
-                "expiration": exp_date,
-                "bid": b_val,
-                "ask": a_val,
-                "mid": mid,
-                "iv": opt_iv,
-                "spread_percent": spread_pct,
-                "distance": dist,
-            })
+            # Rank by distance to spot price, then spread percentage (O(1) memory)
+            rank = (dist, spread_pct)
+            if rank < best_rank:
+                best_rank = rank
+                best_candidate = {
+                    "symbol": opt_sym,
+                    "strike": strike,
+                    "expiration": exp_date,
+                    "bid": b_val,
+                    "ask": a_val,
+                    "mid": mid,
+                    "iv": opt_iv,
+                    "spread_percent": spread_pct,
+                    "distance": dist,
+                }
 
-        if not candidates:
-            return None
-
-        # Sort by distance to spot price
-        candidates.sort(key=lambda x: (x["distance"], x["spread_percent"]))
-        return candidates[0]
+        return best_candidate
 
     # ==========================================
     # OPTIONS CHAIN (REAL CONTRACTS)
@@ -768,28 +853,29 @@ class VoltronService:
             res.pop("_cached_at", None)
             return res
 
+        # On cache miss, prune expired caches first
+        self._prune_memory_caches()
+
         req = OptionChainRequest(underlying_symbol=sym, feed=OptionsFeed.INDICATIVE)
         raw_chain = self.option_data_client.get_option_chain(req)
 
         today = datetime.now(timezone.utc).date()
         expirations_set = set()
-        contracts_by_exp: Dict[str, List[Any]] = {}
 
-        # 1. Parse all contracts and collect real expirations
-        for opt_sym, snapshot in raw_chain.items():
+        # 1. Fast Pass 1: Parse expirations directly from string keys without storing snapshots
+        for opt_sym in raw_chain.keys():
             parsed = parse_option_symbol(opt_sym)
             if not parsed:
                 continue
             strike, opt_type, exp_date = parsed
             if exp_date <= today:
                 continue
-
-            exp_str = exp_date.strftime("%Y-%m-%d")
-            expirations_set.add(exp_str)
-            contracts_by_exp.setdefault(exp_str, []).append((opt_sym, strike, opt_type, exp_date, snapshot))
+            expirations_set.add(exp_date.strftime("%Y-%m-%d"))
 
         expirations_list = sorted(list(expirations_set))
         if not expirations_list:
+            del raw_chain
+            gc.collect()
             return {
                 "symbol": sym,
                 "spot_price": spot_price,
@@ -810,12 +896,19 @@ class VoltronService:
                     break
 
         target_dte = max(1, (datetime.strptime(active_exp, "%Y-%m-%d").date() - today).days)
-        target_contracts = contracts_by_exp.get(active_exp, [])
+        target_date = datetime.strptime(active_exp, "%Y-%m-%d").date()
+        max_strike_dist = spot_price * 0.12
 
-        # Filter strikes within 12% of spot price
+        # 2. Pass 2: Filter and process ONLY contracts for active_exp within 12% of spot price
         strikes_map: Dict[float, Dict[str, Any]] = {}
-        for opt_sym, strike, opt_type, exp_date, snapshot in target_contracts:
-            if abs(strike - spot_price) > (spot_price * 0.12):
+        for opt_sym, snapshot in raw_chain.items():
+            parsed = parse_option_symbol(opt_sym)
+            if not parsed:
+                continue
+            strike, opt_type, exp_date = parsed
+            if exp_date != target_date:
+                continue
+            if abs(strike - spot_price) > max_strike_dist:
                 continue
 
             quote = _get_val(snapshot, "latest_quote")
@@ -866,6 +959,9 @@ class VoltronService:
             else:
                 strikes_map[strike]["put"] = contract_data
 
+        # Immediately release the entire raw chain!
+        del raw_chain
+
         # Build sorted chain rows
         chain_rows = []
         sorted_strikes = sorted(strikes_map.keys())
@@ -890,6 +986,8 @@ class VoltronService:
                 },
             })
 
+        del strikes_map
+
         result = {
             "symbol": sym,
             "spot_price": spot_price,
@@ -906,10 +1004,19 @@ class VoltronService:
             "data_source": "ALPACA_INDICATIVE",
         }
 
+        # Bound _chain_cache size (oldest-entry eviction)
+        if len(self._chain_cache) >= self.MAX_CHAIN_CACHE:
+            oldest_key = min(self._chain_cache.keys(), key=lambda k: self._chain_cache[k].get("_cached_at", 0))
+            self._chain_cache.pop(oldest_key, None)
+
         # Cache result
         c_entry = dict(result)
         c_entry["_cached_at"] = time.time()
         self._chain_cache[cache_key] = c_entry
+
+        # Controlled garbage collection after large options chain processing
+        gc.collect()
+        self._prune_memory_caches()
 
         return result
 
@@ -945,6 +1052,9 @@ class VoltronService:
         now = time.time()
         market = self.get_market_data(sym)
         cache_key = self._make_ai_cache_key(sym, market)
+
+        # Periodic cache pruning to enforce 512 MB memory boundary
+        self._prune_memory_caches()
 
         # 1. Deterministic cache hit check (TTL >= 60-300s, default 180s)
         cached_entry = self._ai_cache.get(cache_key)
@@ -1075,6 +1185,16 @@ class VoltronService:
             "is_cached": False,
             "_created_time": now,
         }
+
+        # Bound _ai_cache size (oldest-entry eviction)
+        if len(self._ai_cache) >= self.MAX_AI_CACHE:
+            oldest_k = min(self._ai_cache.keys(), key=lambda k: self._ai_cache[k].get("_cached_at", 0))
+            self._ai_cache.pop(oldest_k, None)
+
+        # Bound _last_successful_ai size (oldest-entry eviction)
+        if len(self._last_successful_ai) >= self.MAX_SUCCESSFUL_AI:
+            oldest_sym = min(self._last_successful_ai.keys(), key=lambda k: self._last_successful_ai[k].get("_created_time", 0))
+            self._last_successful_ai.pop(oldest_sym, None)
 
         # Store in cache
         self._ai_cache[cache_key] = {
@@ -1517,10 +1637,16 @@ class VoltronService:
             },
         }
 
+    def record_timeline_event(self, event: Dict[str, Any]) -> None:
+        self.timeline_events.append(event)
+        if len(self.timeline_events) > self.MAX_TIMELINE_EVENTS:
+            self.timeline_events = self.timeline_events[-self.MAX_TIMELINE_EVENTS:]
+
     def get_agent_timeline(self) -> Dict[str, Any]:
+        self._prune_memory_caches()
         status = "PAUSED" if self.agent_paused else "ACTIVE" if self.agent_running else "READY"
         return {
-            "events": self.timeline_events,
+            "events": self.timeline_events[-self.MAX_TIMELINE_EVENTS:],
             "cycle": self.cycle_count,
             "status": status,
             "mode": "OBSERVATION_MODE",
