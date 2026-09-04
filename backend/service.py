@@ -130,6 +130,44 @@ def _get_val(obj, key, default=None):
     return getattr(obj, key, default)
 
 
+def _get_process_rss_mb() -> Optional[float]:
+    """Lightweight cross-platform RSS memory retrieval without external dependencies."""
+    try:
+        if os.path.exists("/proc/self/status"):
+            with open("/proc/self/status", "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("VmRSS:"):
+                        return round(float(line.split()[1]) / 1024.0, 1)
+        import resource
+        return round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 1)
+    except Exception:
+        pass
+    try:
+        import ctypes
+        from ctypes import wintypes
+        class PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ("cb", wintypes.DWORD),
+                ("PageFaultCount", wintypes.DWORD),
+                ("PeakWorkingSetSize", ctypes.c_size_t),
+                ("WorkingSetSize", ctypes.c_size_t),
+                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                ("PagefileUsage", ctypes.c_size_t),
+                ("PeakPagefileUsage", ctypes.c_size_t),
+            ]
+        pmc = PROCESS_MEMORY_COUNTERS()
+        pmc.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS)
+        handle = ctypes.windll.kernel32.GetCurrentProcess()
+        if ctypes.windll.psapi.GetProcessMemoryInfo(handle, ctypes.byref(pmc), pmc.cb):
+            return round(pmc.WorkingSetSize / (1024.0 * 1024.0), 1)
+    except Exception:
+        pass
+    return None
+
+
 class VoltronService:
     def __init__(self):
         self.trading_client: Optional[TradingClient] = None
@@ -158,10 +196,10 @@ class VoltronService:
 
         # 512 MB Render Memory-Safety Bounded Cache Limits
         self._start_time = time.time()
-        self.MAX_MARKET_CACHE = 24
-        self.MAX_CHAIN_CACHE = 8
-        self.MAX_AI_CACHE = 16
-        self.MAX_SUCCESSFUL_AI = 8
+        self.MAX_MARKET_CACHE = 16
+        self.MAX_CHAIN_CACHE = 3
+        self.MAX_AI_CACHE = 8
+        self.MAX_SUCCESSFUL_AI = 4
         self.MAX_TIMELINE_EVENTS = 100
 
         self._ensure_clients()
@@ -244,11 +282,13 @@ class VoltronService:
             if hasattr(self, "timeline_events") and len(self.timeline_events) > self.MAX_TIMELINE_EVENTS:
                 self.timeline_events = self.timeline_events[-self.MAX_TIMELINE_EVENTS:]
 
-            # Telemetry logging (non-sensitive)
+            # Telemetry logging (non-sensitive, with optional RSS measurement)
+            rss_mb = _get_process_rss_mb()
+            rss_str = f" rss={rss_mb:.1f}MB" if rss_mb is not None else ""
             print(
                 f"[VOLTRON][MEMORY] cache sizes: market={len(self._market_cache)} "
                 f"chain={len(self._chain_cache)} ai={len(self._ai_cache)} "
-                f"timeline={len(self.timeline_events)}"
+                f"timeline={len(self.timeline_events)}{rss_str}"
             )
         except Exception:
             pass
@@ -522,7 +562,7 @@ class VoltronService:
                         high = float(day_bars["high"].max())
                         low = float(day_bars["low"].min())
                         volume = int(day_bars["volume"].sum())
-                    del df, day_bars
+                    del df, day_bars, bars_resp
 
             elif tf == "5D":
                 # Intraday 15-minute bars covering latest 5 trading days
@@ -555,7 +595,7 @@ class VoltronService:
                         high = float(bars_5d["high"].max())
                         low = float(bars_5d["low"].min())
                         volume = int(bars_5d["volume"].sum())
-                    del df, bars_5d
+                    del df, bars_5d, bars_resp
 
             else:
                 # Daily bars: 1M (~22 trading days), 3M (~65), 6M (~130), 1Y (~252)
@@ -613,7 +653,7 @@ class VoltronService:
                             "iv_rv": None,
                             "volume": v_val,
                         })
-                    del df, sliced
+                    del df, sliced, prices_series, highs_series, lows_series, volumes_series, returns, rolling_rv, bars_resp
 
             # If daily RV is still 0 (e.g. 1D/5D first request without daily cache), compute from daily
             if rv == 0.0 and self.stock_data_client:
@@ -631,7 +671,7 @@ class VoltronService:
                         for pt in history:
                             if pt.get("rv") == 0.0 or pt.get("rv") is None:
                                 pt["rv"] = round(rv, 2)
-                    del d_resp
+                    del d_resp, daily_req
                 except Exception:
                     pass
 
@@ -646,6 +686,7 @@ class VoltronService:
                 latest_trade_price = float(latest_trade_resp[sym].price)
                 if latest_trade_price > 0:
                     price = latest_trade_price
+            del trade_req, latest_trade_resp
         except Exception as e:
             print(f"[VOLTRON] Latest trade warning for {sym}: {e}")
 
@@ -662,7 +703,8 @@ class VoltronService:
                 opt_req = OptionChainRequest(underlying_symbol=sym, feed=OptionsFeed.INDICATIVE)
                 chain = self.option_data_client.get_option_chain(opt_req)
                 atm_opt = self._extract_atm_option(chain, price)
-                del chain  # Immediately release full options chain payload from memory
+                del chain, opt_req  # Immediately release full options chain payload from memory
+                gc.collect()
 
                 if atm_opt:
                     iv = round(atm_opt["iv"] * 100.0, 2)
@@ -858,6 +900,7 @@ class VoltronService:
 
         req = OptionChainRequest(underlying_symbol=sym, feed=OptionsFeed.INDICATIVE)
         raw_chain = self.option_data_client.get_option_chain(req)
+        del req
 
         today = datetime.now(timezone.utc).date()
         expirations_set = set()
@@ -873,6 +916,8 @@ class VoltronService:
             expirations_set.add(exp_date.strftime("%Y-%m-%d"))
 
         expirations_list = sorted(list(expirations_set))
+        del expirations_set
+
         if not expirations_list:
             del raw_chain
             gc.collect()
@@ -886,7 +931,7 @@ class VoltronService:
             }
 
         # Choose target expiration
-        active_exp = expiration if (expiration and expiration in expirations_set) else expirations_list[0]
+        active_exp = expiration if (expiration and expiration in expirations_list) else expirations_list[0]
         # Prefer an expiration with 14-45 DTE if no specific expiration requested
         if not expiration:
             for e in expirations_list:
@@ -959,8 +1004,9 @@ class VoltronService:
             else:
                 strikes_map[strike]["put"] = contract_data
 
-        # Immediately release the entire raw chain!
+        # Immediately release the entire raw chain and force GC before formatting rows
         del raw_chain
+        gc.collect()
 
         # Build sorted chain rows
         chain_rows = []
@@ -1014,8 +1060,7 @@ class VoltronService:
         c_entry["_cached_at"] = time.time()
         self._chain_cache[cache_key] = c_entry
 
-        # Controlled garbage collection after large options chain processing
-        gc.collect()
+        # Memory hygiene and cache pruning after chain processing
         self._prune_memory_caches()
 
         return result
