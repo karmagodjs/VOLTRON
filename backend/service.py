@@ -23,6 +23,20 @@ if os.path.isdir("/etc/secrets"):
             except Exception:
                 pass
 
+# Ensure Windows Anaconda C/Fortran DLLs (BLAS, LAPACK, MKL) load cleanly on Python 3.8+
+if os.name == "nt":
+    for p in [
+        r"C:\ProgramData\anaconda3\Library\bin",
+        r"C:\ProgramData\anaconda3\Library\mingw-w64\bin",
+        r"C:\ProgramData\anaconda3\Library\usr\bin",
+        r"C:\ProgramData\anaconda3\bin",
+    ]:
+        if os.path.isdir(p):
+            try:
+                os.add_dll_directory(p)
+            except Exception:
+                pass
+
 # Alpaca clients
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import GetOrdersRequest
@@ -1251,8 +1265,8 @@ class VoltronService:
             {
                 "id": "GATE-05",
                 "name": "Market Liquidity",
-                "condition": f"Spread <= {MAX_SPREAD_PERCENT*100}%",
-                "current_value": "< 5.0% Spread",
+                "condition": f"Spread <= {MAX_SPREAD_PERCENT:.1f}%",
+                "current_value": f"< {MAX_SPREAD_PERCENT:.1f}% Spread",
                 "status": "PASS" if gate5_pass else "BLOCKED",
                 "description": "Bid-ask slippage check on execution legs.",
             },
