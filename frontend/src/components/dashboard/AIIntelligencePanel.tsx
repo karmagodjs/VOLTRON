@@ -33,7 +33,15 @@ export function AIAuditModal({
   if (!isOpen || !analysis) return null;
 
   const oppScore = analysis.opportunity_score;
-  const configuredSpreadLimit = risk?.liquidity_spread_limit_pct ?? 5.0;
+  const configuredSpreadLimit =
+    risk?.liquidity_spread_limit_pct ??
+    analysis?.risk_decision?.liquidity_spread_limit_pct ??
+    5.0;
+
+  const measuredSpread =
+    risk?.liquidity_spread_pct ??
+    analysis?.risk_decision?.liquidity_spread_pct ??
+    null;
 
   const rawGates: RiskGate[] =
     analysis.risk_gates && analysis.risk_gates.length > 0
@@ -81,8 +89,8 @@ export function AIAuditModal({
       id: "GATE-05",
       name: "Market Liquidity",
       condition: `Spread <= ${configuredSpreadLimit.toFixed(1)}%`,
-      current_value: "NOT EVALUATED",
-      status: "BLOCKED",
+      current_value: measuredSpread != null ? `${measuredSpread.toFixed(1)}% Spread` : "NOT EVALUATED",
+      status: measuredSpread != null && measuredSpread <= configuredSpreadLimit ? "PASS" : "BLOCKED",
       description: "Bid-ask slippage check on execution legs.",
     },
     {
@@ -115,14 +123,31 @@ export function AIAuditModal({
             const scoreVal = oppScore != null ? oppScore : 0;
             return {
               ...g,
-              current_value: `${scoreVal} / 100`,
-              status: (scoreVal >= 70 ? "PASS" : "BLOCKED") as "PASS" | "BLOCKED",
+              condition: "Score >= 70",
+              current_value: oppScore != null ? `${scoreVal} / 100` : "NOT EVALUATED",
+              status: (oppScore != null && scoreVal >= 70 ? "PASS" : "BLOCKED") as "PASS" | "BLOCKED",
             };
           }
           if (g.id === "GATE-05" || g.name.toLowerCase().includes("liquidity")) {
+            const isPlaceholder =
+              !g.current_value ||
+              g.current_value.includes("<") ||
+              g.current_value.includes("10.0%") ||
+              g.current_value.includes("10%");
+
+            const val = measuredSpread != null
+              ? `${measuredSpread.toFixed(1)}% Spread`
+              : (!isPlaceholder ? g.current_value : "NOT EVALUATED");
+
+            const isPass = measuredSpread != null
+              ? measuredSpread <= configuredSpreadLimit
+              : (!isPlaceholder && g.status === "PASS");
+
             return {
               ...g,
               condition: `Spread <= ${configuredSpreadLimit.toFixed(1)}%`,
+              current_value: val,
+              status: (isPass ? "PASS" : "BLOCKED") as "PASS" | "BLOCKED",
             };
           }
           return g;

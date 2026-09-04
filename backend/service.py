@@ -1237,8 +1237,39 @@ class VoltronService:
         gate2_pass = proposed_max_loss <= (equity * MAX_TRADE_RISK)
         gate3_pass = abs(self.risk_engine.daily_pnl) < (equity * MAX_DAILY_LOSS)
         gate4_pass = (account["portfolio_exposure_pct"] + (proposed_exposure / equity * 100.0)) <= (MAX_PORTFOLIO_EXPOSURE * 100.0)
-        liquidity_spread_pct = 1.2
-        gate5_pass = liquidity_spread_pct <= MAX_SPREAD_PERCENT
+        # Measure actual options liquidity spread from live ATM contracts
+        liquidity_spread_pct = None
+        try:
+            chain_data = self.get_options_chain(symbol)
+            chain = chain_data.get("chain", [])
+            atm_contracts = [r for r in chain if r.get("is_atm")]
+            if not atm_contracts and chain:
+                atm_contracts = [chain[len(chain) // 2]]
+
+            spreads = []
+            for r in atm_contracts:
+                for opt_type in ("call", "put"):
+                    leg = r.get(opt_type, {})
+                    bid = float(leg.get("bid") or 0.0)
+                    ask = float(leg.get("ask") or 0.0)
+                    if bid > 0 and ask >= bid:
+                        mid = (bid + ask) / 2.0
+                        if mid > 0:
+                            spreads.append(((ask - bid) / mid) * 100.0)
+            if spreads:
+                liquidity_spread_pct = round(sum(spreads) / len(spreads), 1)
+        except Exception:
+            liquidity_spread_pct = None
+
+        if liquidity_spread_pct is not None:
+            gate5_pass = liquidity_spread_pct <= MAX_SPREAD_PERCENT
+            gate5_val = f"{liquidity_spread_pct:.1f}% Spread"
+            gate5_status = "PASS" if gate5_pass else "BLOCKED"
+        else:
+            gate5_pass = False
+            gate5_val = "NOT EVALUATED"
+            gate5_status = "BLOCKED"
+
         gate6_pass = self.risk_engine.consecutive_losses < MAX_CONSECUTIVE_LOSSES
         gate7_pass = not self.risk_engine.kill_switch
 
@@ -1279,8 +1310,8 @@ class VoltronService:
                 "id": "GATE-05",
                 "name": "Market Liquidity",
                 "condition": f"Spread <= {MAX_SPREAD_PERCENT:.1f}%",
-                "current_value": f"{liquidity_spread_pct:.1f}% Spread",
-                "status": "PASS" if gate5_pass else "BLOCKED",
+                "current_value": gate5_val,
+                "status": gate5_status,
                 "description": "Bid-ask slippage check on execution legs.",
             },
             {
@@ -1314,7 +1345,7 @@ class VoltronService:
             "overall_status": overall_status,
             "reason": reason,
             "gates": gates,
-            "liquidity_spread_pct": 1.2,
+            "liquidity_spread_pct": liquidity_spread_pct,
             "liquidity_spread_limit_pct": MAX_SPREAD_PERCENT,
             "history": [],  # Real history empty until trades execute
             "alerts": [],
@@ -1970,7 +2001,7 @@ class VoltronService:
         # Multi-leg Independent Liquidity Validation
         multileg_ok, multileg_reason, leg_liquidity_reports = validate_multileg_liquidity(
             selected_contracts,
-            max_spread_percent=10.0
+            max_spread_percent=MAX_SPREAD_PERCENT
         )
 
         # Truthful Liquidity Depth Source

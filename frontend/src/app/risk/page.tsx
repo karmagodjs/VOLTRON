@@ -158,7 +158,7 @@ export default function RiskCommandPage() {
           <div className="p-2.5 rounded bg-voltron-900 border border-voltron-750/80">
             <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Options Spread</span>
             <span className="text-sm font-bold text-voltron-cyan font-tabular">
-              {risk.liquidity_spread_pct != null ? `${risk.liquidity_spread_pct.toFixed(1)}%` : "< 5.0%"}{" "}
+              {risk.liquidity_spread_pct != null ? `${risk.liquidity_spread_pct.toFixed(1)}%` : "NOT EVALUATED"}{" "}
               <span className="text-[10px] text-voltron-400 font-normal">
                 / {risk.liquidity_spread_limit_pct ? `${risk.liquidity_spread_limit_pct.toFixed(1)}%` : "5.0%"} Max
               </span>

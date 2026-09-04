@@ -3,7 +3,9 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import TerminalLayout from "@/components/layout/TerminalLayout";
-import { fetchOptionsChain } from "@/lib/api";
+import { fetchOptionsChain, fetchAIAnalysis, fetchRisk } from "@/lib/api";
+import { AIAuditModal } from "@/components/dashboard/AIIntelligencePanel";
+import { AIAnalysis, RiskStatus } from "@/types";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -19,7 +21,6 @@ import {
 import {
   Search,
   RefreshCw,
-  X,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -39,6 +40,22 @@ function OptionsTerminalContent() {
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
+  const [analysisData, setAnalysisData] = useState<AIAnalysis | null>(null);
+  const [riskData, setRiskData] = useState<RiskStatus | null>(null);
+
+  const handleOpenRiskAudit = async () => {
+    try {
+      const [ai, rk] = await Promise.all([
+        fetchAIAnalysis(symbol),
+        fetchRisk(symbol),
+      ]);
+      setAnalysisData(ai);
+      setRiskData(rk);
+    } catch {
+      // Handled fail-closed
+    }
+    setRiskModalOpen(true);
+  };
 
   // Sync if query param or context changes externally
   useEffect(() => {
@@ -622,7 +639,7 @@ function OptionsTerminalContent() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setRiskModalOpen(true)}
+                  onClick={handleOpenRiskAudit}
                   className="px-3 py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] font-bold text-voltron-cyan border border-voltron-700 transition-colors"
                 >
                   Review Risk Gates
@@ -639,72 +656,14 @@ function OptionsTerminalContent() {
         </div>
       </div>
 
-      {/* Risk Gates Review Modal */}
-      {riskModalOpen && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono text-xs">
-          <div className="w-full max-w-lg bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
-            <button
-              onClick={() => setRiskModalOpen(false)}
-              className="absolute top-4 right-4 text-voltron-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                VOLTRON RISK GATE AUDIT — {symbol} {strat?.name || "IRON CONDOR"}
-              </h3>
-            </div>
-
-            <div className="space-y-2 mb-5 max-h-[300px] overflow-y-auto">
-              <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                <div>
-                  <span className="font-bold text-white block">Opportunity Score</span>
-                  <span className="text-[10px] text-voltron-400">Score &ge; 70</span>
-                </div>
-                <span className="text-voltron-emerald font-bold">{data?.opportunity_score != null ? `${data.opportunity_score} / 100 [PASS]` : "—"}</span>
-              </div>
-              <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                <div>
-                  <span className="font-bold text-white block">Max Trade Risk</span>
-                  <span className="text-[10px] text-voltron-400">Loss &le; 1.0% ($1,000)</span>
-                </div>
-                <span className="text-voltron-emerald font-bold">0.31% ($315.00) [PASS]</span>
-              </div>
-              <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                <div>
-                  <span className="font-bold text-white block">Portfolio Exposure</span>
-                  <span className="text-[10px] text-voltron-400">Exposure &le; 30.0% ($30,000)</span>
-                </div>
-                <span className="text-voltron-emerald font-bold">18.2% ($18,200) [PASS]</span>
-              </div>
-              <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                <div>
-                  <span className="font-bold text-white block">Liquidity Spread Gate</span>
-                  <span className="text-[10px] text-voltron-400">Spread &le; 5.0%</span>
-                </div>
-                <span className="text-voltron-emerald font-bold">&lt; 5.0% Spread [PASS]</span>
-              </div>
-              <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                <div>
-                  <span className="font-bold text-white block">Paper Trading Isolation Gate</span>
-                  <span className="text-[10px] text-voltron-400">Live order bypass strictly disabled</span>
-                </div>
-                <span className="text-voltron-emerald font-bold">PAPER MODE [PASS]</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                onClick={() => setRiskModalOpen(false)}
-                className="px-4 py-2 rounded-lg bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white transition-colors"
-              >
-                Close Audit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Unified AI Intelligence & Risk Audit Modal */}
+      <AIAuditModal
+        isOpen={riskModalOpen}
+        onClose={() => setRiskModalOpen(false)}
+        analysis={analysisData}
+        risk={riskData}
+        initialTab="risk"
+      />
     </TerminalLayout>
   );
 }
