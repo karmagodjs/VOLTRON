@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 from google import genai
+import requests
 
 
 load_dotenv()
@@ -111,6 +112,8 @@ def get_cached_analysis(data: dict) -> Optional[Dict[str, Any]]:
     cached_result = dict(entry.get("analysis", {}))
     cached_result["status"] = "CACHED"
     cached_result["ai_status"] = "CACHED"
+    if "ai_provider" not in cached_result:
+        cached_result["ai_provider"] = "GEMINI"
     return cached_result
 
 
@@ -133,6 +136,31 @@ def store_cached_analysis(data: dict, analysis: dict) -> None:
         "analysis": dict(analysis),
         "timestamp": time.time(),
     }
+
+
+def get_openrouter_api_key() -> Optional[str]:
+    key = os.getenv("OPENROUTER_API_KEY")
+    if key:
+        key = key.strip().strip("'").strip('"')
+    return key if key else None
+
+
+def _is_temporary_unavailable_error(exc: Exception) -> bool:
+    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    if code in (503, "503", 504, "504"):
+        return True
+
+    cls_name = exc.__class__.__name__.lower()
+    if cls_name in ("serviceunavailable", "temporarilyunavailable"):
+        return True
+
+    exc_str = str(exc).lower()
+    if "500" in exc_str:
+        return False
+    if "503" in exc_str or "temporarily unavailable" in exc_str or "service unavailable" in exc_str:
+        return True
+
+    return False
 
 
 def _is_rate_limit_error(exc: Exception) -> bool:
@@ -259,6 +287,120 @@ Rules:
 """
 
 
+def call_openrouter_fallback(data: dict, api_key: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    key = api_key or get_openrouter_api_key()
+    if not key:
+        return None
+
+    model_name = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+    prompt = build_analysis_prompt(data)
+
+    headers = {
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://voltron.ai",
+        "X-Title": "VOLTRON",
+    }
+
+    payload = {
+        "model": model_name,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.2,
+    }
+
+    try:
+        resp = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=12.0,
+        )
+        if resp.status_code != 200:
+            return None
+
+        body = resp.json()
+        choices = body.get("choices")
+        if not choices or not isinstance(choices, list):
+            return None
+
+        raw_text = choices[0].get("message", {}).get("content", "")
+        if not raw_text:
+            return None
+
+        cleaned = raw_text.strip()
+        if cleaned.startswith("```"):
+            lines = cleaned.split("\n")
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            cleaned = "\n".join(lines).strip()
+
+        try:
+            parsed = json.loads(cleaned)
+        except json.JSONDecodeError:
+            json_match = re.search(r"(\{[\s\S]*\})", cleaned)
+            if json_match:
+                try:
+                    parsed = json.loads(json_match.group(1))
+                except Exception:
+                    return None
+            else:
+                return None
+
+        if not isinstance(parsed, dict) or "decision" not in parsed:
+            return None
+
+        decision = str(parsed.get("decision", "NO_TRADE")).upper().strip()
+        if decision not in ("TRADE_CANDIDATE", "NO_TRADE"):
+            decision = "NO_TRADE"
+
+        try:
+            confidence = max(0, min(100, int(parsed.get("confidence", 0) or 0)))
+        except (ValueError, TypeError):
+            confidence = 0
+
+        vol_view = str(parsed.get("volatility_view", "FAIR")).upper().strip()
+        if vol_view not in ("CHEAP", "FAIR", "EXPENSIVE"):
+            vol_view = "FAIR"
+
+        direction = str(parsed.get("direction", "NEUTRAL")).upper().strip()
+        if direction not in ("BULLISH", "BEARISH", "NEUTRAL"):
+            direction = "NEUTRAL"
+
+        thesis = str(parsed.get("thesis") or "OpenRouter volatility analysis complete.").strip()
+
+        raw_reasons = parsed.get("key_reasons", [])
+        if isinstance(raw_reasons, list):
+            key_reasons = [str(r) for r in raw_reasons]
+        else:
+            key_reasons = [str(raw_reasons)] if raw_reasons else []
+
+        raw_risks = parsed.get("risks", [])
+        if isinstance(raw_risks, list):
+            risks = [str(r) for r in raw_risks]
+        else:
+            risks = [str(raw_risks)] if raw_risks else []
+
+        return {
+            "decision": decision,
+            "confidence": confidence,
+            "volatility_view": vol_view,
+            "direction": direction,
+            "thesis": thesis,
+            "key_reasons": key_reasons,
+            "risks": risks,
+            "status": "COMPLETE",
+            "ai_status": "LIVE",
+            "ai_provider": "OPENROUTER",
+        }
+    except Exception:
+        return None
+
+
 def create_analysis(data):
     global _rate_limit_until, _last_retry_delay
 
@@ -278,7 +420,8 @@ def create_analysis(data):
             "key_reasons": [],
             "risks": [
                 "GEMINI_API_KEY is not configured."
-            ]
+            ],
+            "ai_provider": "GEMINI",
         }
 
     if not data or not data.get("symbol") or (data.get("iv") is None and data.get("rv") is None and data.get("implied_volatility") is None and data.get("realized_volatility") is None):
@@ -293,7 +436,8 @@ def create_analysis(data):
             "key_reasons": [],
             "risks": [
                 "Missing required volatility inputs."
-            ]
+            ],
+            "ai_provider": "GEMINI",
         }
 
     cached = get_cached_analysis(data)
@@ -301,6 +445,13 @@ def create_analysis(data):
         return cached
 
     if is_rate_limited():
+        openrouter_key = get_openrouter_api_key()
+        if openrouter_key:
+            openrouter_resp = call_openrouter_fallback(data, api_key=openrouter_key)
+            if openrouter_resp and openrouter_resp.get("decision") in ("TRADE_CANDIDATE", "NO_TRADE"):
+                store_cached_analysis(data, openrouter_resp)
+                return openrouter_resp
+
         return {
             "decision": "NO_TRADE",
             "confidence": 0,
@@ -312,6 +463,7 @@ def create_analysis(data):
             "key_reasons": [],
             "risks": ["GEMINI_RATE_LIMITED"],
             "retry_delay": get_rate_limit_remaining(),
+            "ai_provider": "GEMINI",
         }
 
     try:
@@ -338,7 +490,7 @@ def create_analysis(data):
                             output_text = out.text
                             break
             except Exception as exc:
-                if _is_rate_limit_error(exc):
+                if _is_rate_limit_error(exc) or _is_temporary_unavailable_error(exc):
                     raise exc
                 output_text = None
 
@@ -365,35 +517,71 @@ def create_analysis(data):
                 lines = lines[:-1]
             cleaned_text = "\n".join(lines).strip()
 
-        analysis = json.loads(cleaned_text)
+        try:
+            analysis = json.loads(cleaned_text)
+        except json.JSONDecodeError:
+            json_match = re.search(r"(\{[\s\S]*\})", cleaned_text)
+            if json_match:
+                analysis = json.loads(json_match.group(1))
+            else:
+                raise ValueError("Malformed AI response missing JSON object")
 
         if not isinstance(analysis, dict) or "decision" not in analysis:
             raise ValueError("Malformed AI response missing decision")
 
         analysis["status"] = "COMPLETE"
         analysis["ai_status"] = "LIVE"
+        analysis["ai_provider"] = "GEMINI"
         store_cached_analysis(data, analysis)
         return analysis
 
     except Exception as exc:
-        if _is_rate_limit_error(exc):
-            delay = _parse_retry_delay(exc, default=60.0)
-            effective_delay = max(5.0, delay)
-            _rate_limit_until = time.time() + effective_delay
-            _last_retry_delay = effective_delay
+        is_rl = _is_rate_limit_error(exc)
+        is_temp = _is_temporary_unavailable_error(exc)
 
-            return {
-                "decision": "NO_TRADE",
-                "confidence": 0,
-                "status": "RATE_LIMITED",
-                "ai_status": "RATE_LIMITED",
-                "volatility_view": data.get("vol_signal", "FAIR") if data else "FAIR",
-                "direction": "NEUTRAL",
-                "thesis": "Gemini analysis temporarily unavailable due to API quota.",
-                "key_reasons": [],
-                "risks": ["GEMINI_RATE_LIMITED"],
-                "retry_delay": int(effective_delay),
-            }
+        if is_rl or is_temp:
+            if is_rl:
+                delay = _parse_retry_delay(exc, default=60.0)
+                effective_delay = max(5.0, delay)
+                _rate_limit_until = time.time() + effective_delay
+                _last_retry_delay = effective_delay
+
+            openrouter_key = get_openrouter_api_key()
+            if openrouter_key:
+                openrouter_resp = call_openrouter_fallback(data, api_key=openrouter_key)
+                if openrouter_resp and openrouter_resp.get("decision") in ("TRADE_CANDIDATE", "NO_TRADE"):
+                    store_cached_analysis(data, openrouter_resp)
+                    return openrouter_resp
+
+            if is_rl:
+                return {
+                    "decision": "NO_TRADE",
+                    "confidence": 0,
+                    "status": "RATE_LIMITED",
+                    "ai_status": "RATE_LIMITED",
+                    "volatility_view": data.get("vol_signal", "FAIR") if data else "FAIR",
+                    "direction": "NEUTRAL",
+                    "thesis": "Gemini analysis temporarily unavailable due to API quota.",
+                    "key_reasons": [],
+                    "risks": ["GEMINI_RATE_LIMITED"],
+                    "retry_delay": int(effective_delay),
+                    "ai_provider": "GEMINI",
+                }
+            else:
+                return {
+                    "decision": "NO_TRADE",
+                    "confidence": 0,
+                    "status": "ERROR",
+                    "ai_status": "ERROR",
+                    "volatility_view": "FAIR",
+                    "direction": "NEUTRAL",
+                    "thesis": "Gemini analysis failed safely.",
+                    "key_reasons": [],
+                    "risks": [
+                        f"Gemini error: {exc}"
+                    ],
+                    "ai_provider": "GEMINI",
+                }
 
         return {
             "decision": "NO_TRADE",
@@ -406,5 +594,6 @@ def create_analysis(data):
             "key_reasons": [],
             "risks": [
                 f"Gemini error: {exc}"
-            ]
+            ],
+            "ai_provider": "GEMINI",
         }

@@ -5,12 +5,12 @@ import Link from "next/link";
 import {
   Bell,
   Settings as SettingsIcon,
-  ChevronDown,
   Menu,
   AlertTriangle,
 } from "lucide-react";
 import clsx from "clsx";
 import ThemeToggle from "@/components/common/ThemeToggle";
+import MarketTickerStrip from "./MarketTickerStrip";
 
 interface TopNavProps {
   currentSymbol: string;
@@ -50,19 +50,17 @@ export default function TopNav({
   agentStatus = "ACTIVE",
   isConnected = true,
 }: TopNavProps) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
 
   return (
-    <header className="h-14 bg-voltron-950/95 backdrop-blur border-b border-voltron-750/70 px-2.5 sm:px-4 flex items-center justify-between sticky top-0 z-20 font-mono text-xs max-w-full overflow-hidden">
+    <header className="h-14 bg-voltron-950/95 backdrop-blur border-b border-voltron-750/70 px-2 sm:px-3 flex items-center justify-between sticky top-0 z-20 font-mono text-xs max-w-full overflow-hidden">
 
-      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-shrink overflow-x-auto no-scrollbar py-0.5">
-
+      <div className="flex items-center flex-shrink-0 mr-1 sm:mr-2">
         {onOpenMobileMenu && (
           <button
             onClick={onOpenMobileMenu}
             aria-label="Open navigation"
-            className="lg:hidden p-1.5 rounded bg-voltron-900 hover:bg-voltron-850 text-voltron-300 hover:text-white border border-voltron-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan flex-shrink-0"
+            className="lg:hidden p-1.5 rounded bg-voltron-900 hover:bg-voltron-850 text-voltron-300 hover:text-white border border-voltron-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-voltron-cyan flex-shrink-0 mr-1.5"
           >
             <Menu className="w-4 h-4" />
           </button>
@@ -75,113 +73,18 @@ export default function TopNav({
           <span className="w-2 h-2 rounded-xs bg-voltron-cyan shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
           <span>VOLTRON</span>
         </Link>
+      </div>
 
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded bg-voltron-850 hover:bg-voltron-800 border border-voltron-700/80 hover:border-voltron-600 font-bold text-white transition-all shadow-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-voltron-cyan"
-            aria-label="Select asset"
-          >
-            <span className="text-voltron-400 text-[10px] sm:text-[11px] uppercase tracking-wider hidden xs:inline">Asset:</span>
-            <span className="text-voltron-cyan font-bold text-xs">{currentSymbol}</span>
-            <ChevronDown className={clsx("w-3 h-3 text-voltron-400 ml-0.5 transition-transform duration-150", dropdownOpen && "rotate-180")} />
-          </button>
-
-          {dropdownOpen && (
-            <div className="absolute left-0 mt-1.5 w-48 bg-voltron-850 border border-voltron-700 rounded-md shadow-terminal p-1 z-50">
-              <div className="px-2 py-1 text-[9px] uppercase text-voltron-400 tracking-wider">
-                Select Asset
-              </div>
-              {symbols.map((item) => (
-                <button
-                  key={item.symbol}
-                  onClick={() => {
-                    onSelectSymbol(item.symbol);
-                    setDropdownOpen(false);
-                  }}
-                  className={clsx(
-                    "w-full text-left px-2.5 py-1.5 rounded text-xs font-semibold flex items-center justify-between transition-colors",
-                    currentSymbol === item.symbol
-                      ? "bg-voltron-cyan/15 text-voltron-cyan"
-                      : "text-voltron-200 hover:bg-voltron-750 hover:text-white"
-                  )}
-                >
-                  <span className="font-bold">{item.symbol}</span>
-                  <span className="text-[10px] text-voltron-400">
-                    {item.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Price:</span>
-          <span className="font-bold text-white font-tabular text-xs">
-            {marketPrice != null ? `$${marketPrice.toFixed(2)}` : "—"}
-          </span>
-        </div>
-
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span
-            className={clsx(
-              "font-bold flex items-center gap-1.5 text-[11px]",
-              marketStatus === "OPEN"
-                ? "text-voltron-emerald"
-                : marketStatus === "CLOSED"
-                ? "text-voltron-rose"
-                : "text-voltron-400"
-            )}
-          >
-            <span
-              className={clsx(
-                "w-1.5 h-1.5 rounded-full",
-                marketStatus === "OPEN"
-                  ? "bg-voltron-emerald shadow-[0_0_6px_rgba(16,185,129,0.8)]"
-                  : marketStatus === "CLOSED"
-                  ? "bg-voltron-rose shadow-[0_0_6px_rgba(244,63,94,0.8)]"
-                  : "bg-voltron-400 animate-pulse"
-              )}
-            />
-            {marketStatus === "OPEN"
-              ? "MARKET OPEN"
-              : marketStatus === "CLOSED"
-              ? "MARKET CLOSED"
-              : "MARKET --"}
-          </span>
-        </div>
-
-        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-900 border border-voltron-750/70 flex-shrink-0">
-          <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Agent:</span>
-          <span
-            className={clsx(
-              "font-bold flex items-center gap-1.5 text-[11px]",
-              agentStatus === "ACTIVE"
-                ? "text-voltron-emerald"
-                : agentStatus === "PAUSED"
-                ? "text-voltron-amber"
-                : "text-voltron-rose"
-            )}
-          >
-            <span
-              className={clsx(
-                "w-1.5 h-1.5 rounded-full",
-                agentStatus === "ACTIVE"
-                  ? "bg-voltron-emerald animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]"
-                  : agentStatus === "PAUSED"
-                  ? "bg-voltron-amber shadow-[0_0_6px_rgba(245,158,11,0.8)]"
-                  : "bg-voltron-rose shadow-[0_0_6px_rgba(244,63,94,0.8)]"
-              )}
-            />
-            {agentStatus || "—"}
-          </span>
-        </div>
-
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-voltron-cyan/10 border border-voltron-cyan/30 flex-shrink-0">
-          <span className="text-voltron-400 text-[10px] uppercase tracking-wider">Trading:</span>
-          <span className="text-voltron-cyan font-bold text-[10.5px]">PAPER (DISABLED)</span>
-        </div>
+      <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+        <MarketTickerStrip
+          currentSymbol={currentSymbol}
+          onSelectSymbol={onSelectSymbol}
+          marketPrice={marketPrice}
+          marketStatus={marketStatus}
+          agentStatus={agentStatus}
+          symbols={symbols}
+          showIndicators={true}
+        />
       </div>
 
       <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0 ml-2">

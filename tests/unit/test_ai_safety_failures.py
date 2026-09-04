@@ -52,8 +52,9 @@ class TestAISafetyFailures(unittest.TestCase):
         self.assertEqual(result["decision"], "NO_TRADE")
         self.assertEqual(result["confidence"], 0)
 
+    @patch("agent.analyst.get_openrouter_api_key", return_value=None)
     @patch("agent.analyst.genai")
-    def test_ai_rate_limited_429_structured_response(self, mock_genai):
+    def test_ai_rate_limited_429_structured_response(self, mock_genai, mock_or_key):
         from agent.analyst import reset_rate_limit, is_rate_limited
         reset_rate_limit()
 
@@ -77,6 +78,26 @@ class TestAISafetyFailures(unittest.TestCase):
         self.assertEqual(second_result["status"], "RATE_LIMITED")
         self.assertEqual(second_result["confidence"], 0)
         mock_genai.Client.assert_not_called()
+
+        mock_or_resp = {
+            "decision": "TRADE_CANDIDATE",
+            "confidence": 85,
+            "volatility_view": "EXPENSIVE",
+            "direction": "NEUTRAL",
+            "thesis": "OpenRouter fallback succeeded.",
+            "key_reasons": ["Elevated IV"],
+            "risks": ["Tail risk"],
+            "status": "COMPLETE",
+            "ai_status": "LIVE",
+            "ai_provider": "OPENROUTER",
+        }
+        with patch("agent.analyst.get_openrouter_api_key", return_value="test-or-key"), \
+             patch("agent.analyst.call_openrouter_fallback", return_value=mock_or_resp) as mock_fb:
+            fb_res = create_analysis({"symbol": "QQQ", "iv": 25.0, "rv": 15.0})
+            self.assertEqual(fb_res["status"], "COMPLETE")
+            self.assertEqual(fb_res["ai_provider"], "OPENROUTER")
+            self.assertEqual(fb_res["decision"], "TRADE_CANDIDATE")
+            mock_fb.assert_called_once()
 
         reset_rate_limit()
 

@@ -167,6 +167,15 @@
   }
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .light .text-white:not([class*="bg-voltron-cyan"]):not([class*="bg-voltron-rose"]):not([class*="bg-voltron-emerald"]):not([class*="bg-voltron-amber"]):not([class*="bg-voltron-violet"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="badge-solid"]) {
   color: #0F172A;
 }

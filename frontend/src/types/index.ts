@@ -82,6 +82,7 @@ export interface AIAnalysis {
   opportunity_score: number;
   timestamp: string;
   ai_status?: "LIVE" | "CACHED" | "RATE_LIMITED" | "ERROR";
+  ai_provider?: "GEMINI" | "OPENROUTER" | string;
   cached_at?: string;
   is_cached?: boolean;
   risk_decision?: any;
@@ -101,6 +102,7 @@ export interface AgentState {
   last_reason: string | null;
   errors: string[];
   ai_status?: "LIVE" | "CACHED" | "RATE_LIMITED" | "ERROR";
+  ai_provider?: "GEMINI" | "OPENROUTER" | string;
 }
 
 export interface TimelineEvent {

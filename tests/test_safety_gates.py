@@ -710,23 +710,51 @@ def test_cache_expiry_triggers_fresh_request(monkeypatch):
 
 def test_rate_limit_cooldown_prevents_request_storms():
     import time
-    from agent.analyst import reset_rate_limit, is_rate_limited, create_analysis
+    from unittest.mock import patch
+    from agent.analyst import reset_rate_limit, reset_ai_cache, is_rate_limited, create_analysis
     import agent.analyst as analyst_mod
 
     reset_rate_limit()
+    reset_ai_cache()
     assert not is_rate_limited()
 
     analyst_mod._rate_limit_until = time.time() + 60.0
     assert is_rate_limited()
 
-    for _ in range(10):
-        res = create_analysis({"symbol": "SPY", "iv": 12.0, "rv": 8.0})
-        assert res["status"] == "RATE_LIMITED"
-        assert res["ai_status"] == "RATE_LIMITED"
-        assert res["decision"] == "NO_TRADE"
-        assert res["confidence"] == 0
+    with patch("agent.analyst.get_openrouter_api_key", return_value=None), \
+         patch("agent.analyst.genai") as mock_genai:
+        for _ in range(10):
+            res = create_analysis({"symbol": "SPY", "iv": 12.0, "rv": 8.0})
+            assert res["status"] == "RATE_LIMITED"
+            assert res["ai_status"] == "RATE_LIMITED"
+            assert res["decision"] == "NO_TRADE"
+            assert res["confidence"] == 0
+        mock_genai.Client.assert_not_called()
+
+    reset_ai_cache()
+    mock_fallback_resp = {
+        "decision": "TRADE_CANDIDATE",
+        "confidence": 75,
+        "volatility_view": "EXPENSIVE",
+        "direction": "NEUTRAL",
+        "thesis": "Fallback analysis",
+        "key_reasons": ["High IV"],
+        "risks": ["Tail risk"],
+        "status": "COMPLETE",
+        "ai_status": "LIVE",
+        "ai_provider": "OPENROUTER",
+    }
+    with patch("agent.analyst.get_openrouter_api_key", return_value="dummy-key"), \
+         patch("agent.analyst.call_openrouter_fallback", return_value=mock_fallback_resp) as mock_fb, \
+         patch("agent.analyst.genai") as mock_genai:
+        res = create_analysis({"symbol": "QQQ", "iv": 18.0, "rv": 10.0})
+        assert res["status"] == "COMPLETE"
+        assert res["ai_provider"] == "OPENROUTER"
+        mock_fb.assert_called_once()
+        mock_genai.Client.assert_not_called()
 
     reset_rate_limit()
+    reset_ai_cache()
 
 
 def test_rate_limit_fallback_cannot_become_trade_candidate():

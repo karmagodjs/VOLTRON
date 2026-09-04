@@ -18,11 +18,16 @@ class TestAICachingHardening(unittest.TestCase):
     def setUp(self):
         reset_rate_limit()
         reset_ai_cache()
-        self.mock_env = patch.dict(os.environ, {"GEMINI_API_KEY": "fake_test_gemini_key"})
+        if "ANTIGRAVITY_SOURCE_METADATA" in os.environ and len(os.environ["ANTIGRAVITY_SOURCE_METADATA"]) > 30000:
+            del os.environ["ANTIGRAVITY_SOURCE_METADATA"]
+        self.mock_env = patch.dict(os.environ, {"GEMINI_API_KEY": "fake_test_gemini_key", "OPENROUTER_API_KEY": ""})
         self.mock_env.start()
 
     def tearDown(self):
-        self.mock_env.stop()
+        try:
+            self.mock_env.stop()
+        except Exception:
+            pass
         reset_rate_limit()
         reset_ai_cache()
 
@@ -106,8 +111,9 @@ class TestAICachingHardening(unittest.TestCase):
             self.assertEqual(res_fresh["ai_status"], "LIVE")
             self.assertEqual(mock_genai.Client.call_count, 1)
 
+    @patch("agent.analyst.get_openrouter_api_key", return_value=None)
     @patch("agent.analyst.genai")
-    def test_d_rate_limited_responses_are_not_cached(self, mock_genai):
+    def test_d_rate_limited_responses_are_not_cached(self, mock_genai, mock_or_key):
         mock_genai.Client.side_effect = Exception("429 Quota exceeded: ResourceExhausted")
         market_data = {"symbol": "SPY", "iv": 20.0, "rv": 12.0}
 
@@ -120,6 +126,15 @@ class TestAICachingHardening(unittest.TestCase):
 
         store_cached_analysis(market_data, res)
         self.assertIsNone(get_cached_analysis(market_data))
+
+        reset_ai_cache()
+        with patch("agent.analyst.get_openrouter_api_key", return_value="test-or-key"), \
+             patch("agent.analyst.call_openrouter_fallback", return_value=None):
+            res_failed_fb = create_analysis(market_data)
+            self.assertEqual(res_failed_fb["status"], "RATE_LIMITED")
+            self.assertIsNone(get_cached_analysis(market_data))
+            store_cached_analysis(market_data, res_failed_fb)
+            self.assertIsNone(get_cached_analysis(market_data))
 
     @patch("agent.analyst.genai")
     def test_e_generic_error_responses_are_not_cached(self, mock_genai):
@@ -151,8 +166,9 @@ class TestAICachingHardening(unittest.TestCase):
         mock_genai.Client.assert_not_called()
         self.assertIsNone(get_cached_analysis(incomplete_data))
 
+    @patch("agent.analyst.get_openrouter_api_key", return_value=None)
     @patch("agent.analyst.genai")
-    def test_g_active_cooldown_prevents_api_calls_and_returns_rate_limited(self, mock_genai):
+    def test_g_active_cooldown_prevents_api_calls_and_returns_rate_limited(self, mock_genai, mock_or_key):
         import agent.analyst as analyst_mod
         analyst_mod._rate_limit_until = time.time() + 60.0
         self.assertTrue(is_rate_limited())
@@ -163,6 +179,27 @@ class TestAICachingHardening(unittest.TestCase):
         self.assertEqual(res["status"], "RATE_LIMITED")
         self.assertEqual(res["ai_status"], "RATE_LIMITED")
         mock_genai.Client.assert_not_called()
+
+        mock_fb_resp = {
+            "decision": "TRADE_CANDIDATE",
+            "confidence": 80,
+            "volatility_view": "EXPENSIVE",
+            "direction": "NEUTRAL",
+            "thesis": "Fallback analysis during cooldown",
+            "key_reasons": ["Vol spike"],
+            "risks": ["Tail risk"],
+            "status": "COMPLETE",
+            "ai_status": "LIVE",
+            "ai_provider": "OPENROUTER",
+        }
+        with patch("agent.analyst.get_openrouter_api_key", return_value="dummy_key"), \
+             patch("agent.analyst.call_openrouter_fallback", return_value=mock_fb_resp) as mock_fb:
+            res_fb = create_analysis({"symbol": "QQQ", "iv": 25.0, "rv": 15.0})
+            self.assertEqual(res_fb["decision"], "TRADE_CANDIDATE")
+            self.assertEqual(res_fb["status"], "COMPLETE")
+            self.assertEqual(res_fb["ai_provider"], "OPENROUTER")
+            mock_fb.assert_called_once()
+            mock_genai.Client.assert_not_called()
 
     @patch("agent.analyst.genai")
     def test_h_cache_returns_cached_labels(self, mock_genai):
