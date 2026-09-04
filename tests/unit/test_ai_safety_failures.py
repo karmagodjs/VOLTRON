@@ -7,6 +7,16 @@ from agent.analyst import create_analysis
 
 class TestAISafetyFailures(unittest.TestCase):
 
+    def setUp(self):
+        from agent.analyst import reset_rate_limit, reset_ai_cache
+        reset_rate_limit()
+        reset_ai_cache()
+
+    def tearDown(self):
+        from agent.analyst import reset_rate_limit, reset_ai_cache
+        reset_rate_limit()
+        reset_ai_cache()
+
     def test_ai_empty_market_data_fallback(self):
         result = create_analysis({})
         self.assertEqual(result["decision"], "NO_TRADE")
@@ -82,16 +92,18 @@ class TestAISafetyFailures(unittest.TestCase):
 class TestVoltronServiceAICaching(unittest.TestCase):
 
     def setUp(self):
-        from agent.analyst import reset_rate_limit
+        from agent.analyst import reset_rate_limit, reset_ai_cache
         reset_rate_limit()
+        reset_ai_cache()
         from backend.service import VoltronService
         self.service = VoltronService()
         self.service.stock_data_client = MagicMock()
         self.service.option_data_client = MagicMock()
 
     def tearDown(self):
-        from agent.analyst import reset_rate_limit
+        from agent.analyst import reset_rate_limit, reset_ai_cache
         reset_rate_limit()
+        reset_ai_cache()
 
     @patch("backend.service.VoltronService.get_market_data")
     @patch("backend.service.create_analysis")

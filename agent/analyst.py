@@ -2,6 +2,7 @@ import json
 import os
 import re
 import time
+from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 from google import genai
@@ -13,6 +14,10 @@ load_dotenv()
 # Rate limit cooldown tracking (Free tier protection)
 _rate_limit_until: float = 0.0
 _last_retry_delay: float = 60.0
+
+# In-memory successful-analysis cache (Free tier quota efficiency)
+AI_CACHE_TTL: float = 180.0
+_ai_cache: Dict[str, Dict[str, Any]] = {}
 
 
 def is_rate_limited() -> bool:
@@ -30,6 +35,119 @@ def reset_rate_limit():
     global _rate_limit_until, _last_retry_delay
     _rate_limit_until = 0.0
     _last_retry_delay = 60.0
+
+
+def reset_ai_cache():
+    """Clear in-memory analysis cache (primarily for unit tests)."""
+    global _ai_cache
+    _ai_cache.clear()
+
+
+def _generate_cache_key(data: dict) -> str:
+    """Generate a deterministic cache key from symbol and quantitative market inputs."""
+    if not isinstance(data, dict):
+        return ""
+
+    sym = str(data.get("symbol") or data.get("underlying") or "").upper().strip()
+    if not sym:
+        return ""
+
+    # Price bucketing (round to nearest $0.50 to absorb sub-dollar tick noise)
+    price_val = data.get("price")
+    if price_val is None:
+        price_val = data.get("spot_price")
+    if price_val is None:
+        price_val = data.get("underlying_price")
+
+    price_bucket = "NONE"
+    if price_val is not None:
+        try:
+            price_bucket = f"{round(float(price_val) / 0.50) * 0.50:.2f}"
+        except (ValueError, TypeError):
+            price_bucket = str(price_val)
+
+    # Implied Volatility (round to 2 decimals)
+    iv_val = data.get("iv") if data.get("iv") is not None else data.get("implied_volatility")
+    iv_bucket = "NONE"
+    if iv_val is not None:
+        try:
+            iv_bucket = f"{round(float(iv_val), 2):.2f}"
+        except (ValueError, TypeError):
+            iv_bucket = str(iv_val)
+
+    # Realized Volatility (round to 2 decimals)
+    rv_val = data.get("rv") if data.get("rv") is not None else data.get("realized_volatility")
+    rv_bucket = "NONE"
+    if rv_val is not None:
+        try:
+            rv_bucket = f"{round(float(rv_val), 2):.2f}"
+        except (ValueError, TypeError):
+            rv_bucket = str(rv_val)
+
+    # IV/RV Ratio
+    ratio_val = data.get("iv_rv_ratio")
+    ratio_bucket = "NONE"
+    if ratio_val is not None:
+        try:
+            ratio_bucket = f"{round(float(ratio_val), 2):.2f}"
+        except (ValueError, TypeError):
+            ratio_bucket = str(ratio_val)
+
+    # Opportunity Score
+    score_val = data.get("opportunity_score")
+    score_bucket = "NONE"
+    if score_val is not None:
+        try:
+            score_bucket = str(int(score_val))
+        except (ValueError, TypeError):
+            score_bucket = str(score_val)
+
+    regime = str(data.get("market_regime") or data.get("regime") or "NONE").upper().strip()
+    vol_sig = str(data.get("vol_signal") or data.get("volatility_signal") or "NONE").upper().strip()
+
+    return f"{sym}:P={price_bucket}:IV={iv_bucket}:RV={rv_bucket}:RATIO={ratio_bucket}:SCORE={score_bucket}:REGIME={regime}:SIG={vol_sig}"
+
+
+def get_cached_analysis(data: dict) -> Optional[Dict[str, Any]]:
+    """Return a cached analysis if valid within TTL, else None."""
+    key = _generate_cache_key(data)
+    if not key or key not in _ai_cache:
+        return None
+
+    entry = _ai_cache[key]
+    cached_time = entry.get("timestamp", 0.0)
+    current_time = time.time()
+    if (current_time - cached_time) >= AI_CACHE_TTL or (current_time - cached_time) < 0:
+        _ai_cache.pop(key, None)
+        return None
+
+    cached_result = dict(entry.get("analysis", {}))
+    cached_result["status"] = "CACHED"
+    cached_result["ai_status"] = "CACHED"
+    return cached_result
+
+
+def store_cached_analysis(data: dict, analysis: dict) -> None:
+    """Store successful COMPLETE/LIVE analysis in memory cache."""
+    if not isinstance(analysis, dict):
+        return
+
+    # RATE_LIMITED and ERROR results must NEVER be cached
+    status = analysis.get("status")
+    ai_status = analysis.get("ai_status")
+    if status in ("RATE_LIMITED", "ERROR") or ai_status in ("RATE_LIMITED", "ERROR"):
+        return
+    if status != "COMPLETE" and ai_status != "LIVE":
+        return
+
+    key = _generate_cache_key(data)
+    if not key:
+        return
+
+    _ai_cache[key] = {
+        "analysis": dict(analysis),
+        "timestamp": time.time(),
+    }
 
 
 def _is_rate_limit_error(exc: Exception) -> bool:
@@ -197,6 +315,11 @@ def create_analysis(data):
             ]
         }
 
+    # 1. Check in-memory cache for valid prior successful analysis
+    cached = get_cached_analysis(data)
+    if cached is not None:
+        return cached
+
     # If Gemini is in an active rate limit cooldown, return structured 429 response immediately
     if is_rate_limited():
         return {
@@ -273,6 +396,7 @@ def create_analysis(data):
 
         analysis["status"] = "COMPLETE"
         analysis["ai_status"] = "LIVE"
+        store_cached_analysis(data, analysis)
         return analysis
 
     except Exception as exc:
