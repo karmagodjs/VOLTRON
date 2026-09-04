@@ -247,6 +247,7 @@ export default function DashboardPage() {
               analysis={analysis}
               strategyName={analysis?.strategy_recommendation || "IRON CONDOR"}
               riskStatus={risk?.overall_status || "APPROVED"}
+              risk={risk}
             />
           </div>
         </div>

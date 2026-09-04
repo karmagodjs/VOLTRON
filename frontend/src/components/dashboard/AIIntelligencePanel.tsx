@@ -1,23 +1,330 @@
 "use client";
 
-import { useState } from "react";
-import { AIAnalysis } from "@/types";
+import { useState, useEffect } from "react";
+import { AIAnalysis, RiskStatus, RiskGate } from "@/types";
 import { X } from "lucide-react";
 import clsx from "clsx";
+
+export interface AIAuditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  analysis: AIAnalysis | null;
+  risk?: RiskStatus | null;
+  riskStatus?: string | null;
+  initialTab?: "reasoning" | "data" | "risk";
+}
+
+export function AIAuditModal({
+  isOpen,
+  onClose,
+  analysis,
+  risk = null,
+  riskStatus = "APPROVED",
+  initialTab = "reasoning",
+}: AIAuditModalProps) {
+  const [modalTab, setModalTab] = useState<"reasoning" | "data" | "risk">(initialTab);
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setModalTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
+
+  if (!isOpen || !analysis) return null;
+
+  const oppScore = analysis.opportunity_score;
+  const configuredSpreadLimit = risk?.liquidity_spread_limit_pct ?? 5.0;
+
+  const rawGates: RiskGate[] =
+    analysis.risk_gates && analysis.risk_gates.length > 0
+      ? analysis.risk_gates
+      : analysis.risk_decision?.gates && analysis.risk_decision.gates.length > 0
+      ? analysis.risk_decision.gates
+      : risk?.gates && risk.gates.length > 0
+      ? risk.gates
+      : [];
+
+  const fallbackGates: RiskGate[] = [
+    {
+      id: "GATE-01",
+      name: "Opportunity Score",
+      condition: "Score >= 70",
+      current_value: oppScore != null ? `${oppScore} / 100` : "NOT EVALUATED",
+      status: oppScore != null && oppScore >= 70 ? "PASS" : "BLOCKED",
+      description: "Quant IV/RV dislocation meets statistical edge threshold.",
+    },
+    {
+      id: "GATE-02",
+      name: "Trade Risk",
+      condition: "Risk <= 1.0%",
+      current_value: "NOT EVALUATED",
+      status: "BLOCKED",
+      description: "Single-trade maximum loss strictly constrained.",
+    },
+    {
+      id: "GATE-03",
+      name: "Daily Loss Limit",
+      condition: "Daily Loss < 2.0%",
+      current_value: "NOT EVALUATED",
+      status: "BLOCKED",
+      description: "Intraday circuit breaker prevents capital bleed.",
+    },
+    {
+      id: "GATE-04",
+      name: "Portfolio Exposure",
+      condition: "Exposure <= 30.0%",
+      current_value: "NOT EVALUATED",
+      status: "BLOCKED",
+      description: "Total collateral utilization limits enforced.",
+    },
+    {
+      id: "GATE-05",
+      name: "Market Liquidity",
+      condition: `Spread <= ${configuredSpreadLimit.toFixed(1)}%`,
+      current_value: "NOT EVALUATED",
+      status: "BLOCKED",
+      description: "Bid-ask slippage check on execution legs.",
+    },
+    {
+      id: "GATE-06",
+      name: "Consecutive Losses",
+      condition: "Losses < 3",
+      current_value: "NOT EVALUATED",
+      status: "BLOCKED",
+      description: "Enforces cooldown after consecutive stops.",
+    },
+    {
+      id: "GATE-07",
+      name: "Emergency Kill Switch",
+      condition: "Disarmed / Normal",
+      current_value:
+        risk?.kill_switch != null
+          ? risk.kill_switch
+            ? "ENGAGED"
+            : "ARMED (Ready)"
+          : "UNAVAILABLE",
+      status: risk && !risk.kill_switch ? "PASS" : "BLOCKED",
+      description: "Master circuit breaker state.",
+    },
+  ];
+
+  const effectiveGates: RiskGate[] =
+    rawGates.length > 0
+      ? rawGates.map((g) => {
+          if (g.id === "GATE-01" || g.name.toLowerCase().includes("opportunity")) {
+            const scoreVal = oppScore != null ? oppScore : 0;
+            return {
+              ...g,
+              current_value: `${scoreVal} / 100`,
+              status: (scoreVal >= 70 ? "PASS" : "BLOCKED") as "PASS" | "BLOCKED",
+            };
+          }
+          if (g.id === "GATE-05" || g.name.toLowerCase().includes("liquidity")) {
+            return {
+              ...g,
+              condition: `Spread <= ${configuredSpreadLimit.toFixed(1)}%`,
+            };
+          }
+          return g;
+        })
+      : fallbackGates;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-mono">
+      <div className="w-full max-w-2xl bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-voltron-400 hover:text-white"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            VOLTRON AI Intelligence Audit — {analysis.symbol}
+          </h3>
+        </div>
+
+        <div className="flex gap-2 border-b border-voltron-750 pb-2 mb-4">
+          <button
+            onClick={() => setModalTab("reasoning")}
+            className={clsx(
+              "px-3 py-1 rounded text-xs font-semibold transition-colors",
+              modalTab === "reasoning"
+                ? "bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30"
+                : "text-voltron-400 hover:text-white"
+            )}
+          >
+            Neural Reasoning
+          </button>
+          <button
+            onClick={() => setModalTab("data")}
+            className={clsx(
+              "px-3 py-1 rounded text-xs font-semibold transition-colors",
+              modalTab === "data"
+                ? "bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30"
+                : "text-voltron-400 hover:text-white"
+            )}
+          >
+            Data Payload
+          </button>
+          <button
+            onClick={() => setModalTab("risk")}
+            className={clsx(
+              "px-3 py-1 rounded text-xs font-semibold transition-colors",
+              modalTab === "risk"
+                ? "bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30"
+                : "text-voltron-400 hover:text-white"
+            )}
+          >
+            Risk Gate Checklist
+          </button>
+        </div>
+
+        <div className="max-h-[360px] overflow-y-auto space-y-3 text-xs">
+          {modalTab === "reasoning" && (
+            <div className="space-y-3">
+              {/* Decision Snapshot Metrics Bar */}
+              <div className="grid grid-cols-3 gap-2 p-2.5 rounded bg-voltron-950 border border-voltron-800 text-center">
+                <div>
+                  <span className="text-[9px] uppercase text-voltron-400 block">Opportunity Score</span>
+                  <span
+                    className={clsx(
+                      "text-xs font-bold font-tabular",
+                      (oppScore ?? 0) >= 70 ? "text-voltron-emerald" : "text-voltron-rose"
+                    )}
+                  >
+                    {oppScore != null ? `${oppScore} / 100` : "— / 100"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase text-voltron-400 block">Confidence</span>
+                  <span className="text-xs font-bold text-voltron-cyan font-tabular">
+                    {analysis.confidence != null ? `${analysis.confidence}%` : "—"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase text-voltron-400 block">Direction</span>
+                  <span className="text-xs font-bold text-white">
+                    {analysis.direction || "—"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded bg-voltron-950 border border-voltron-800">
+                <span className="text-voltron-cyan font-bold block mb-1">Thesis:</span>
+                <p className="text-voltron-200">{analysis.thesis}</p>
+              </div>
+              <div className="p-3 rounded bg-voltron-950 border border-voltron-800 space-y-2">
+                <span className="text-voltron-emerald font-bold block">Key Quantitative Drivers:</span>
+                {analysis.key_reasons.map((r, i) => (
+                  <div key={i} className="flex items-start gap-2 text-voltron-300">
+                    <span className="text-voltron-emerald">✓</span>
+                    <span>{r}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 rounded bg-voltron-950 border border-voltron-800 space-y-2">
+                <span className="text-voltron-rose font-bold block">Risk Factors:</span>
+                {analysis.risks.map((r, i) => (
+                  <div key={i} className="flex items-start gap-2 text-voltron-300">
+                    <span className="text-voltron-rose">⚠</span>
+                    <span>{r}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {modalTab === "data" && (
+            <pre className="p-3 rounded bg-voltron-950 border border-voltron-800 text-[11px] text-voltron-cyan overflow-x-auto">
+              {JSON.stringify(
+                {
+                  symbol: analysis.symbol,
+                  decision: analysis.decision,
+                  confidence: analysis.confidence,
+                  opportunity_score: analysis.opportunity_score,
+                  direction: analysis.direction,
+                  volatility_view: analysis.volatility_view,
+                  timestamp: analysis.timestamp,
+                  risk_status:
+                    analysis?.risk_decision?.overall_status ||
+                    risk?.overall_status ||
+                    riskStatus ||
+                    (rawGates.length > 0 ? "APPROVED" : "BLOCKED"),
+                  risk_gates: effectiveGates,
+                },
+                null,
+                2
+              )}
+            </pre>
+          )}
+
+          {modalTab === "risk" && (
+            <div className="space-y-2">
+              {rawGates.length === 0 && (
+                <div className="p-2.5 rounded bg-voltron-amber/10 border border-voltron-amber/30 text-[11px] text-voltron-amber font-semibold flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>Live risk-engine telemetry not evaluated for this asset — all unevaluated gates fail-closed (BLOCKED).</span>
+                </div>
+              )}
+              {effectiveGates.map((gate, idx) => {
+                const isPass = gate.status === "PASS";
+                return (
+                  <div
+                    key={gate.id || gate.name || idx}
+                    className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center"
+                  >
+                    <div>
+                      <span className="font-bold text-white text-xs block">
+                        {gate.name} <span className="text-[10px] text-voltron-400 font-normal">({gate.condition})</span>
+                      </span>
+                      {gate.description && (
+                        <span className="text-[10px] text-voltron-400 block">{gate.description}</span>
+                      )}
+                    </div>
+                    <span
+                      className={clsx(
+                        "font-bold font-tabular text-xs",
+                        isPass ? "text-voltron-emerald" : "text-voltron-rose"
+                      )}
+                    >
+                      {gate.current_value} [{gate.status}]
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-5 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white transition-colors"
+          >
+            Close Audit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface AIIntelligencePanelProps {
   analysis: AIAnalysis | null;
   strategyName?: string | null;
   riskStatus?: string | null;
+  risk?: RiskStatus | null;
 }
 
 export default function AIIntelligencePanel({
   analysis,
   strategyName = "IRON CONDOR",
   riskStatus = "APPROVED",
+  risk = null,
 }: AIIntelligencePanelProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalTab, setModalTab] = useState<"reasoning" | "data" | "risk">("reasoning");
 
   const isRateLimited = analysis?.ai_status === "RATE_LIMITED" || analysis?.status === "RATE_LIMITED";
   const isCached = analysis?.ai_status === "CACHED" || Boolean(analysis?.is_cached);
@@ -226,10 +533,7 @@ export default function AIIntelligencePanel({
 
         {/* Audit Button */}
         <button
-          onClick={() => {
-            setModalTab("reasoning");
-            setModalOpen(true);
-          }}
+          onClick={() => setModalOpen(true)}
           className="w-full py-1.5 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-voltron-cyan font-bold border border-voltron-700/80 transition-colors flex items-center justify-center"
         >
           <span>INSPECT DECISION & AUDIT PAYLOAD</span>
@@ -302,137 +606,13 @@ export default function AIIntelligencePanel({
       </div>
 
       {/* Neural Reasoning Inspection Modal */}
-      {modalOpen && analysis && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-2xl bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
-            <button
-              onClick={() => setModalOpen(false)}
-              className="absolute top-4 right-4 text-voltron-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                VOLTRON AI Intelligence Audit — {analysis.symbol}
-              </h3>
-            </div>
-
-            <div className="flex gap-2 border-b border-voltron-750 pb-2 mb-4">
-              <button
-                onClick={() => setModalTab("reasoning")}
-                className={clsx(
-                  "px-3 py-1 rounded text-xs font-semibold transition-colors",
-                  modalTab === "reasoning"
-                    ? "bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30"
-                    : "text-voltron-400 hover:text-white"
-                )}
-              >
-                Neural Reasoning
-              </button>
-              <button
-                onClick={() => setModalTab("data")}
-                className={clsx(
-                  "px-3 py-1 rounded text-xs font-semibold transition-colors",
-                  modalTab === "data"
-                    ? "bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30"
-                    : "text-voltron-400 hover:text-white"
-                )}
-              >
-                Data Payload
-              </button>
-              <button
-                onClick={() => setModalTab("risk")}
-                className={clsx(
-                  "px-3 py-1 rounded text-xs font-semibold transition-colors",
-                  modalTab === "risk"
-                    ? "bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30"
-                    : "text-voltron-400 hover:text-white"
-                )}
-              >
-                Risk Gate Checklist
-              </button>
-            </div>
-
-            <div className="max-h-[360px] overflow-y-auto space-y-3 text-xs">
-              {modalTab === "reasoning" && (
-                <div className="space-y-3">
-                  <div className="p-3 rounded bg-voltron-950 border border-voltron-800">
-                    <span className="text-voltron-cyan font-bold block mb-1">Thesis:</span>
-                    <p className="text-voltron-200">{analysis.thesis}</p>
-                  </div>
-                  <div className="p-3 rounded bg-voltron-950 border border-voltron-800 space-y-2">
-                    <span className="text-voltron-emerald font-bold block">Key Quantitative Drivers:</span>
-                    {analysis.key_reasons.map((r, i) => (
-                      <div key={i} className="flex items-start gap-2 text-voltron-300">
-                        <span className="text-voltron-emerald">✓</span>
-                        <span>{r}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-3 rounded bg-voltron-950 border border-voltron-800 space-y-2">
-                    <span className="text-voltron-rose font-bold block">Risk Factors:</span>
-                    {analysis.risks.map((r, i) => (
-                      <div key={i} className="flex items-start gap-2 text-voltron-300">
-                        <span className="text-voltron-rose">⚠</span>
-                        <span>{r}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {modalTab === "data" && (
-                <pre className="p-3 rounded bg-voltron-950 border border-voltron-800 text-[11px] text-voltron-cyan overflow-x-auto">
-                  {JSON.stringify(
-                    {
-                      symbol: analysis.symbol,
-                      decision: analysis.decision,
-                      confidence: analysis.confidence,
-                      opportunity_score: analysis.opportunity_score,
-                      direction: analysis.direction,
-                      volatility_view: analysis.volatility_view,
-                      timestamp: analysis.timestamp,
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
-              )}
-
-              {modalTab === "risk" && (
-                <div className="space-y-2">
-                  <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                    <span>Opportunity Score (Min 70)</span>
-                    <span className="text-voltron-emerald font-bold">94 / 100 [PASS]</span>
-                  </div>
-                  <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                    <span>Max Trade Risk (&le; 1.0%)</span>
-                    <span className="text-voltron-emerald font-bold">0.31% [PASS]</span>
-                  </div>
-                  <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                    <span>Portfolio Exposure (&le; 30.0%)</span>
-                    <span className="text-voltron-emerald font-bold">18.2% [PASS]</span>
-                  </div>
-                  <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                    <span>Liquidity Spread (&le; 10.0%)</span>
-                    <span className="text-voltron-emerald font-bold">2.1% [PASS]</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5 flex justify-end">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="px-4 py-2 rounded-lg bg-voltron-800 hover:bg-voltron-750 text-xs font-bold text-white transition-colors"
-              >
-                Close Audit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AIAuditModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        analysis={analysis}
+        risk={risk}
+        riskStatus={riskStatus}
+      />
     </div>
   );
 }

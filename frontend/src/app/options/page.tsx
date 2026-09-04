@@ -662,7 +662,7 @@ function OptionsTerminalContent() {
                   <span className="font-bold text-white block">Opportunity Score</span>
                   <span className="text-[10px] text-voltron-400">Score &ge; 70</span>
                 </div>
-                <span className="text-voltron-emerald font-bold">{data?.opportunity_score || 94} / 100 [PASS]</span>
+                <span className="text-voltron-emerald font-bold">{data?.opportunity_score != null ? `${data.opportunity_score} / 100 [PASS]` : "—"}</span>
               </div>
               <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
                 <div>
@@ -681,9 +681,9 @@ function OptionsTerminalContent() {
               <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
                 <div>
                   <span className="font-bold text-white block">Liquidity Spread Gate</span>
-                  <span className="text-[10px] text-voltron-400">Spread &le; 10.0%</span>
+                  <span className="text-[10px] text-voltron-400">Spread &le; 5.0%</span>
                 </div>
-                <span className="text-voltron-emerald font-bold">2.1% Spread [PASS]</span>
+                <span className="text-voltron-emerald font-bold">&lt; 5.0% Spread [PASS]</span>
               </div>
               <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
                 <div>

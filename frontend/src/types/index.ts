@@ -84,6 +84,8 @@ export interface AIAnalysis {
   ai_status?: "LIVE" | "CACHED" | "RATE_LIMITED" | "ERROR";
   cached_at?: string;
   is_cached?: boolean;
+  risk_decision?: any;
+  risk_gates?: RiskGate[];
 }
 
 export interface AgentState {
@@ -143,6 +145,7 @@ export interface StrategyDetails {
 }
 
 export interface RiskGate {
+  id?: string;
   name: string;
   condition: string;
   current_value: string;
@@ -160,6 +163,8 @@ export interface RiskStatus {
   kill_switch: boolean;
   overall_status: "APPROVED" | "BLOCKED";
   gates: RiskGate[];
+  liquidity_spread_pct?: number;
+  liquidity_spread_limit_pct?: number;
 }
 
 export interface AccountSummary {

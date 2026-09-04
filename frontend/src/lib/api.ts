@@ -98,6 +98,13 @@ export async function fetchAIAnalysis(symbol = "SPY"): Promise<AIAnalysis> {
       if (!data.analysis.ai_status && data.ai_status) {
         data.analysis.ai_status = data.ai_status;
       }
+      if (data.risk_decision) {
+        data.analysis.risk_decision = data.risk_decision;
+        data.analysis.risk_gates = data.risk_decision.gates;
+      }
+      if (data.market_observation?.opportunity_score != null) {
+        data.analysis.opportunity_score = data.market_observation.opportunity_score;
+      }
       return data.analysis;
     }
     return {

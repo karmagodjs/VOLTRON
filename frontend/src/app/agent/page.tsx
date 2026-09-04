@@ -397,7 +397,7 @@ function AgentCommandCenterContent() {
             </div>
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Opportunity</span>
-              <span className="font-bold text-voltron-emerald text-xs font-tabular">{observation?.opportunity_score ?? 94}</span>
+              <span className="font-bold text-voltron-emerald text-xs font-tabular">{observation?.opportunity_score != null ? observation.opportunity_score : 0}</span>
             </div>
             <div className="p-2 rounded bg-voltron-950 border border-voltron-800">
               <span className="text-[9px] uppercase text-voltron-400 block mb-0.5">Strategy</span>
@@ -471,7 +471,7 @@ function AgentCommandCenterContent() {
               </div>
               <div className="text-right">
                 <span className="text-[9px] text-voltron-400 uppercase block">Opportunity Score</span>
-                <span className="font-bold text-voltron-cyan text-xs font-tabular">{observation?.opportunity_score ?? 94} / 100</span>
+                <span className="font-bold text-voltron-cyan text-xs font-tabular">{observation?.opportunity_score != null ? `${observation.opportunity_score} / 100` : "—"}</span>
               </div>
             </div>
           </div>

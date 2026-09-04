@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { AIAnalysis } from "@/types";
-import { X } from "lucide-react";
+import { AIAnalysis, RiskStatus } from "@/types";
 import clsx from "clsx";
+import { AIAuditModal } from "./AIIntelligencePanel";
 
 interface AIAnalystCardProps {
   analysis: AIAnalysis;
   onOpenRisk?: () => void;
+  risk?: RiskStatus | null;
 }
 
-export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardProps) {
+export default function AIAnalystCard({ analysis, onOpenRisk, risk }: AIAnalystCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"reasoning" | "data" | "risk">("reasoning");
 
@@ -172,140 +173,15 @@ export default function AIAnalystCard({ analysis, onOpenRisk }: AIAnalystCardPro
         </button>
       </div>
 
-      {/* Reasoning Inspection Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-2xl bg-voltron-900 border border-voltron-700 rounded-xl shadow-2xl p-6 relative">
-            <button
-              onClick={() => setModalOpen(false)}
-              className="absolute top-4 right-4 text-voltron-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="mb-4">
-              <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
-                AI Intelligence & Quant Audit — {analysis.symbol}
-              </h3>
-            </div>
-
-            {/* Modal Tabs */}
-            <div className="flex gap-2 border-b border-voltron-750 pb-2 mb-4">
-              <button
-                onClick={() => setModalTab("reasoning")}
-                className={clsx(
-                  "px-3 py-1 rounded text-xs font-mono font-semibold transition-colors",
-                  modalTab === "reasoning"
-                    ? "bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30"
-                    : "text-voltron-400 hover:text-white"
-                )}
-              >
-                Neural Reasoning
-              </button>
-              <button
-                onClick={() => setModalTab("data")}
-                className={clsx(
-                  "px-3 py-1 rounded text-xs font-mono font-semibold transition-colors",
-                  modalTab === "data"
-                    ? "bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30"
-                    : "text-voltron-400 hover:text-white"
-                )}
-              >
-                Data Payload
-              </button>
-              <button
-                onClick={() => setModalTab("risk")}
-                className={clsx(
-                  "px-3 py-1 rounded text-xs font-mono font-semibold transition-colors",
-                  modalTab === "risk"
-                    ? "bg-voltron-cyan/15 text-voltron-cyan border border-voltron-cyan/30"
-                    : "text-voltron-400 hover:text-white"
-                )}
-              >
-                Risk Gate Checklist
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="max-h-[360px] overflow-y-auto space-y-3 text-xs font-mono">
-              {modalTab === "reasoning" && (
-                <div className="space-y-3">
-                  <div className="p-3 rounded bg-voltron-950 border border-voltron-800">
-                    <span className="text-voltron-cyan font-bold block mb-1">Thesis:</span>
-                    <p className="text-voltron-200">{analysis.thesis}</p>
-                  </div>
-                  <div className="p-3 rounded bg-voltron-950 border border-voltron-800 space-y-2">
-                    <span className="text-voltron-emerald font-bold block">Key Quantitative Drivers:</span>
-                    {analysis.key_reasons.map((r, i) => (
-                      <div key={i} className="flex items-start gap-2 text-voltron-300">
-                        <span className="text-voltron-emerald">✓</span>
-                        <span>{r}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-3 rounded bg-voltron-950 border border-voltron-800 space-y-2">
-                    <span className="text-voltron-rose font-bold block">Risk Factors:</span>
-                    {analysis.risks.map((r, i) => (
-                      <div key={i} className="flex items-start gap-2 text-voltron-300">
-                        <span className="text-voltron-rose">⚠</span>
-                        <span>{r}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {modalTab === "data" && (
-                <pre className="p-3 rounded bg-voltron-950 border border-voltron-800 text-[11px] text-voltron-cyan overflow-x-auto">
-                  {JSON.stringify(
-                    {
-                      symbol: analysis.symbol,
-                      decision: analysis.decision,
-                      confidence: analysis.confidence,
-                      opportunity_score: analysis.opportunity_score,
-                      direction: analysis.direction,
-                      volatility_view: analysis.volatility_view,
-                      timestamp: analysis.timestamp,
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
-              )}
-
-              {modalTab === "risk" && (
-                <div className="space-y-2">
-                  <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                    <span>Opportunity Score (Min 70)</span>
-                    <span className="text-voltron-emerald font-bold">94 / 100 [PASS]</span>
-                  </div>
-                  <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                    <span>Max Trade Risk (&le; 1.0%)</span>
-                    <span className="text-voltron-emerald font-bold">0.31% [PASS]</span>
-                  </div>
-                  <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                    <span>Portfolio Exposure (&le; 30.0%)</span>
-                    <span className="text-voltron-emerald font-bold">18.2% [PASS]</span>
-                  </div>
-                  <div className="p-2.5 rounded bg-voltron-950 border border-voltron-800 flex justify-between items-center">
-                    <span>Liquidity Spread (&le; 10.0%)</span>
-                    <span className="text-voltron-emerald font-bold">2.1% [PASS]</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5 flex justify-end">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="px-4 py-2 rounded-lg bg-voltron-800 hover:bg-voltron-750 text-xs font-mono font-bold text-white transition-colors"
-              >
-                Close Audit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* AI Intelligence Audit Modal */}
+      <AIAuditModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        analysis={analysis}
+        risk={risk}
+        riskStatus={risk?.overall_status || "APPROVED"}
+        initialTab={modalTab}
+      />
     </div>
   );
 }

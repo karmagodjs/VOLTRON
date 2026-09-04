@@ -31,6 +31,9 @@ interface AssetScanRow {
 }
 
 import { useMarket } from "@/context/MarketContext";
+import { fetchAIAnalysis, fetchRisk } from "@/lib/api";
+import { AIAuditModal } from "@/components/dashboard/AIIntelligencePanel";
+import { AIAnalysis, RiskStatus } from "@/types";
 
 export default function MarketsPage() {
   const router = useRouter();
@@ -40,6 +43,29 @@ export default function MarketsPage() {
   const [assets, setAssets] = useState<AssetScanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // AI Intelligence Audit modal state
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [auditAnalysis, setAuditAnalysis] = useState<AIAnalysis | null>(null);
+  const [auditRisk, setAuditRisk] = useState<RiskStatus | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+
+  const handleOpenAudit = async (sym: string) => {
+    try {
+      setAuditLoading(true);
+      const [aiData, riskData] = await Promise.all([
+        fetchAIAnalysis(sym),
+        fetchRisk(sym),
+      ]);
+      setAuditAnalysis(aiData);
+      setAuditRisk(riskData);
+      setAuditOpen(true);
+    } catch (e) {
+      console.error("Failed to fetch audit data", e);
+    } finally {
+      setAuditLoading(false);
+    }
+  };
 
   const loadMarketScanner = async () => {
     try {
@@ -55,6 +81,17 @@ export default function MarketsPage() {
       setLoading(false);
     }
   };
+
+  // Sync with URL query parameter ?symbol=...
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const sym = params.get("symbol");
+      if (sym) {
+        setSelectedSymbol(sym.toUpperCase(), true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     loadMarketScanner();
@@ -121,6 +158,16 @@ export default function MarketsPage() {
                 </button>
               ))}
             </div>
+
+            <button
+              onClick={() => handleOpenAudit(selectedSymbol)}
+              disabled={auditLoading}
+              className="px-2.5 py-1.5 rounded-lg bg-voltron-cyan/15 hover:bg-voltron-cyan/25 text-voltron-cyan border border-voltron-cyan/30 text-[11px] font-mono font-bold transition-colors flex items-center gap-1.5 flex-shrink-0"
+              title={`Open AI Intelligence Audit for ${selectedSymbol}`}
+            >
+              <Cpu className={clsx("w-3.5 h-3.5", auditLoading && "animate-spin")} />
+              <span>Audit {selectedSymbol}</span>
+            </button>
 
             <button
               onClick={loadMarketScanner}
@@ -240,6 +287,12 @@ export default function MarketsPage() {
                       >
                         Chain
                       </Link>
+                      <button
+                        onClick={() => handleOpenAudit(row.symbol)}
+                        className="px-2.5 py-1 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-white font-bold border border-voltron-700 transition-colors min-h-[32px] flex items-center"
+                      >
+                        Audit
+                      </button>
                       <Link
                         href={`/agent?symbol=${row.symbol}`}
                         onClick={() => setSelectedSymbol(row.symbol, false)}
@@ -392,6 +445,12 @@ export default function MarketsPage() {
                             >
                               {isSelected ? "Selected" : "Select"}
                             </button>
+                            <button
+                              onClick={() => handleOpenAudit(row.symbol)}
+                              className="px-2.5 py-1 rounded bg-voltron-800 hover:bg-voltron-750 text-[11px] text-white font-bold border border-voltron-700 transition-colors"
+                            >
+                              Audit
+                            </button>
                             <Link
                               href={`/options?symbol=${row.symbol}`}
                               onClick={() => setSelectedSymbol(row.symbol, false)}
@@ -416,6 +475,14 @@ export default function MarketsPage() {
             </table>
           </div>
         </div>
+
+        {/* AI Intelligence Audit Modal */}
+        <AIAuditModal
+          isOpen={auditOpen}
+          onClose={() => setAuditOpen(false)}
+          analysis={auditAnalysis}
+          risk={auditRisk}
+        />
       </div>
     </TerminalLayout>
   );
