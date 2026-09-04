@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timezone
 from typing import Tuple, Optional
+from risk.limits import MAX_SPREAD_PERCENT
 
 VALID_DEFINED_RISK_STRATEGIES = {
     "BULL_CALL_SPREAD",
@@ -105,12 +106,13 @@ def validate_options_buying_power(
 
 def validate_multileg_liquidity(
     legs: list,
-    max_spread_percent: float = 10.0
+    max_spread_percent: Optional[float] = None
 ) -> Tuple[bool, str, list]:
     """
     Independently verify liquidity across every leg of a multi-leg strategy.
     All required legs must have valid bid/ask quotes and spread <= max_spread_percent.
     """
+    threshold = max_spread_percent if max_spread_percent is not None else MAX_SPREAD_PERCENT
     if not legs:
         return False, "EMPTY_LEGS_LIST", []
 
@@ -137,12 +139,12 @@ def validate_multileg_liquidity(
             "mid": round(mid, 2),
             "spread": round(spread, 2),
             "spread_percent": spread_pct,
-            "liquid": spread_pct <= max_spread_percent
+            "liquid": spread_pct <= threshold
         }
         leg_reports.append(leg_report)
 
-        if spread_pct > max_spread_percent:
-            return False, f"LEG_SPREAD_TOO_WIDE: {symbol} spread {spread_pct}% exceeds {max_spread_percent}% limit", leg_reports
+        if spread_pct > threshold:
+            return False, f"LEG_SPREAD_TOO_WIDE: {symbol} spread {spread_pct}% exceeds {threshold:.1f}% limit", leg_reports
 
     return True, "ALL_LEGS_LIQUIDITY_APPROVED", leg_reports
 
