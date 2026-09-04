@@ -38,11 +38,12 @@ export async function fetchAccount(): Promise<AccountSummary> {
   }
 }
 
-export async function fetchMarket(symbol = "SPY"): Promise<MarketData> {
+export async function fetchMarket(symbol = "SPY", timeframe = "1M"): Promise<MarketData> {
   const sym = symbol.toUpperCase();
+  const tf = (timeframe || "1M").toUpperCase();
   try {
-    const res = await fetch(`${API_BASE}/market?symbol=${sym}`, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Backend error for ${sym}`);
+    const res = await fetch(`${API_BASE}/market?symbol=${sym}&timeframe=${tf}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Backend error for ${sym} (${tf})`);
     return await res.json();
   } catch (err) {
     return {

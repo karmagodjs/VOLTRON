@@ -13,6 +13,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { MarketData, RiskStatus, AccountSummary } from "@/types";
+import { RefreshCw } from "lucide-react";
 import clsx from "clsx";
 
 interface MarketWorkspaceProps {
@@ -20,6 +21,9 @@ interface MarketWorkspaceProps {
   risk: RiskStatus | null;
   account: AccountSummary | null;
   isLoading?: boolean;
+  activeTimeframe?: string;
+  onTimeframeChange?: (tf: string) => void;
+  isTimeframeLoading?: boolean;
 }
 
 type ChartTab = "PRICE" | "REALIZED VOL" | "IMPLIED VOL" | "IV/RV";
@@ -29,12 +33,26 @@ export default function MarketWorkspace({
   risk,
   account,
   isLoading = false,
+  activeTimeframe: propActiveTimeframe,
+  onTimeframeChange,
+  isTimeframeLoading = false,
 }: MarketWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<ChartTab>("PRICE");
-  const [activeTimeframe, setActiveTimeframe] = useState<string>("1M");
+  const [internalTimeframe, setInternalTimeframe] = useState<string>("1M");
+
+  const activeTimeframe = propActiveTimeframe || internalTimeframe;
+  const isTimeframeBusy = isTimeframeLoading || (isLoading && (!market?.history || market.history.length === 0));
 
   const tabs: ChartTab[] = ["PRICE", "REALIZED VOL", "IMPLIED VOL", "IV/RV"];
   const timeframes = ["1D", "5D", "1M", "3M", "6M", "1Y"];
+
+  const handleSelectTimeframe = (tf: string) => {
+    if (onTimeframeChange) {
+      onTimeframeChange(tf);
+    } else {
+      setInternalTimeframe(tf);
+    }
+  };
 
   const isPositive = market ? market.change >= 0 : true;
 
@@ -125,12 +143,14 @@ export default function MarketWorkspace({
             {timeframes.map((tf) => (
               <button
                 key={tf}
-                onClick={() => setActiveTimeframe(tf)}
+                onClick={() => handleSelectTimeframe(tf)}
+                disabled={isTimeframeBusy}
                 className={clsx(
                   "px-2 py-0.5 rounded text-[10px] font-semibold transition-colors",
                   activeTimeframe === tf
                     ? "bg-voltron-cyan/20 text-voltron-cyan border border-voltron-cyan/40"
-                    : "text-voltron-400 hover:text-white"
+                    : "text-voltron-400 hover:text-white",
+                  isTimeframeBusy && "opacity-60 cursor-not-allowed"
                 )}
               >
                 {tf}
@@ -162,14 +182,24 @@ export default function MarketWorkspace({
       <div className="p-3.5 rounded-lg bg-voltron-900 border border-voltron-800 h-[340px] flex flex-col justify-between">
         <div className="flex items-center justify-between text-[11px] text-voltron-400 border-b border-voltron-800 pb-1.5 mb-2">
           <span className="text-white font-bold text-xs uppercase tracking-wider">
-            {market?.symbol || "SPY"} — {activeTab} TIME SERIES ({activeTimeframe})
+            {market?.symbol || "SPY"} — {activeTab === "PRICE" ? "PRICE TIME SERIES" : activeTab === "REALIZED VOL" ? "20-DAY REALIZED VOLATILITY" : activeTab === "IMPLIED VOL" ? "CURRENT ATM IMPLIED VOLATILITY" : "IV/RV VOLATILITY RATIO"} ({activeTimeframe})
           </span>
           <span className="text-[10px] text-voltron-cyan font-bold">
             SIP CONSOLIDATED MARKET FEED
           </span>
         </div>
 
-        <div className="flex-1 w-full min-h-0">
+        <div className="flex-1 w-full min-h-0 relative">
+          {/* Timeframe Loading Overlay */}
+          {isTimeframeBusy && (
+            <div className="absolute inset-0 bg-voltron-900/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-voltron-cyan">
+              <RefreshCw className="w-5 h-5 animate-spin mb-2 text-voltron-cyan" />
+              <span className="text-[11px] font-mono font-bold tracking-wider text-white">
+                LOADING {market?.symbol || "SPY"} {activeTimeframe} BARS...
+              </span>
+            </div>
+          )}
+
           {market?.history && market.history.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={market.history}>
@@ -199,10 +229,15 @@ export default function MarketWorkspace({
                     fontFamily: "monospace",
                     boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
                   }}
-                  formatter={(value: any) => [
-                    `${activeTab === "PRICE" ? "$" : ""}${Number(value).toFixed(2)}${getUnit()}`,
-                    activeTab,
-                  ]}
+                  formatter={(value: any) => {
+                    const num = Number(value);
+                    if (isNaN(num)) return ["—", activeTab];
+                    if (activeTab === "PRICE") return [`$${num.toFixed(2)}`, "Price"];
+                    if (activeTab === "REALIZED VOL") return [`${num.toFixed(2)}%`, "20D Realized Vol"];
+                    if (activeTab === "IMPLIED VOL") return [`${num.toFixed(2)}% (Current ATM Reference)`, "Implied Vol"];
+                    if (activeTab === "IV/RV") return [`${num.toFixed(2)}x`, "IV/RV Ratio"];
+                    return [`${num.toFixed(2)}${getUnit()}`, activeTab];
+                  }}
                 />
                 <Area
                   type="monotone"

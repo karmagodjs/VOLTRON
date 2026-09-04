@@ -45,13 +45,15 @@ export default function DashboardPage() {
   } | null>(null);
   const [risk, setRisk] = useState<RiskStatus | null>(null);
   const [account, setAccount] = useState<AccountSummary | null>(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1M");
+  const [timeframeLoading, setTimeframeLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadMarketData = async (sym = selectedSymbol) => {
+  const loadMarketData = async (sym = selectedSymbol, tf = selectedTimeframe) => {
     try {
       const [m, t, r, acc] = await Promise.all([
-        fetchMarket(sym),
+        fetchMarket(sym, tf),
         fetchTimeline(sym),
         fetchRisk(sym),
         fetchAccount(),
@@ -66,6 +68,19 @@ export default function DashboardPage() {
     }
   };
 
+  const handleTimeframeChange = async (tf: string) => {
+    setSelectedTimeframe(tf);
+    try {
+      setTimeframeLoading(true);
+      const m = await fetchMarket(selectedSymbol, tf);
+      setMarket(m);
+    } catch (err: any) {
+      console.warn("Failed to update timeframe data", err);
+    } finally {
+      setTimeframeLoading(false);
+    }
+  };
+
   const loadAIData = async (sym = selectedSymbol) => {
     try {
       const a = await fetchAIAnalysis(sym);
@@ -75,10 +90,10 @@ export default function DashboardPage() {
     }
   };
 
-  const loadAll = async (sym = selectedSymbol) => {
+  const loadAll = async (sym = selectedSymbol, tf = selectedTimeframe) => {
     try {
       setLoading(true);
-      await Promise.all([loadMarketData(sym), loadAIData(sym)]);
+      await Promise.all([loadMarketData(sym, tf), loadAIData(sym)]);
       setError(null);
     } catch (err: any) {
       setError(err?.message || "Failed to load telemetry from backend");
@@ -88,9 +103,9 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    loadAll(selectedSymbol);
+    loadAll(selectedSymbol, selectedTimeframe);
     // Market data refreshes every 15s (frequent refresh)
-    const marketInterval = setInterval(() => loadMarketData(selectedSymbol), 15000);
+    const marketInterval = setInterval(() => loadMarketData(selectedSymbol, selectedTimeframe), 15000);
     // AI Analysis refreshes every 45s (cached on backend with 180s TTL)
     const aiInterval = setInterval(() => loadAIData(selectedSymbol), 45000);
 
@@ -98,7 +113,7 @@ export default function DashboardPage() {
       clearInterval(marketInterval);
       clearInterval(aiInterval);
     };
-  }, [selectedSymbol]);
+  }, [selectedSymbol, selectedTimeframe]);
 
   const isRateLimited = analysis?.ai_status === "RATE_LIMITED" || analysis?.status === "RATE_LIMITED";
   const confidenceVal = analysis?.confidence != null ? analysis.confidence : 0;
@@ -220,6 +235,9 @@ export default function DashboardPage() {
               risk={risk}
               account={account}
               isLoading={loading}
+              activeTimeframe={selectedTimeframe}
+              onTimeframeChange={handleTimeframeChange}
+              isTimeframeLoading={timeframeLoading}
             />
           </div>
 

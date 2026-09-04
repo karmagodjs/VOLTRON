@@ -115,18 +115,26 @@ def get_account():
     return voltron_service.get_account_summary()
 
 @app.get("/api/market")
-def get_market(symbol: Optional[str] = Query(None), all: Optional[bool] = Query(False)):
+def get_market(
+    symbol: Optional[str] = Query(None),
+    timeframe: Optional[str] = Query("1M"),
+    all: Optional[bool] = Query(False)
+):
     from backend.service import SUPPORTED_UNIVERSE
     from datetime import datetime, timezone
 
+    tf = (timeframe or "1M").upper().strip()
+    if tf not in ("1D", "5D", "1M", "3M", "6M", "1Y"):
+        tf = "1M"
+
     if all or not symbol:
-        assets = [voltron_service.get_market_data(symbol=s) for s in SUPPORTED_UNIVERSE]
+        assets = [voltron_service.get_market_data(symbol=s, timeframe=tf) for s in SUPPORTED_UNIVERSE]
         return {
             "count": len(assets),
             "assets": assets,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-    return voltron_service.get_market_data(symbol=symbol.upper())
+    return voltron_service.get_market_data(symbol=symbol.upper(), timeframe=tf)
 
 @app.get("/api/market/clock")
 def get_market_clock():

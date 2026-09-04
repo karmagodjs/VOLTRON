@@ -3,9 +3,9 @@ export type MarketStatus = "OPEN" | "CLOSED" | "PRE_MARKET" | "AFTER_HOURS";
 export interface MarketHistoryPoint {
   date: string;
   price: number;
-  rv: number;
-  iv: number;
-  iv_rv: number;
+  rv?: number | null;
+  iv?: number | null;
+  iv_rv?: number | null;
   volume: number;
 }
 
@@ -27,6 +27,7 @@ export interface MarketData {
   vol_signal: "IV EXPENSIVE" | "IV CHEAP" | "IV FAIR" | "EXPENSIVE" | "CHEAP" | "FAIR" | string;
   market_status: MarketStatus | string;
   last_updated: string;
+  timeframe?: string;
   history: MarketHistoryPoint[];
 }
 

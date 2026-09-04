@@ -33,7 +33,7 @@ from alpaca.data.requests import (
     StockLatestTradeRequest,
     OptionChainRequest,
 )
-from alpaca.data.timeframe import TimeFrame
+from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from alpaca.data.enums import OptionsFeed
 
 # Quant & Agent imports
@@ -334,11 +334,15 @@ class VoltronService:
     # ==========================================
     # MARKET INTELLIGENCE & VOLATILITY (REAL DATA)
     # ==========================================
-    def get_market_data(self, symbol: str = "SPY") -> Dict[str, Any]:
+    def get_market_data(self, symbol: str = "SPY", timeframe: str = "1M") -> Dict[str, Any]:
         sym = symbol.upper()
+        tf = str(timeframe or "1M").upper().strip()
+        if tf not in ("1D", "5D", "1M", "3M", "6M", "1Y"):
+            tf = "1M"
 
-        # Cache check (15s TTL)
-        cached = self._market_cache.get(sym)
+        # Cache check (15s TTL per symbol + timeframe)
+        cache_key = f"{sym}_{tf}"
+        cached = self._market_cache.get(cache_key)
         if cached and (time.time() - cached.get("_cached_at", 0)) < 15:
             res = dict(cached)
             res.pop("_cached_at", None)
@@ -376,64 +380,170 @@ class VoltronService:
                 "market_status": clock_data.get("market_status", "UNKNOWN"),
                 "is_market_open": clock_data.get("is_open", False),
                 "market_clock": clock_data,
+                "timeframe": tf,
                 "history": [],
                 "options_volume": 0,
                 "put_call_ratio": 1.0,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
-        # 1. Fetch historical bars via IEX feed for 20-day RV and history
         now = datetime.now(timezone.utc)
-        start = now - timedelta(days=90)
 
+        # 1. Fetch historical bars via IEX feed for requested timeframe
         try:
-            req = StockBarsRequest(
-                symbol_or_symbols=[sym],
-                timeframe=TimeFrame.Day,
-                start=start,
-                end=now,
-                feed="iex",
-            )
-            bars_resp = self.stock_data_client.get_stock_bars(req)
-            df = bars_resp.df
+            # Check if 1M is cached to reuse baseline daily metrics
+            daily_cached = self._market_cache.get(f"{sym}_1M")
+            if daily_cached and (time.time() - daily_cached.get("_cached_at", 0)) < 15:
+                price = daily_cached.get("price", 0.0)
+                change = daily_cached.get("change", 0.0)
+                change_pct = daily_cached.get("change_percent", 0.0)
+                high = daily_cached.get("high", 0.0)
+                low = daily_cached.get("low", 0.0)
+                volume = daily_cached.get("volume", 0)
+                rv = daily_cached.get("rv", 0.0)
 
-            if sym in df.index.levels[0] if isinstance(df.index, pd.MultiIndex) else not df.empty:
-                prices_series = df.xs(sym)["close"] if isinstance(df.index, pd.MultiIndex) else df["close"]
-                highs_series = df.xs(sym)["high"] if isinstance(df.index, pd.MultiIndex) else df["high"]
-                lows_series = df.xs(sym)["low"] if isinstance(df.index, pd.MultiIndex) else df["low"]
-                volumes_series = df.xs(sym)["volume"] if isinstance(df.index, pd.MultiIndex) else df["volume"]
+            if tf == "1D":
+                # Intraday 5-minute bars for latest trading session
+                req = StockBarsRequest(
+                    symbol_or_symbols=[sym],
+                    timeframe=TimeFrame(5, TimeFrameUnit.Minute),
+                    start=now - timedelta(days=5),
+                    end=now,
+                    feed="iex",
+                )
+                bars_resp = self.stock_data_client.get_stock_bars(req)
+                df = bars_resp.df
+                if isinstance(df.index, pd.MultiIndex):
+                    df = df.xs(sym)
+                if not df.empty:
+                    dates = df.index.normalize().unique()
+                    latest_date = dates[-1]
+                    day_bars = df[df.index.normalize() == latest_date]
+                    for d, row in day_bars.iterrows():
+                        history.append({
+                            "date": d.strftime("%H:%M"),
+                            "price": round(float(row["close"]), 2),
+                            "rv": round(rv, 2) if rv > 0 else 0.0,
+                            "iv": None,
+                            "iv_rv": None,
+                            "volume": int(row["volume"]),
+                        })
+                    if not price or price == 0.0:
+                        price = float(day_bars["close"].iloc[-1])
+                        high = float(day_bars["high"].max())
+                        low = float(day_bars["low"].min())
+                        volume = int(day_bars["volume"].sum())
 
-                if len(prices_series) >= 21:
-                    rv = calculate_realized_volatility(prices_series, window=20) * 100.0
+            elif tf == "5D":
+                # Intraday 15-minute bars covering latest 5 trading days
+                req = StockBarsRequest(
+                    symbol_or_symbols=[sym],
+                    timeframe=TimeFrame(15, TimeFrameUnit.Minute),
+                    start=now - timedelta(days=12),
+                    end=now,
+                    feed="iex",
+                )
+                bars_resp = self.stock_data_client.get_stock_bars(req)
+                df = bars_resp.df
+                if isinstance(df.index, pd.MultiIndex):
+                    df = df.xs(sym)
+                if not df.empty:
+                    dates = df.index.normalize().unique()
+                    last_5_dates = dates[-5:]
+                    bars_5d = df[df.index.normalize().isin(last_5_dates)]
+                    for d, row in bars_5d.iterrows():
+                        history.append({
+                            "date": d.strftime("%b %d %H:%M"),
+                            "price": round(float(row["close"]), 2),
+                            "rv": round(rv, 2) if rv > 0 else 0.0,
+                            "iv": None,
+                            "iv_rv": None,
+                            "volume": int(row["volume"]),
+                        })
+                    if not price or price == 0.0:
+                        price = float(bars_5d["close"].iloc[-1])
+                        high = float(bars_5d["high"].max())
+                        low = float(bars_5d["low"].min())
+                        volume = int(bars_5d["volume"].sum())
 
-                latest_close = float(prices_series.iloc[-1])
-                price = latest_close
-                high = float(highs_series.iloc[-1])
-                low = float(lows_series.iloc[-1])
-                volume = int(volumes_series.iloc[-1])
+            else:
+                # Daily bars: 1M (~22 trading days), 3M (~65), 6M (~130), 1Y (~252)
+                start_days = 450 if tf in ("6M", "1Y") else (150 if tf == "3M" else 90)
+                req = StockBarsRequest(
+                    symbol_or_symbols=[sym],
+                    timeframe=TimeFrame.Day,
+                    start=now - timedelta(days=start_days),
+                    end=now,
+                    feed="iex",
+                )
+                bars_resp = self.stock_data_client.get_stock_bars(req)
+                df = bars_resp.df
+                if isinstance(df.index, pd.MultiIndex):
+                    df = df.xs(sym)
 
-                if len(prices_series) >= 2:
-                    prev_close = float(prices_series.iloc[-2])
-                    change = price - prev_close
-                    change_pct = (change / prev_close) * 100.0
+                if not df.empty:
+                    prices_series = df["close"]
+                    highs_series = df["high"]
+                    lows_series = df["low"]
+                    volumes_series = df["volume"]
 
-                # Build 30-day history from actual Alpaca bars (no Math.sin/cos)
-                dates = prices_series.index[-30:]
-                for d in dates:
-                    dt_label = d.strftime("%b %d") if hasattr(d, "strftime") else str(d)[:10]
-                    p_val = float(prices_series.loc[d])
-                    v_val = int(volumes_series.loc[d]) if d in volumes_series.index else 0
-                    history.append({
-                        "date": dt_label,
-                        "price": round(p_val, 2),
-                        "rv": round(rv, 2),
-                        "iv": None,
-                        "iv_rv": None,
-                        "volume": v_val,
-                    })
+                    if len(prices_series) >= 21:
+                        rv = calculate_realized_volatility(prices_series, window=20) * 100.0
+
+                    latest_close = float(prices_series.iloc[-1])
+                    price = latest_close
+                    high = float(highs_series.iloc[-1])
+                    low = float(lows_series.iloc[-1])
+                    volume = int(volumes_series.iloc[-1])
+
+                    if len(prices_series) >= 2:
+                        prev_close = float(prices_series.iloc[-2])
+                        change = price - prev_close
+                        change_pct = (change / prev_close) * 100.0
+
+                    # Calculate rolling 20-day realized volatility series
+                    returns = np.log(prices_series / prices_series.shift(1)).dropna()
+                    rolling_rv = returns.rolling(20).std() * np.sqrt(252) * 100.0
+
+                    limit_map = {"1M": 22, "3M": 65, "6M": 130, "1Y": 252}
+                    limit = limit_map.get(tf, 22)
+                    sliced = df.iloc[-limit:]
+
+                    for d, row in sliced.iterrows():
+                        dt_label = d.strftime("%b %d") if tf != "1Y" else d.strftime("%b %d, '%y")
+                        p_val = float(row["close"])
+                        v_val = int(row["volume"])
+                        pt_rv = round(float(rolling_rv.loc[d]), 2) if (d in rolling_rv.index and not np.isnan(rolling_rv.loc[d])) else round(rv, 2)
+                        history.append({
+                            "date": dt_label,
+                            "price": round(p_val, 2),
+                            "rv": pt_rv,
+                            "iv": None,
+                            "iv_rv": None,
+                            "volume": v_val,
+                        })
+
+            # If daily RV is still 0 (e.g. 1D/5D first request without daily cache), compute from daily
+            if rv == 0.0 and self.stock_data_client:
+                try:
+                    daily_req = StockBarsRequest(symbol_or_symbols=[sym], timeframe=TimeFrame.Day, start=now - timedelta(days=60), end=now, feed="iex")
+                    d_resp = self.stock_data_client.get_stock_bars(daily_req).df
+                    if isinstance(d_resp.index, pd.MultiIndex):
+                        d_resp = d_resp.xs(sym)
+                    if not d_resp.empty and len(d_resp["close"]) >= 21:
+                        rv = calculate_realized_volatility(d_resp["close"], window=20) * 100.0
+                        if len(d_resp["close"]) >= 2 and change == 0.0:
+                            prev_c = float(d_resp["close"].iloc[-2])
+                            change = price - prev_c
+                            change_pct = (change / prev_c) * 100.0
+                        for pt in history:
+                            if pt.get("rv") == 0.0 or pt.get("rv") is None:
+                                pt["rv"] = round(rv, 2)
+                except Exception:
+                    pass
 
         except Exception as e:
-            print(f"[VOLTRON] Error fetching historical bars for {sym}: {e}")
+            print(f"[VOLTRON] Error fetching historical bars for {sym} ({tf}): {e}")
 
         # 2. Fetch latest live trade via IEX feed
         try:
@@ -479,10 +589,14 @@ class VoltronService:
                             vol_signal = "FAIR"
                             market_regime = "NORMAL VOLATILITY"
 
-                        # Update history points with calculated iv
+                        # Update history points with calculated iv and iv_rv
                         for pt in history:
                             pt["iv"] = iv
-                            pt["iv_rv"] = iv_rv_ratio
+                            pt_rv = pt.get("rv") or rv
+                            if iv is not None and pt_rv and pt_rv > 0:
+                                pt["iv_rv"] = round(iv / pt_rv, 2)
+                            else:
+                                pt["iv_rv"] = iv_rv_ratio
 
             except Exception as e:
                 print(f"[VOLTRON] Options scan error for {sym}: {e}")
@@ -514,15 +628,16 @@ class VoltronService:
             "market_status": market_status,
             "is_market_open": is_market_open,
             "market_clock": clock_data,
+            "timeframe": tf,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "history": history,
         }
 
-        # Store in cache
+        # Store in cache with timeframe-specific key
         cached_entry = dict(result)
         cached_entry["_cached_at"] = time.time()
-        self._market_cache[sym] = cached_entry
+        self._market_cache[cache_key] = cached_entry
 
         return result
 
