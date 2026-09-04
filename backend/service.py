@@ -40,7 +40,8 @@ if os.name == "nt":
 
 # Alpaca clients
 from alpaca.trading.client import TradingClient
-from alpaca.trading.requests import GetOrdersRequest
+from alpaca.trading.requests import GetOrdersRequest, GetOptionContractsRequest
+from alpaca.trading.enums import AssetStatus
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.historical.option import OptionHistoricalDataClient
 from alpaca.data.requests import (
@@ -201,6 +202,7 @@ class VoltronService:
         self.MAX_AI_CACHE = 8
         self.MAX_SUCCESSFUL_AI = 4
         self.MAX_TIMELINE_EVENTS = 100
+        self._expirations_cache: Dict[str, Tuple[float, List[str]]] = {}
 
         self._ensure_clients()
 
@@ -281,6 +283,12 @@ class VoltronService:
             # 6. Trim timeline_events to latest MAX_TIMELINE_EVENTS
             if hasattr(self, "timeline_events") and len(self.timeline_events) > self.MAX_TIMELINE_EVENTS:
                 self.timeline_events = self.timeline_events[-self.MAX_TIMELINE_EVENTS:]
+
+            # 7. Prune _expirations_cache (TTL 120s)
+            if hasattr(self, "_expirations_cache") and self._expirations_cache:
+                expired_e = [k for k, v in self._expirations_cache.items() if (now - v[0]) > 120.0]
+                for k in expired_e:
+                    self._expirations_cache.pop(k, None)
 
             # Telemetry logging (non-sensitive, with optional RSS measurement)
             rss_mb = _get_process_rss_mb()
@@ -700,11 +708,7 @@ class VoltronService:
 
         if self.option_data_client and price > 0:
             try:
-                opt_req = OptionChainRequest(underlying_symbol=sym, feed=OptionsFeed.INDICATIVE)
-                chain = self.option_data_client.get_option_chain(opt_req)
-                atm_opt = self._extract_atm_option(chain, price)
-                del chain, opt_req  # Immediately release full options chain payload from memory
-                gc.collect()
+                atm_opt = self._fetch_atm_option_bounded(sym, price)
 
                 if atm_opt:
                     iv = round(atm_opt["iv"] * 100.0, 2)
@@ -781,6 +785,174 @@ class VoltronService:
         self._market_cache[cache_key] = cached_entry
 
         return result
+
+    def _discover_candidate_expirations(self, symbol: str, spot_price: float) -> List[str]:
+        """
+        Discover candidate option expirations using server-side metadata filtering.
+        Never downloads option snapshots or full chains.
+        """
+        sym = symbol.upper()
+        now = time.time()
+        if hasattr(self, "_expirations_cache"):
+            cached = self._expirations_cache.get(sym)
+            if cached and (now - cached[0]) < 60.0 and cached[1]:
+                return list(cached[1])
+
+        self._ensure_clients()
+        today = datetime.now(timezone.utc).date()
+        exps_set = set()
+
+        if self.trading_client:
+            try:
+                low_s = str(round(spot_price * 0.92, 2)) if spot_price > 0 else None
+                high_s = str(round(spot_price * 1.08, 2)) if spot_price > 0 else None
+                start_date = today + timedelta(days=14)
+                end_date = today + timedelta(days=45)
+
+                req = GetOptionContractsRequest(
+                    underlying_symbols=[sym],
+                    status=AssetStatus.ACTIVE,
+                    expiration_date_gte=start_date,
+                    expiration_date_lte=end_date,
+                    strike_price_gte=low_s,
+                    strike_price_lte=high_s,
+                    limit=100,
+                )
+                res = self.trading_client.get_option_contracts(req)
+                contracts = res.option_contracts if hasattr(res, "option_contracts") else (res or [])
+                for c in (contracts or []):
+                    if c.expiration_date and c.expiration_date > today:
+                        exps_set.add(str(c.expiration_date))
+
+                # If first page was saturated with 1 expiration, fetch 1 bounded page (total limit <= 200)
+                if getattr(res, "next_page_token", None) and len(exps_set) < 2:
+                    req2 = GetOptionContractsRequest(
+                        underlying_symbols=[sym],
+                        status=AssetStatus.ACTIVE,
+                        expiration_date_gte=start_date,
+                        expiration_date_lte=end_date,
+                        strike_price_gte=low_s,
+                        strike_price_lte=high_s,
+                        limit=100,
+                        page_token=res.next_page_token,
+                    )
+                    res2 = self.trading_client.get_option_contracts(req2)
+                    contracts2 = res2.option_contracts if hasattr(res2, "option_contracts") else (res2 or [])
+                    for c in (contracts2 or []):
+                        if c.expiration_date and c.expiration_date > today:
+                            exps_set.add(str(c.expiration_date))
+            except Exception as e:
+                print(f"[VOLTRON] Candidate expiration discovery error for {sym}: {e}")
+
+            # Fallback to wider date window if 14-45 DTE yielded no active contracts
+            if not exps_set:
+                try:
+                    fallback_req = GetOptionContractsRequest(
+                        underlying_symbols=[sym],
+                        status=AssetStatus.ACTIVE,
+                        expiration_date_gte=today + timedelta(days=1),
+                        expiration_date_lte=today + timedelta(days=90),
+                        strike_price_gte=low_s,
+                        strike_price_lte=high_s,
+                        limit=100,
+                    )
+                    f_res = self.trading_client.get_option_contracts(fallback_req)
+                    f_contracts = f_res.option_contracts if hasattr(f_res, "option_contracts") else (f_res or [])
+                    for c in (f_contracts or []):
+                        if c.expiration_date and c.expiration_date > today:
+                            exps_set.add(str(c.expiration_date))
+                except Exception as e:
+                    print(f"[VOLTRON] Fallback expiration discovery error for {sym}: {e}")
+
+        # Deterministic calendar fallback if API returns no contracts (e.g. offline/mocks/weekends)
+        if not exps_set:
+            target = today + timedelta(days=21)
+            target = target + timedelta(days=(4 - target.weekday()) % 7)
+            exps_set.add(target.strftime("%Y-%m-%d"))
+
+        exps = sorted(list(exps_set))
+        if not hasattr(self, "_expirations_cache"):
+            self._expirations_cache = {}
+        self._expirations_cache[sym] = (now, exps)
+        return exps
+
+    def _fetch_atm_option_bounded(self, symbol: str, spot_price: float) -> Optional[Dict[str, Any]]:
+        """
+        Fetch ATM option IV using tight server-side expiration and strike filters.
+        Never fetches full chain or unfiltered OptionChainRequest.
+        """
+        sym = symbol.upper()
+
+        # 1. Reuse existing chain cache if available (prevents duplicate queries)
+        if hasattr(self, "_chain_cache"):
+            for k, v in self._chain_cache.items():
+                if k.startswith(f"{sym}_") and (time.time() - v.get("_cached_at", 0)) < 30.0:
+                    for row in v.get("chain", []):
+                        if row.get("is_atm") and row.get("call") and row["call"].get("iv"):
+                            return {
+                                "symbol": row["call"].get("contract"),
+                                "strike": row["strike"],
+                                "expiration": v.get("selected_expiration"),
+                                "iv": float(row["call"]["iv"]) / 100.0,
+                                "spread_percent": 0.02,
+                            }
+
+        if not self.option_data_client or spot_price <= 0:
+            return None
+
+        # 2. Discover candidate expirations via metadata
+        exps = self._discover_candidate_expirations(sym, spot_price)
+        if not exps:
+            return None
+
+        today = datetime.now(timezone.utc).date()
+        active_exp = exps[0]
+        for e in exps:
+            try:
+                dte = (datetime.strptime(e, "%Y-%m-%d").date() - today).days
+                if 14 <= dte <= 45:
+                    active_exp = e
+                    break
+            except Exception:
+                pass
+
+        # 3. Server-side strike filter (+-4% tight ATM window)
+        narrow_pct = 0.04
+        low_strike = round(spot_price * (1.0 - narrow_pct), 2)
+        high_strike = round(spot_price * (1.0 + narrow_pct), 2)
+
+        print(f"[VOLTRON][OPTIONS] request symbol={sym}")
+        print(f"[VOLTRON][OPTIONS] spot={spot_price:.2f}")
+        print(f"[VOLTRON][OPTIONS] strike_range={low_strike:.2f}..{high_strike:.2f}")
+        print(f"[VOLTRON][OPTIONS] expiration={active_exp}")
+
+        req = OptionChainRequest(
+            underlying_symbol=sym,
+            feed=OptionsFeed.INDICATIVE,
+            expiration_date=active_exp,
+            strike_price_gte=low_strike,
+            strike_price_lte=high_strike,
+        )
+        raw_chain = self.option_data_client.get_option_chain(req)
+        del req
+
+        num_contracts = len(raw_chain) if raw_chain else 0
+        print(f"[VOLTRON][OPTIONS] contracts_received={num_contracts}")
+        rss_mb = _get_process_rss_mb()
+        rss_str = f"{rss_mb:.1f}MB" if rss_mb is not None else "unknown"
+        print(f"[VOLTRON][OPTIONS] rss_after_fetch={rss_str}")
+
+        # Secondary hard safety guard (> 500 contracts fails closed)
+        if num_contracts > 500:
+            print(f"[VOLTRON][OPTIONS][ERROR] Option chain exceeded safety limit: {num_contracts} > 500 contracts. Failing closed.")
+            del raw_chain
+            gc.collect()
+            return None
+
+        atm_opt = self._extract_atm_option(raw_chain, spot_price)
+        del raw_chain
+        gc.collect()
+        return atm_opt
 
     def _extract_atm_option(self, chain: Dict[str, Any], stock_price: float) -> Optional[Dict[str, Any]]:
         today = datetime.now(timezone.utc).date()
@@ -898,62 +1070,110 @@ class VoltronService:
         # On cache miss, prune expired caches first
         self._prune_memory_caches()
 
-        req = OptionChainRequest(underlying_symbol=sym, feed=OptionsFeed.INDICATIVE)
+        today = datetime.now(timezone.utc).date()
+
+        # Step 1: Bounded expiration discovery using metadata endpoint
+        expirations_list = self._discover_candidate_expirations(sym, spot_price)
+
+        if not expirations_list and not expiration:
+            return {
+                "symbol": sym,
+                "spot_price": spot_price,
+                "change": market.get("change", 0.0),
+                "change_percent": market.get("change_percent", 0.0),
+                "implied_volatility": market.get("implied_volatility", 0.0),
+                "realized_volatility": market.get("realized_volatility", 0.0),
+                "iv_rv_ratio": market.get("iv_rv_ratio", 0.0),
+                "opportunity_score": market.get("opportunity_score", 0),
+                "expirations": [],
+                "selected_expiration": "",
+                "days_to_expiration": 0,
+                "chain": [],
+                "error": "NO_EXPIRATIONS_FOUND",
+                "data_source": "ALPACA_INDICATIVE",
+            }
+
+        # Step 2: Select target expiration (prefer 14-45 DTE if none requested)
+        if expiration:
+            active_exp = expiration
+            if expiration not in expirations_list:
+                expirations_list = sorted(list(set(expirations_list + [expiration])))
+        else:
+            active_exp = expirations_list[0]
+            for e in expirations_list:
+                try:
+                    dte = (datetime.strptime(e, "%Y-%m-%d").date() - today).days
+                    if 14 <= dte <= 45:
+                        active_exp = e
+                        break
+                except Exception:
+                    pass
+
+        try:
+            target_date = datetime.strptime(active_exp, "%Y-%m-%d").date()
+            target_dte = max(1, (target_date - today).days)
+        except Exception:
+            target_dte = 14
+            target_date = today + timedelta(days=14)
+
+        # Step 3: Server-side strike filter (+-8% around spot)
+        strike_range_pct = 0.08
+        low_strike = round(spot_price * (1.0 - strike_range_pct), 2)
+        high_strike = round(spot_price * (1.0 + strike_range_pct), 2)
+
+        # Memory telemetry logging
+        print(f"[VOLTRON][OPTIONS] request symbol={sym}")
+        print(f"[VOLTRON][OPTIONS] spot={spot_price:.2f}")
+        print(f"[VOLTRON][OPTIONS] strike_range={low_strike:.2f}..{high_strike:.2f}")
+        print(f"[VOLTRON][OPTIONS] expiration={active_exp}")
+
+        # Step 4: Filtered OptionChainRequest to fetch small bounded options response
+        req = OptionChainRequest(
+            underlying_symbol=sym,
+            feed=OptionsFeed.INDICATIVE,
+            expiration_date=active_exp,
+            strike_price_gte=low_strike,
+            strike_price_lte=high_strike,
+        )
         raw_chain = self.option_data_client.get_option_chain(req)
         del req
 
-        today = datetime.now(timezone.utc).date()
-        expirations_set = set()
+        num_contracts = len(raw_chain) if raw_chain else 0
+        print(f"[VOLTRON][OPTIONS] contracts_received={num_contracts}")
+        rss_mb = _get_process_rss_mb()
+        rss_str = f"{rss_mb:.1f}MB" if rss_mb is not None else "unknown"
+        print(f"[VOLTRON][OPTIONS] rss_after_fetch={rss_str}")
 
-        # 1. Fast Pass 1: Parse expirations directly from string keys without storing snapshots
-        for opt_sym in raw_chain.keys():
-            parsed = parse_option_symbol(opt_sym)
-            if not parsed:
-                continue
-            strike, opt_type, exp_date = parsed
-            if exp_date <= today:
-                continue
-            expirations_set.add(exp_date.strftime("%Y-%m-%d"))
-
-        expirations_list = sorted(list(expirations_set))
-        del expirations_set
-
-        if not expirations_list:
+        # Step 5: Secondary hard safety limit (> 500 contracts fails closed)
+        if num_contracts > 500:
+            print(f"[VOLTRON][OPTIONS][ERROR] Option chain exceeded safety limit: {num_contracts} > 500 contracts. Failing closed.")
             del raw_chain
             gc.collect()
             return {
                 "symbol": sym,
                 "spot_price": spot_price,
-                "expirations": [],
-                "selected_expiration": "",
-                "days_to_expiration": 0,
+                "change": market.get("change", 0.0),
+                "change_percent": market.get("change_percent", 0.0),
+                "implied_volatility": market.get("implied_volatility", 0.0),
+                "realized_volatility": market.get("realized_volatility", 0.0),
+                "iv_rv_ratio": market.get("iv_rv_ratio", 0.0),
+                "opportunity_score": market.get("opportunity_score", 0),
+                "expirations": expirations_list,
+                "selected_expiration": active_exp,
+                "days_to_expiration": target_dte,
                 "chain": [],
+                "error": "OPTIONS_CHAIN_TOO_LARGE",
+                "data_source": "ALPACA_INDICATIVE",
             }
 
-        # Choose target expiration
-        active_exp = expiration if (expiration and expiration in expirations_list) else expirations_list[0]
-        # Prefer an expiration with 14-45 DTE if no specific expiration requested
-        if not expiration:
-            for e in expirations_list:
-                dte = (datetime.strptime(e, "%Y-%m-%d").date() - today).days
-                if 14 <= dte <= 45:
-                    active_exp = e
-                    break
-
-        target_dte = max(1, (datetime.strptime(active_exp, "%Y-%m-%d").date() - today).days)
-        target_date = datetime.strptime(active_exp, "%Y-%m-%d").date()
-        max_strike_dist = spot_price * 0.12
-
-        # 2. Pass 2: Filter and process ONLY contracts for active_exp within 12% of spot price
+        # Step 6: Process only the filtered contracts for active_exp
         strikes_map: Dict[float, Dict[str, Any]] = {}
-        for opt_sym, snapshot in raw_chain.items():
+        for opt_sym, snapshot in (raw_chain or {}).items():
             parsed = parse_option_symbol(opt_sym)
             if not parsed:
                 continue
             strike, opt_type, exp_date = parsed
             if exp_date != target_date:
-                continue
-            if abs(strike - spot_price) > max_strike_dist:
                 continue
 
             quote = _get_val(snapshot, "latest_quote")
