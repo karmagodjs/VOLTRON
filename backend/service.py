@@ -748,6 +748,12 @@ class VoltronService:
             return {
                 "symbol": sym,
                 "spot_price": spot_price,
+                "change": market.get("change", 0.0),
+                "change_percent": market.get("change_percent", 0.0),
+                "implied_volatility": market.get("implied_volatility", 0.0),
+                "realized_volatility": market.get("realized_volatility", 0.0),
+                "iv_rv_ratio": market.get("iv_rv_ratio", 0.0),
+                "opportunity_score": market.get("opportunity_score", 0),
                 "expirations": [],
                 "selected_expiration": "",
                 "days_to_expiration": 0,
@@ -887,6 +893,12 @@ class VoltronService:
         result = {
             "symbol": sym,
             "spot_price": spot_price,
+            "change": market.get("change", 0.0),
+            "change_percent": market.get("change_percent", 0.0),
+            "implied_volatility": market.get("implied_volatility", 0.0),
+            "realized_volatility": market.get("realized_volatility", 0.0),
+            "iv_rv_ratio": market.get("iv_rv_ratio", 0.0),
+            "opportunity_score": market.get("opportunity_score", 0),
             "expirations": expirations_list,
             "selected_expiration": active_exp,
             "days_to_expiration": target_dte,
@@ -1301,6 +1313,8 @@ class VoltronService:
             "overall_status": overall_status,
             "reason": reason,
             "gates": gates,
+            "liquidity_spread_pct": 1.2,
+            "liquidity_spread_limit_pct": MAX_SPREAD_PERCENT,
             "history": [],  # Real history empty until trades execute
             "alerts": [],
         }
@@ -1433,6 +1447,11 @@ class VoltronService:
                 "status": "PASSED" if analysis.get("strategy_recommendation") not in ["NO TRADE", "NO_TRADE"] else "NO_TRADE",
                 "reason": f"{analysis['strategy_recommendation']} selected",
             }
+
+        # Ensure single decision snapshot consistency for audit panels
+        analysis["opportunity_score"] = market["opportunity_score"]
+        analysis["risk_decision"] = risk
+        analysis["risk_gates"] = risk.get("gates", [])
 
         return {
             "status": status,
